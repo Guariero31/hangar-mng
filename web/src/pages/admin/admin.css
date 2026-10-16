@@ -122,6 +122,20 @@ table.players td { padding: 9px 14px; }
 .approval-feedback.is-error .approval-feedback-icon { color: var(--danger); }
 .approval-dismiss { margin-left: auto; display: grid; place-items: center; min-width: 32px; min-height: 32px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); font: 22px var(--font-body); cursor: pointer; }
 .approval-dismiss:hover { color: var(--text); background: var(--hover); }
+.approval-confirm { margin: auto; width: min(480px, calc(100% - 32px)); max-height: calc(100dvh - 32px); padding: 0; border: 1px solid var(--line-2); border-radius: 14px; background: var(--surface); color: var(--text); box-shadow: var(--shadow-pop); }
+.approval-confirm::backdrop { background: rgb(0 0 0 / .72); backdrop-filter: blur(5px); }
+.approval-confirm-content { padding: 30px; }
+.approval-confirm-symbol { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 20px; border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--ok) 10%, var(--surface)); color: var(--ok); font-size: 26px; }
+.approval-confirm-symbol.is-reject { border-color: color-mix(in srgb, var(--danger) 40%, transparent); background: color-mix(in srgb, var(--danger) 10%, var(--surface)); color: var(--danger); }
+.approval-confirm h2 { margin: 8px 0 12px; font-size: 28px; text-transform: none; letter-spacing: -.4px; }
+.approval-confirm p { color: var(--muted); line-height: 1.6; }
+.approval-confirm-person { margin: 20px 0 26px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg); overflow-wrap: anywhere; }
+.approval-confirm-actions { display: flex; justify-content: flex-end; gap: 10px; }
+@media (max-width: 480px) {
+  .approval-confirm-content { padding: 24px 20px; }
+  .approval-confirm-actions { flex-wrap: wrap; }
+  .approval-confirm-actions .btn { flex: 1 1 auto; }
+}
 @media (max-width: 600px) {
   .approval-panel-head { padding: 20px 16px; gap: 12px; }
   .approvals-page .approval-row { padding: 18px 16px; gap: 12px; }

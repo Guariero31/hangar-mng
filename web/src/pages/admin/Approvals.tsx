@@ -1,5 +1,5 @@
 import { Pagination } from '../../components/Pagination';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useApprovals, useDecideApproval } from '../../api/hooks';
 import { errorMessage } from '../../api/client';
 import { fmtDate } from '../../lib/format';
@@ -12,14 +12,28 @@ export function Approvals() {
   const decide = useDecideApproval();
   const [msg, setMsg] = useState('');
   const [messageError, setMessageError] = useState(false);
+  const [confirmation, setConfirmation] = useState<{ id: string; decision: 'approve' | 'reject'; email: string } | null>(null);
+  const [confirmationError, setConfirmationError] = useState('');
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    if (confirmation && !dialog.current?.open) dialog.current?.showModal();
+    if (!confirmation && dialog.current?.open) dialog.current.close();
+  }, [confirmation]);
 
   function run(id: string, decision: 'approve' | 'reject', email: string) {
-    if (decision === 'reject' && !confirm(`Recusar o cadastro de ${email}?`)) return;
+    setConfirmationError('');
+    setConfirmation({ id, decision, email });
+  }
+
+  function confirmDecision() {
+    if (!confirmation || decide.isPending) return;
+    const { id, decision, email } = confirmation;
     setMsg('');
     setMessageError(false);
+    setConfirmationError('');
     decide.mutate({ id, decision }, {
-      onSuccess: () => setMsg(decision === 'approve' ? `${email} aprovado.` : `${email} recusado.`),
-      onError: (exception) => { setMessageError(true); setMsg(errorMessage(exception)); },
+      onSuccess: () => { setConfirmation(null); setMsg(decision === 'approve' ? `${email} aprovado.` : `${email} recusado.`); },
+      onError: (exception) => setConfirmationError(errorMessage(exception)),
     });
   }
 
@@ -28,6 +42,24 @@ export function Approvals() {
 
   return (
     <div className="approvals-page">
+      <dialog ref={dialog} className="approval-confirm" aria-labelledby="approval-confirm-title" aria-describedby="approval-confirm-description"
+        onCancel={(event) => { event.preventDefault(); if (!decide.isPending) setConfirmation(null); }}
+        onClick={(event) => { if (event.target === event.currentTarget && !decide.isPending) setConfirmation(null); }}>
+        {confirmation && <div className="approval-confirm-content" aria-busy={decide.isPending}>
+          <span className={`approval-confirm-symbol ${confirmation.decision === 'reject' ? 'is-reject' : ''}`} aria-hidden="true">{confirmation.decision === 'approve' ? '✓' : '!'}</span>
+          <span className="label">Controle de acesso</span>
+          <h2 id="approval-confirm-title">{confirmation.decision === 'approve' ? 'Aprovar cadastro?' : 'Recusar cadastro?'}</h2>
+          <p id="approval-confirm-description">{confirmation.decision === 'approve' ? 'Este piloto terá acesso ao esquadrão e poderá escolher seu nickname.' : 'Este piloto ficará sem acesso ao esquadrão. Você poderá aprovar o cadastro depois.'}</p>
+          <div className="approval-confirm-person">{confirmation.email}</div>
+          {confirmationError && <p className="approval-feedback is-error" role="alert">{confirmationError}</p>}
+          <div className="approval-confirm-actions">
+            <button type="button" className="btn ghost" autoFocus disabled={decide.isPending} onClick={() => setConfirmation(null)}>Voltar</button>
+            <button type="button" className={`btn ${confirmation.decision === 'reject' ? 'danger' : ''}`} disabled={decide.isPending} onClick={confirmDecision}>
+              {decide.isPending ? 'Confirmando…' : confirmation.decision === 'approve' ? 'Confirmar aprovação' : 'Recusar cadastro'}
+            </button>
+          </div>
+        </div>}
+      </dialog>
       <div className="page-head">
         <div>
           <span className="label">Administração</span>
