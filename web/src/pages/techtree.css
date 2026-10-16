@@ -11,32 +11,31 @@
 }
 /* Ocupa exatamente a altura da tela (menos a barra do topo): a árvore estica para preencher o que sobra */
 .tt.tt-screen { height: calc(100vh - 60px - 36px); height: calc(100dvh - 60px - 36px); min-height: 520px; }
-.tt .tt-top { display: flex; align-items: stretch; gap: 16px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+.tt .tt-top { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 14px; }
 .tt .tt-top .tt-head { border: 0; padding: 0; display: flex; flex-direction: column; justify-content: center; flex: none; }
-.tt .tt-top .stats { flex: 1 1 640px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
-.tt .tt-top .stat { padding: 7px 12px 8px 14px; gap: 3px; }
-.tt .tt-top .num { font-size: 22px; }
+.tt .tt-top .stats { flex: 1 1 640px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0; }
+.tt .tt-top .stat { padding: 2px 20px; gap: 6px; }
+.tt .tt-top .num { font-size: 30px; }
 .tt .tt-top .stat select { padding: 4px 8px; font-size: 13px; }
 .tt :focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; }
 
 .tt .tt-head { border-bottom: 1px solid var(--line); padding-bottom: 14px; }
-.tt .kicker { font-family: var(--f-mono); font-size: 12px; letter-spacing: .22em; color: var(--hud); text-transform: uppercase; }
-.tt h1 { font-family: var(--f-display); font-weight: 700; font-size: 32px; letter-spacing: .1em; margin: 4px 0 0; text-transform: uppercase; line-height: 1; }
+.tt .kicker { font-family: var(--f-display); font-weight: 600; font-size: 11px; letter-spacing: .22em; color: var(--mute); text-transform: uppercase; }
+.tt h1 { font-family: var(--f-display); font-weight: 700; font-size: 34px; letter-spacing: .06em; margin: 4px 0 0; text-transform: uppercase; line-height: 1; }
 .tt h1 b { color: var(--hud); font-weight: 700; }
 .tt .sub { color: var(--mute); margin: 8px 0 0; max-width: 68ch; }
 
 .tt .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
-.tt .stat { position: relative; background: var(--panel); border: 1px solid var(--line); padding: 10px 14px 12px 16px; display: flex; flex-direction: column; gap: 6px; min-width: 0;
-  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%); }
-.tt .stat::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 2px; background: var(--hud); opacity: .7; }
-.tt .lbl { font-family: var(--f-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
-.tt .num { font-family: var(--f-display); font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; letter-spacing: .03em; }
+.tt .stat { position: relative; background: none; border: 0; border-left: 1px solid var(--line); padding: 2px 20px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.tt .lbl { font-family: var(--f-display); font-weight: 600; font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--mute); }
+.tt .num { font-family: var(--f-mono); font-size: 32px; font-weight: 400; font-variant-numeric: tabular-nums; line-height: 1.1; letter-spacing: .03em; }
 .tt .num small { font-family: var(--f-mono); font-size: 12px; color: var(--mute); margin-left: 5px; font-weight: 400; }
-.tt .num.pm { color: var(--pm); text-shadow: 0 0 14px rgba(255, 194, 74, .35); }
+.tt .num.pm { color: var(--pm); }
 .tt select { font-family: var(--f-mono); font-size: 14px; background: #11100c; color: var(--fg); border: 1px solid var(--line2); border-radius: 0; padding: 8px 10px; width: 100%; min-width: 0; }
-.tt button:not(.node) { font-family: var(--f-mono); font-size: 13px; letter-spacing: .1em; text-transform: uppercase; border: 1px solid var(--hud); border-radius: 0; background: rgba(255, 168, 15, .13); color: #fff6e0; padding: 9px 14px; cursor: pointer; }
-.tt button:not(.node):hover:not(:disabled) { background: rgba(255, 168, 15, .26); }
-.tt button.ghost { background: transparent; color: var(--hud); }
+.tt button:not(.node) { font-family: var(--f-mono); font-size: 13px; letter-spacing: .1em; text-transform: uppercase; border: 1px solid var(--hud); border-radius: 0; background: transparent; color: var(--pm); padding: 9px 14px; cursor: pointer; }
+.tt button:not(.node):hover:not(:disabled) { background: rgba(255, 168, 15, .12); }
+.tt button.ghost { background: transparent; color: var(--fg); border-color: var(--line2); }
+.tt button.ghost:hover:not(:disabled) { border-color: var(--hud); }
 .tt button:disabled { opacity: .4; cursor: not-allowed; }
 
 .tt .toolbar { display: flex; flex-wrap: nowrap; justify-content: space-between; align-items: center; gap: 12px; padding: 0 0 10px; }
@@ -45,7 +44,7 @@
 .tt .legend { display: flex; gap: 6px 12px; flex-wrap: wrap; font-size: 12px; color: var(--mute); align-items: center; }
 .tt .legend span { display: inline-flex; align-items: center; gap: 7px; }
 .tt .legend .sep { width: 1px; height: 16px; background: var(--line2); }
-.tt .sq { width: 10px; height: 10px; background: var(--c); box-shadow: 0 0 6px var(--c); display: inline-block; }
+.tt .sq { width: 10px; height: 10px; background: var(--c); display: inline-block; }
 .tt .st { width: 16px; height: 16px; display: inline-block; border: 1px solid #3a3524; background: #100f0b; }
 .tt .st.own { border-color: var(--own); box-shadow: 0 0 8px rgba(63, 185, 80, .5); }
 .tt .st.av { border-color: var(--sel); box-shadow: 0 0 8px rgba(244, 241, 232, .5); }
@@ -127,9 +126,8 @@
 
 /* Painel de detalhes */
 .tt .tip { position: fixed; z-index: 20; width: 320px; max-width: calc(100vw - 16px); background: rgba(14, 13, 10, .97); border: 1px solid var(--line2); padding: 16px;
-  display: flex; flex-direction: column; gap: 11px; box-shadow: 0 18px 40px rgba(0, 0, 0, .6); --rc: var(--hud);
-  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px)); }
-.tt .tip::before { content: ''; position: absolute; left: 0; top: 0; width: 55%; height: 2px; background: var(--rc); box-shadow: 0 0 8px var(--rc); }
+  display: flex; flex-direction: column; gap: 11px; box-shadow: 0 18px 40px rgba(0, 0, 0, .6); --rc: var(--hud); }
+.tt .tip::before { content: ''; position: absolute; left: 0; top: 0; width: 55%; height: 2px; background: var(--rc); }
 .tt .tip .head { display: flex; gap: 12px; align-items: center; }
 .tt .tip .head svg { width: 52px; height: 52px; color: var(--rc); filter: drop-shadow(0 0 8px var(--rc)); flex: none; }
 .tt .tip h2 { font-family: var(--f-display); font-size: 26px; font-weight: 700; letter-spacing: .06em; margin: 2px 0 0; line-height: 1; text-transform: uppercase; }
@@ -153,12 +151,11 @@
 
 /* Ícone de informação com as regras */
 .tt .info { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-left: 10px; color: var(--hud); vertical-align: middle; cursor: help; outline: none; }
-.tt .info svg { width: 22px; height: 22px; filter: drop-shadow(0 0 4px rgba(255, 168, 15, .4)); }
+.tt .info svg { width: 22px; height: 22px; }
 .tt .info-pop { display: none; position: absolute; left: 0; top: calc(100% + 8px); z-index: 30; width: 340px; max-width: calc(100vw - 24px);
   flex-direction: column; gap: 8px; padding: 14px 16px; background: rgba(14, 13, 10, .97); border: 1px solid var(--line2);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, .6); font: 400 13px/1.45 var(--f-body); letter-spacing: normal; text-transform: none; color: var(--mute); cursor: default;
-  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); }
-.tt .info-pop::before { content: ''; position: absolute; left: 0; top: 0; width: 45%; height: 2px; background: var(--hud); box-shadow: 0 0 8px var(--hud); }
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .6); font: 400 13px/1.45 var(--f-body); letter-spacing: normal; text-transform: none; color: var(--mute); cursor: default; }
+.tt .info-pop::before { content: ''; position: absolute; left: 0; top: 0; width: 45%; height: 2px; background: var(--hud); }
 .tt .info-pop b { font-family: var(--f-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--hud); font-weight: 400; }
 .tt .info-pop em { font-style: normal; color: var(--fg); }
 .tt .info-pop em.b { color: var(--bound); }
