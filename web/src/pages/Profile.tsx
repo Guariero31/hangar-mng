@@ -6,7 +6,6 @@ import { errorMessage } from '../api/client';
 import type { Achievement, Profile } from '../api/types';
 import { AircraftIcon, fmtMult, iconOf, ROLE_LABEL } from '../lib/aircraft';
 import { fmtDate, fmtPoints, fmtSigned, SOURCE_LABEL } from '../lib/format';
-import { MedalStrip } from '../components/MedalStrip';
 import { MedalArt } from '../components/MedalArt';
 import './profile.css';
 
@@ -34,7 +33,6 @@ function ProfileView({ p }: { p: Profile }) {
           <div>
             <span className="label">Piloto</span>
             <h1 className="pf-name">{user.nickname}</h1>
-            <MedalStrip medals={user.medals} size={30} />
             <span className="muted pf-meta">
               No esquadrão desde {new Date(user.createdAt).toLocaleDateString('pt-BR')}
               {user.role === 'admin' && <> · <span className="badge info">admin</span></>}
