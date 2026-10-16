@@ -323,8 +323,6 @@ function TechTreeView({ state }: { state: TechTreeState }) {
               {tiers.map((t, i) => (
                 <div key={t.tier} className="th" style={{ left: G + i * CW, width: CW }}>
                   <b><i style={{ opacity: 0.45 + i * 0.14 }} />Tier {t.label}</b>
-                  <span>{t.cost ? <>Custo <em>{fmtPoints(t.cost)} PM</em></> : <em>Gratuito</em>}</span>
-                  <span>Bônus ao voar <em>{fmtMult(t.multiplier)}</em></span>
                 </div>
               ))}
             </div>
