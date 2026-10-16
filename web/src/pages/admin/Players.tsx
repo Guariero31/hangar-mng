@@ -123,7 +123,7 @@ export function Players() {
             <span className="label count">{data ? `${rows.length} de ${data.total}` : ''}</span>
           </div>
           {picked.size > 0 && <BatchBar ids={[...picked]} onClear={() => setPicked(new Set())} />}
-          <div className="table-wrap">
+          <div className="table-wrap table-scroll" style={{ ["--row-h" as string]: "57px" }}>
             <table className="players">
               <thead>
                 <tr>

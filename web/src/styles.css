@@ -192,6 +192,9 @@ select.input option { background: var(--bg-2); color: var(--text); }
 .toolbar select.input { width: auto; }
 .toolbar .count { margin-left: auto; }
 .table-wrap { overflow-x: auto; }
+/* Lista com rolagem própria (cabeçalho fixo) */
+.table-scroll { max-height: calc(35px + 20 * var(--row-h, 53px) + 1px); min-height: 320px; overflow-y: auto;}
+.table-scroll thead th { position: sticky; top: 0; z-index: 1; background: var(--bg); }
 table.players { width: 100%; border-collapse: collapse; font-size: 14px; }
 table.players th {
   text-align: left; padding: 10px 14px; white-space: nowrap;

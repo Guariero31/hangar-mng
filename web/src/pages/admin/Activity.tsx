@@ -1,5 +1,4 @@
 // Histórico de auditoria: tudo o que os admins fizeram (PM, aeronaves, contas, tech tree, configurações).
-import { Pagination } from '../../components/Pagination';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useActivity } from '../../api/hooks';
@@ -36,7 +35,7 @@ const KIND: Record<string, { label: string; tone: string }> = {
 function describe(it: ActivityItem): string {
   const d = it.details;
   switch (it.action) {
-    case 'add_points': return `${(d.amount ?? 0) > 0 ? 'Lançou' : 'Retirou'} ${fmtPoints(Math.abs(d.amount ?? 0))} PM — ${d.reason}${d.batch ? ` (lote de ${d.batch})` : ''}`;
+    case 'add_points': return `${d.amount > 0 ? 'Lançou' : 'Retirou'} ${fmtPoints(Math.abs(d.amount))} PM — ${d.reason}${d.batch ? ` (lote de ${d.batch})` : ''}`;
     case 'grant_aircraft': return `Liberou ${d.aircraftName ?? d.aircraft}`;
     case 'revoke_aircraft': return `Removeu ${d.aircraftName ?? d.aircraft}${d.refund ? ' e devolveu os PM' : ' sem devolver PM'}`;
     case 'set_status': return d.status === 'banned' ? 'Suspendeu a conta' : 'Reativou a conta';
@@ -59,8 +58,8 @@ const when = (iso: string) => new Date(iso).toLocaleString('pt-BR', { dateStyle:
 
 export function Activity() {
   const [group, setGroup] = useState('');
-  const [offset, setOffset] = useState(0);
-  const { data, isLoading, isFetching, error } = useActivity(group, 50, offset);
+  const [limit, setLimit] = useState(50);
+  const { data, isLoading, error } = useActivity(group, limit);
 
   return (
     <>
@@ -78,12 +77,12 @@ export function Activity() {
           <div className="seg" role="tablist">
             {GROUPS.map((g) => (
               <button key={g.key} type="button" className={group === g.key ? 'on' : ''}
-                onClick={() => { setGroup(g.key); setOffset(0); }}>{g.label}</button>
+                onClick={() => { setGroup(g.key); setLimit(50); }}>{g.label}</button>
             ))}
           </div>
           <span className="label count">{data ? `${data.items.length} de ${data.total} registros` : ''}</span>
         </div>
-        <div className="table-wrap">
+        <div className="table-wrap table-scroll" style={{ ["--row-h" as string]: "53px" }}>
           <table className="players act">
             <thead><tr><th>Quando</th><th>Admin</th><th>Tipo</th><th>O que foi feito</th><th>Jogador</th></tr></thead>
             <tbody>
@@ -107,7 +106,9 @@ export function Activity() {
             </tbody>
           </table>
         </div>
-        <Pagination offset={offset} total={data?.total ?? 0} busy={isFetching} onChange={setOffset} />
+        {data && data.items.length < data.total && (
+          <div className="more"><button className="btn ghost" onClick={() => setLimit(limit + 50)}>Carregar mais</button></div>
+        )}
       </section>
     </>
   );
