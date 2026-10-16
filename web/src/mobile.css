@@ -62,22 +62,15 @@
   .tt .tip h2 { font-size: 22px; }
   .tt .tip button { min-height: 44px; }
 
-  /* perfil */
-  .pf { gap: 12px; }
-  .pf-hero { padding: 16px; gap: 14px; }
-  .pf-id { gap: 14px; }
+  /* perfil (tema claro, sem caixas) */
   .pf-avatar { width: 60px; height: 60px; }
   .pf-initial { font-size: 28px; }
-  .pf-name { font-size: 26px; }
-  .pf-rank { display: flex; align-items: baseline; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
-  .pf-rank-num { font-size: 34px; margin: 0; }
-  .pf-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .pf-stat { padding: 10px 12px 11px 14px; }
-  .pf-stat-num { font-size: 22px; }
-  .pf-stat:last-child:nth-child(odd) { grid-column: 1 / -1; }
-  .medals { grid-template-columns: 1fr; gap: 8px; }
-  .pf-goal-main { grid-template-columns: auto 1fr; gap: 12px; }
-  .pf-goal-name { font-size: 22px; }
+  .pf-rank { display: flex; align-items: baseline; gap: 12px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .pf-rank-num { font-size: 36px; margin: 0; }
+  .pf-stat-num { font-size: 28px; }
+  .pf-stat:last-child:nth-child(odd) { grid-column: 1 / -1; padding-left: 0; border-left: 0; }
+  .medals { grid-template-columns: 1fr; gap: 24px; }
+  .pf-goal-main { gap: 16px; }
 
   /* ranking */
   .rk-podium { gap: 8px; }
@@ -109,8 +102,3 @@
   .brand span { display: none; }
   .tt .tt-top .num { font-size: 17px; }
 }
-
-/* Independent notices preserve purchase actions when achievements arrive. */
-.toast-stack { position: fixed; z-index: 1000; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; max-width: calc(100vw - 24px); max-height: 70vh; overflow-y: auto; pointer-events: none; }
-.toast-stack .toast { position: relative; inset: auto; bottom: auto !important; transform: none; width: auto; max-width: 100%; flex-shrink: 0; pointer-events: auto; }
-@media (max-width: 680px) { .toast-stack { bottom: calc(var(--nav-h) + var(--safe-b) + 14px); } }

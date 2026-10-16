@@ -1,5 +1,5 @@
 // Perfil privado do piloto: resumo, progresso, próximos objetivos, frota, PM por semana e linha do tempo.
-import { History } from './History';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAchievements, useMe, useProfile, useSetGoal, useTechTree } from '../api/hooks';
 import { planPath } from '../lib/path';
@@ -23,11 +23,16 @@ const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
 function ProfileView({ p }: { p: Profile }) {
   const { user, rank, totals, estimate } = p;
   const fleetPct = pct(totals.fleet, totals.aircraftTotal);
+  // tema claro só enquanto o perfil está aberto (as outras telas seguem no tema escuro)
+  useEffect(() => {
+    document.body.classList.add('light-page');
+    return () => document.body.classList.remove('light-page');
+  }, []);
 
   return (
     <div className="pf">
       {/* ------------------------------------------------ cabeçalho */}
-      <section className="pf-hero card">
+      <section className="pf-hero">
         <div className="pf-id">
           {user.avatarUrl
             ? <img className="pf-avatar" src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
@@ -47,11 +52,10 @@ function ProfileView({ p }: { p: Profile }) {
           <div className="pf-rank-num">{rank.position ? `${rank.position}º` : '—'}</div>
           <span className="muted">de {rank.total} pilotos · por PM ganhos</span>
         </div>
-        <div className="pf-ring" style={{ '--p': fleetPct } as React.CSSProperties} aria-label={`Frota: ${fleetPct}%`}>
-          <div>
-            <strong>{fleetPct}%</strong>
-            <span>da árvore</span>
-          </div>
+        <div className="pf-fleetpct">
+          <span className="label">Frota da árvore</span>
+          <div className="pf-fleetpct-num">{fleetPct}<small>%</small></div>
+          <div className="pf-bar"><i style={{ width: `${fleetPct}%` }} /></div>
         </div>
       </section>
 
@@ -66,10 +70,9 @@ function ProfileView({ p }: { p: Profile }) {
 
       <div className="pf-grid">
         <Medals />
-        <History />
         <GoalCard balance={totals.balance} perMission={estimate.perMission} />
         {/* ------------------------------------------------ progresso por tier */}
-        <section className="card pf-card">
+        <section className="pf-card">
           <h2 className="pf-h">Progresso por tier</h2>
           <div className="pf-bars">
             {p.byTier.map((t) => (
@@ -83,7 +86,7 @@ function ProfileView({ p }: { p: Profile }) {
         </section>
 
         {/* ------------------------------------------------ progresso por papel */}
-        <section className="card pf-card">
+        <section className="pf-card">
           <h2 className="pf-h">Por função</h2>
           <div className="pf-bars">
             {p.byRole.map((r) => (
@@ -97,7 +100,7 @@ function ProfileView({ p }: { p: Profile }) {
         </section>
 
         {/* ------------------------------------------------ próximos objetivos */}
-        <section className="card pf-card">
+        <section className="pf-card">
           <div className="pf-h-row">
             <h2 className="pf-h">Próximos objetivos</h2>
             <Link to="/" className="pf-link">Abrir a árvore →</Link>
@@ -120,13 +123,13 @@ function ProfileView({ p }: { p: Profile }) {
         </section>
 
         {/* ------------------------------------------------ PM por semana */}
-        <section className="card pf-card">
+        <section className="pf-card">
           <h2 className="pf-h">PM ganhos por semana</h2>
           <WeeklyChart weekly={p.weekly} />
         </section>
 
         {/* ------------------------------------------------ frota */}
-        <section className="card pf-card pf-wide">
+        <section className="pf-card pf-wide">
           <h2 className="pf-h">Sua frota <span className="muted">({p.fleet.length})</span></h2>
           <div className="pf-fleet">
             {p.fleet.map((a) => (
@@ -140,7 +143,7 @@ function ProfileView({ p }: { p: Profile }) {
         </section>
 
         {/* ------------------------------------------------ linha do tempo */}
-        <section className="card pf-card pf-wide">
+        <section className="pf-card pf-wide">
           <h2 className="pf-h">Linha do tempo</h2>
           {p.timeline.length === 0 && <p className="muted">Nada por aqui ainda. Voe uma missão!</p>}
           <ol className="pf-timeline">
@@ -211,7 +214,7 @@ function GoalCard({ balance, perMission }: { balance: number; perMission: number
 
   if (!goal) {
     return (
-      <section className="card pf-card pf-wide pf-goal empty">
+      <section className="pf-card pf-wide pf-goal empty">
         <div>
           <h2 className="pf-h">Sua meta</h2>
           <p className="muted">Escolha a aeronave que você quer conquistar: na árvore, abra o painel dela e clique na estrela ☆. O progresso aparece aqui.</p>
@@ -227,7 +230,7 @@ function GoalCard({ balance, perMission }: { balance: number; perMission: number
   const missing = Math.max(0, cost - balance);
 
   return (
-    <section className={`card pf-card pf-wide pf-goal ${goal.owned ? 'done' : ''}`} style={{ '--c': `var(--role-${goal.role})` } as React.CSSProperties}>
+    <section className={`pf-card pf-wide pf-goal ${goal.owned ? 'done' : ''}`} style={{ '--c': `var(--role-${goal.role})` } as React.CSSProperties}>
       <div className="pf-goal-main">
         <AircraftIcon icon={iconOf(goal)} className="pf-goal-big" />
         <div className="pf-goal-info">
@@ -298,7 +301,7 @@ function Medals() {
   const { data } = useAchievements();
   if (!data) return null;
   return (
-    <section className="card pf-card pf-wide">
+    <section className="pf-card pf-wide">
       <div className="pf-h-row">
         <h2 className="pf-h">Conquistas</h2>
         <span className="muted">{data.earned} de {data.total}</span>
