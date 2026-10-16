@@ -218,7 +218,6 @@ function TechTreeView({ state }: { state: TechTreeState }) {
   function buy(a: TreeAircraft) {
     unlock.mutate(a.id, {
       onSuccess: (r) => {
-        r.achievements?.forEach((m, i) => setTimeout(() => toast(`Conquista: ${m.name}`, 'ok', { duration: 5000, medal: m }), 600 + i * 5200));
         toast(`${a.name} adicionada à frota · ${fmtPoints(a.cost)} PM`, 'ok', {
         duration: Math.max(3000, (r.undoSeconds - 2) * 1000),
         action: {
@@ -228,7 +227,9 @@ function TechTreeView({ state }: { state: TechTreeState }) {
             onError: (e) => toast(errorMessage(e), 'err'),
           }),
         },
-      }); },
+      });
+        r.achievements?.forEach(medal => toast(`Conquista: ${medal.name}`, 'ok', { duration: 5000, medal }));
+      },
       onError: (e) => toast(errorMessage(e), 'err'),
     });
   }

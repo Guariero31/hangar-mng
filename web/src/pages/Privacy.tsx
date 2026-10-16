@@ -26,10 +26,10 @@ export function Privacy() {
         <p>Em um servidor privado do esquadrão, contratado na Hostinger (Brasil), com conexão protegida por HTTPS e cópias de segurança diárias do banco de dados.</p>
 
         <h2>Quem vê o quê</h2>
-        <p>Seu nickname, medalhas, frota e pontos aparecem para os outros pilotos aprovados, no ranking e no perfil. Seu e-mail só é visível para os administradores do esquadrão.</p>
+        <p>Seu nickname, foto, medalhas, quantidade de aeronaves e total de pontos ganhos aparecem para os outros pilotos aprovados no ranking. O perfil detalhado e o saldo são privados para você e para os administradores. Seu e-mail só é visível para os administradores do esquadrão.</p>
 
         <h2>Seus direitos</h2>
-        <p>Você pode pedir acesso, correção ou exclusão dos seus dados a qualquer momento, conforme a LGPD. Escreva para <a href={`mailto:${CONTACT}`}>{CONTACT}</a>. Ao excluir a conta, os dados pessoais são removidos; registros de pontos podem ser mantidos de forma anônima para preservar o histórico do ranking.</p>
+        <p>Você pode pedir acesso, correção ou exclusão dos seus dados a qualquer momento, conforme a LGPD. Escreva para <a href={`mailto:${CONTACT}`}>{CONTACT}</a>. Ao excluir a conta, removemos seus dados de cadastro, pontos, frota e medalhas. Os eventos de auditoria são preservados sem vínculo com a conta excluída, e os campos estruturados de identificação são removidos. Textos livres escritos por administradores podem exigir revisão para remoção de dados pessoais. Cópias de segurança seguem o prazo de retenção informado pelo esquadrão.</p>
 
         <h2>Mudanças</h2>
         <p>Se esta política mudar, a data acima será atualizada.</p>

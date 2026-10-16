@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, ApiError } from '../api/client';
+import { api, ApiError, errorMessage } from '../api/client';
 import { useLogout } from '../api/hooks';
 import { AuthLogo } from '../components/AuthLogo';
 import { Loading } from '../components/RequireUser';
@@ -26,6 +26,11 @@ export function Pending() {
     }
   }, [data, error, navigate, qc]);
 
+  if (error) return <main className="auth"><section className="auth-glass">
+    <h1 className="auth-title">Não foi possível verificar o cadastro</h1>
+    <p role="alert">{errorMessage(error)}</p>
+    <button className="auth-btn" onClick={() => refetch()} disabled={isFetching}>Tentar novamente</button>
+  </section></main>;
   if (!data) return <Loading />;
   const rejected = data.status === 'rejected';
 

@@ -18,7 +18,7 @@ const BANDS: [name: string, rowStart: number, rowEnd: number][] = [
   ['Asas rotativas', 14, 16],
 ];
 
-// id, nome, tier, linha, famílias (linhas visuais), restrição de armamento
+// id, nome, tier, linha, famílias (requisito: uma das mães), restrição de armamento
 const AIRCRAFT: [string, string, number, number, string[], string?][] = [
   ['mig21', 'MiG-21bis', 1, 0, []], ['su25a', 'Su-25A', 2, 1, ['mig21']], ['mig29a', 'MiG-29A', 3, 0, ['su25a']], ['su25t', 'Su-25T', 3, 1, ['su25a']],
   ['mig29s', 'MiG-29S', 4, 0, ['mig29a', 'su25t']], ['su27', 'Su-27', 4, 1, ['mig29a', 'su25t']], ['jf17', 'JF-17', 5, 0, ['mig29s', 'su27']], ['j11', 'J-11', 5, 1, ['mig29s', 'su27']], ['su33', 'Su-33', 5, 2, ['mig29s', 'su27']],
@@ -65,56 +65,63 @@ const DEMO_PILOTS: [nick: string, points: [number, string][], aircraft: string[]
 ];
 
 export async function seed() {
-  const { rows: [{ n }] } = await db.query<{ n: number }>('select count(*)::int as n from tiers');
-  if (n === 0) {
-    await db.tx(async (q) => {
-      for (const [tier, label, cost, mult] of TIERS) {
-        await q.query('insert into tiers (tier, label, cost, multiplier) values ($1, $2, $3, $4)', [tier, label, cost, mult]);
-      }
-      for (const [name, r0, r1] of BANDS) {
-        await q.query('insert into tree_bands (name, row_start, row_end) values ($1, $2, $3)', [name, r0, r1]);
-      }
-      for (const [id, name, tier, row, , restriction] of AIRCRAFT) {
-        await q.query(
-          'insert into aircraft (id, name, tier, role, row, icon, restriction) values ($1, $2, $3, $4, $5, $6, $7)',
-          [id, name, tier, roleOf(id), row, ICON[id] ?? null, restriction ?? null]);
-      }
-      for (const [id, , , , parents] of AIRCRAFT) {
-        for (const p of parents) await q.query('insert into aircraft_family (aircraft_id, parent_id) values ($1, $2)', [id, p]);
-      }
-      for (const [id, reqs] of Object.entries(BOUND)) {
-        for (const r of reqs) await q.query('insert into aircraft_bound (aircraft_id, requires_id) values ($1, $2)', [id, r]);
-      }
-      await q.query(`insert into settings (key, value) values ('base_mission_points', '500') on conflict do nothing`);
-    });
-    console.log(`  tech tree criada: ${AIRCRAFT.length} aeronaves em ${TIERS.length} tiers`);
-  }
-
-  if (!config.seedDemo) return;
-  const { rows: [{ u }] } = await db.query<{ u: number }>('select count(*)::int as u from users');
-  if (u > 0) return;
-
-  await db.tx(async (q) => {
-    for (const [nick, points, aircraft, banned] of DEMO_PILOTS) {
-      const email = `${nick.toLowerCase()}@exemplo.com`;
-      const { rows: [user] } = await q.query<{ id: string }>(
-        `insert into users (google_sub, email, name, nickname, status) values ($1, $2, $3, $4, $5) returning id`,
-        [`demo:${email}`, email, nick, nick, banned ? 'banned' : 'active']);
-      for (const [amount, reason] of points) {
-        await q.query(`insert into points_ledger (user_id, amount, reason, source) values ($1, $2, $3, 'manual')`,
-          [user.id, amount, reason]);
-      }
-      for (const id of aircraft) {
-        const { rows: [ac] } = await q.query<{ cost: number }>(
-          'select t.cost from aircraft a join tiers t on t.tier = a.tier where a.id = $1', [id]);
-        if (!ac) continue;
-        if (ac.cost > 0) {
-          await q.query(`insert into points_ledger (user_id, amount, reason, source) values ($1, $2, $3, 'unlock')`,
-            [user.id, -ac.cost, `Desbloqueio: ${id}`]);
+  return db.tx(async query => {
+    if (db.kind === 'postgres') await query.query('select pg_advisory_xact_lock(721406, 2)');
+    const { rows: [{ n }] } = await query.query<{ n: number }>('select count(*)::int as n from tiers');
+    if (n === 0) {
+      {
+        const q = query;
+        for (const [tier, label, cost, mult] of TIERS) {
+          await q.query('insert into tiers (tier, label, cost, multiplier) values ($1, $2, $3, $4)', [tier, label, cost, mult]);
         }
-        await q.query('insert into user_aircraft (user_id, aircraft_id) values ($1, $2)', [user.id, id]);
+        for (const [name, r0, r1] of BANDS) {
+          await q.query('insert into tree_bands (name, row_start, row_end) values ($1, $2, $3)', [name, r0, r1]);
+        }
+        for (const [id, name, tier, row, , restriction] of AIRCRAFT) {
+          await q.query(
+            'insert into aircraft (id, name, tier, role, row, icon, restriction) values ($1, $2, $3, $4, $5, $6, $7)',
+            [id, name, tier, roleOf(id), row, ICON[id] ?? null, restriction ?? null]);
+        }
+        for (const [id, , , , parents] of AIRCRAFT) {
+          for (const p of parents) await q.query('insert into aircraft_family (aircraft_id, parent_id) values ($1, $2)', [id, p]);
+        }
+        for (const [id, reqs] of Object.entries(BOUND)) {
+          for (const r of reqs) await q.query('insert into aircraft_bound (aircraft_id, requires_id) values ($1, $2)', [id, r]);
+        }
+        await q.query(`insert into settings (key, value) values ('base_mission_points', '500') on conflict do nothing`);
+      }
+      console.log(`  tech tree criada: ${AIRCRAFT.length} aeronaves em ${TIERS.length} tiers`);
+    }
+
+    if (!config.seedDemo) return;
+    const { rows: [{ u }] } = await query.query<{ u: number }>('select count(*)::int as u from users');
+    if (u > 0) return;
+
+    {
+      const q = query;
+      for (const [nick, points, aircraft, banned] of DEMO_PILOTS) {
+        const email = `${nick.toLowerCase()}@exemplo.com`;
+        const { rows: [user] } = await q.query<{ id: string }>(
+          `insert into users (google_sub, email, name, nickname, status) values ($1, $2, $3, $4, $5) returning id`,
+          [`demo:${email}`, email, nick, nick, banned ? 'banned' : 'active']);
+        for (const [amount, reason] of points) {
+          await q.query(`insert into points_ledger (user_id, amount, reason, source) values ($1, $2, $3, 'manual')`,
+            [user.id, amount, reason]);
+        }
+        for (const id of aircraft) {
+          const { rows: [ac] } = await q.query<{ cost: number }>(
+            'select t.cost from aircraft a join tiers t on t.tier = a.tier where a.id = $1', [id]);
+          if (!ac) continue;
+          let purchaseLedgerId: string | null = null;
+          if (ac.cost > 0) {
+            const { rows: [purchase] } = await q.query<{ id: string }>(`insert into points_ledger (user_id, amount, reason, source, aircraft_id) values ($1, $2, $3, 'unlock', $4) returning id::text`,
+              [user.id, -ac.cost, `Desbloqueio: ${id}`, id]);
+            purchaseLedgerId = purchase.id;
+          }
+          await q.query(`insert into user_aircraft (user_id, aircraft_id, paid_amount, purchase_ledger_id, acquisition_kind) values ($1, $2, $3, $4, 'purchase')`, [user.id, id, ac.cost, purchaseLedgerId]);
+        }
       }
     }
+    console.log('  pilotos de exemplo criados');
   });
-  console.log('  pilotos de exemplo criados');
 }

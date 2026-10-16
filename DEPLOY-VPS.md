@@ -78,6 +78,10 @@ O HTTPS é emitido sozinho pelo Caddy quando o DNS já está apontando. Abra `ht
 3. Os outros pilotos caem na tela "Aguardando aprovação" e aparecem em **Painel admin → Aprovações**.
 
 ## Atualizar o sistema depois
+
+Antes de publicar esta atualização, rode `npm run check` localmente e gere uma cópia de segurança do banco. A migração `006_acquisition_integrity.sql` é aplicada na inicialização: adiciona o preço pago e o vínculo com o débito original, preservando o histórico. Compras antigas só recebem valor reembolsável quando há um lançamento correspondente à aquisição; o preço atual nunca é usado para preencher lacunas. Saldos e reembolsos antigos já lançados não são recalculados automaticamente.
+
+Configure `ADMIN_EMAILS` antes do primeiro acesso. Cadastros comuns ficam pendentes mesmo quando não há administrador ativo. A atualização das medalhas do esquadrão ocorre em segundo plano a cada minuto.
 Na sua máquina, faça as alterações e envie (`git push`). Na VPS:
 ```
 cd /opt/hangar

@@ -1,3 +1,4 @@
+import { Pagination } from '../../components/Pagination';
 import { useState } from 'react';
 import { useApprovals, useDecideApproval } from '../../api/hooks';
 import { errorMessage } from '../../api/client';
@@ -6,7 +7,8 @@ import { AdminTabs } from './AdminTabs';
 import './admin.css';
 
 export function Approvals() {
-  const { data, isLoading, error } = useApprovals();
+  const [offset, setOffset] = useState(0);
+  const { data, isLoading, isFetching, error } = useApprovals(true, offset);
   const decide = useDecideApproval();
   const [msg, setMsg] = useState('');
 
@@ -37,8 +39,8 @@ export function Approvals() {
       {error && <p className="muted">{errorMessage(error)}</p>}
 
       <section className="card">
-        <span className="label">Aguardando ({pending.length})</span>
-        {!pending.length && !isLoading && <p className="muted">Ninguém na fila. 👍</p>}
+        <span className="label">Aguardando ({data?.pending ?? 0})</span>
+        {!pending.length && !isLoading && <p className="muted">Nenhum cadastro pendente nesta página.</p>}
         {pending.map((p) => (
           <div key={p.id} className="approval-row">
             {p.avatarUrl ? <img src={p.avatarUrl} alt="" className="approval-avatar" referrerPolicy="no-referrer" /> : <span className="approval-avatar" />}
@@ -66,6 +68,7 @@ export function Approvals() {
           ))}
         </section>
       )}
+      <Pagination offset={offset} total={data?.total ?? 0} busy={isFetching} onChange={setOffset} />
     </>
   );
 }

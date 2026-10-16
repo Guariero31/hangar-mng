@@ -76,7 +76,7 @@ web/
 - **Custo e bônus são por tier.** Tiers com custo 0 (o Tier I) ficam na frota de todos automaticamente.
 - **Regra 1:** para comprar uma aeronave do tier N é preciso ter ao menos uma aeronave do tier N-1.
 - **Regra 2 (Bound):** é preciso ter também as aeronaves ligadas pela linha magenta.
-- As linhas tracejadas de família são só visuais.
+- As linhas tracejadas indicam mães: é preciso ter ao menos uma mãe ativa cadastrada. Sem mãe ativa, vale qualquer aeronave do tier anterior.
 - O ganho por missão mostrado na tela é estimativa: `PM base por missão × bônus do tier da aeronave`.
 
 Tudo isso é editável em **Painel admin → Tech tree**: custo e bônus de cada tier, PM base por missão,
@@ -95,6 +95,16 @@ npm start
 ```
 A API passa a entregar o site já compilado em http://localhost:3001. Em produção defina no `.env`:
 `NODE_ENV=production`, `JWT_SECRET` (texto longo aleatório), `GOOGLE_CLIENT_ID` e `DATABASE_URL`.
+
+## Verificações de qualidade
+
+Execute `npm run check`: verifica tipos, proíbe `any` explícito, executa os testes em banco temporário em memória e compila os dois workspaces. Os testes não acessam `server/data` nem o banco configurado no `.env`.
+
+O histórico do perfil, jogadores, aprovações, auditoria e ranking permitem navegar pelas páginas. Os filtros e a ordenação dos jogadores são aplicados no servidor; os indicadores são globais. A exportação CSV identifica que contém apenas a página exibida.
+
+Reembolsos usam o débito da aquisição removida, nunca o preço atual. Concessões gratuitas não devolvem PM. A migração conserva os dados existentes e só associa compras antigas quando o histórico permite identificar a aquisição com segurança; sem comprovação, não há reembolso automático. Valores agregados suportam mais de 32 bits e são recusados acima de `Number.MAX_SAFE_INTEGER`.
+
+Novos usuários ficam pendentes mesmo antes do primeiro administrador. Configure `ADMIN_EMAILS` antes de publicar. As conquistas do esquadrão são atualizadas em segundo plano a cada minuto; o ranking apenas consulta os resultados.
 
 ## Próxima fase: automação com o servidor DCS
 O banco já tem `dcs_links` (vínculo com o UCID), `link_codes` e `points_ledger.external_ref` (evita lançar o mesmo evento duas vezes).

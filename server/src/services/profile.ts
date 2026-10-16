@@ -13,9 +13,9 @@ export async function getProfile(user: User) {
     getOwnedIds(user.id),
     getBalance(user.id),
     db.query<{ earned: number; spent: number; refunded: number }>(
-      `select coalesce(sum(amount) filter (where ${EARNED}), 0)::int as earned,
-              (coalesce(-sum(amount) filter (where source = 'unlock'), 0) - coalesce(sum(amount) filter (where source = 'refund'), 0))::int as spent,
-              coalesce(sum(amount) filter (where source = 'refund'), 0)::int as refunded
+      `select coalesce(sum(amount) filter (where ${EARNED}), 0)::float8 as earned,
+              (coalesce(-sum(amount) filter (where source = 'unlock'), 0) - coalesce(sum(amount) filter (where source = 'refund'), 0))::float8 as spent,
+              coalesce(sum(amount) filter (where source = 'refund'), 0)::float8 as refunded
          from points_ledger where user_id = $1`, [user.id]),
     // posição no ranking por PM ganhos, entre pilotos ativos com nickname
     db.query<{ position: number; total: number }>(
@@ -24,7 +24,7 @@ export async function getProfile(user: User) {
            from users u left join points_ledger l on l.user_id = u.id
           where u.status = 'active' and u.nickname is not null
           group by u.id)
-       select (select pos from r where id = $1)::int as position, (select count(*) from r)::int as total`, [user.id]),
+       select (select pos from r where id = $1)::float8 as position, (select count(*) from r)::float8 as total`, [user.id]),
     // histórico de PM + aeronaves liberadas pelo admin (as compras já aparecem no histórico)
     db.query(
       `select * from (
@@ -38,7 +38,7 @@ export async function getProfile(user: User) {
        ) t order by "createdAt" desc limit 100`, [user.id]),
     // PM ganhos por semana nas últimas 12 semanas
     db.query<{ week: string; earned: number }>(
-      `select to_char(w.week, 'YYYY-MM-DD') as week, coalesce(sum(l.amount), 0)::int as earned
+      `select to_char(w.week, 'YYYY-MM-DD') as week, coalesce(sum(l.amount), 0)::float8 as earned
          from generate_series(date_trunc('week', now()) - interval '11 weeks', date_trunc('week', now()), interval '1 week') as w(week)
          left join points_ledger l
            on l.user_id = $1 and l.amount > 0 and l.source in ('manual', 'server')

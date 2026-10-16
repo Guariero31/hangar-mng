@@ -23,7 +23,7 @@ export function planPath(aircraft: TreeAircraft[], tiers: Tier[], targetId: stri
   function plan(id: string, have: Set<string>, depth: number): TreeAircraft[] | null {
     if (have.has(id)) return [];
     const a = byId.get(id);
-    if (!a || depth > 20) return null;
+    if (!a || depth > aircraft.length) return null;
     const got = new Set(have);
     const steps: TreeAircraft[] = [];
     const take = (list: TreeAircraft[]) => { for (const x of list) { if (!got.has(x.id)) { steps.push(x); got.add(x.id); } } };

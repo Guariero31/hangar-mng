@@ -5,7 +5,7 @@ import { config } from './config.js';
 import { db } from './db.js';
 import { fail } from './errors.js';
 import { endSession, loadSessionUser, requireAdmin, requireNickname, requireUser, startSession, verifyGoogleToken } from './auth.js';
-import { getHistory, getNews, isNicknameAvailable, markNewsSeen, setGoal, setNickname, toMe, upsertLogin } from './services/users.js';
+import { getHistory, getHistoryPage, getNews, isNicknameAvailable, markNewsSeen, setGoal, setNickname, toMe, upsertLogin } from './services/users.js';
 import { getTree, getTechTreeState, undoUnlock, unlockAircraft, UNDO_SECONDS } from './services/techtree.js';
 import * as admin from './services/admin.js';
 import { getAchievements, syncAchievements } from './services/achievements.js';
@@ -14,6 +14,10 @@ import { getRanking } from './services/ranking.js';
 import { getProfile } from './services/profile.js';
 
 export const api = Router();
+const pagination = z.object({
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  offset: z.coerce.number().int().min(0).max(Number.MAX_SAFE_INTEGER).default(0),
+});
 
 // ------------------------------------------------------------------ autenticação
 
@@ -85,7 +89,13 @@ api.post('/me/nickname', requireUser, async (req, res) => {
 });
 
 api.get('/me/history', requireUser, requireNickname, async (req, res) => {
-  res.json(await getHistory(req.user.id));
+  const { limit, offset } = pagination.parse(req.query);
+  res.json(await getHistory(req.user.id, limit, offset));
+});
+
+api.get('/me/history/page', requireUser, requireNickname, async (req, res) => {
+  const { limit, offset } = pagination.parse(req.query);
+  res.json(await getHistoryPage(req.user.id, limit, offset));
 });
 
 api.get('/me/achievements', requireUser, requireNickname, async (req, res) => {
@@ -93,7 +103,8 @@ api.get('/me/achievements', requireUser, requireNickname, async (req, res) => {
 });
 
 api.get('/ranking', requireUser, requireNickname, async (req, res) => {
-  res.json(await getRanking(req.user));
+  const { limit, offset } = pagination.parse(req.query);
+  res.json(await getRanking(req.user, limit, offset));
 });
 
 api.get('/me/profile', requireUser, requireNickname, async (req, res) => {
@@ -157,14 +168,18 @@ adminApi.get('/activity', async (req, res) => {
 adminApi.get('/players', async (req, res) => {
   const q = z.object({
     search: z.string().trim().optional(),
+    filter: z.enum(['all', 'active', 'banned', 'nonick', 'admin']).default('all'),
+    sort: z.enum(['earned', 'balance', 'aircraftCount', 'nickname', 'lastLoginAt', 'createdAt']).default('earned'),
+    direction: z.enum(['asc', 'desc']).default('desc'),
     limit: z.coerce.number().int().min(1).max(1000).default(500),
     offset: z.coerce.number().int().min(0).default(0),
   }).parse(req.query);
-  res.json(await admin.listPlayers(q.search || null, q.limit, q.offset));
+  res.json(await admin.listPlayers(q.search || null, q.limit, q.offset, q));
 });
 
-adminApi.get('/approvals', async (_req, res) => {
-  res.json(await admin.listApprovals());
+adminApi.get('/approvals', async (req, res) => {
+  const { limit, offset } = pagination.parse(req.query);
+  res.json(await admin.listApprovals(limit, offset));
 });
 
 adminApi.post('/approvals/:id', async (req, res) => {

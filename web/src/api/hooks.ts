@@ -1,6 +1,7 @@
 // Hooks de dados (React Query). As telas usam só estes hooks — nunca fetch direto.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from './client';
+import { invalidatePlayerData } from './cache';
 import type { Approvals, MedalLite, Achievements, Ranking, Activity, Overview, News, Profile, AdminTree, Aircraft, AuthConfig, LedgerEntry, Me, PlayerDetail, PlayerRow, TechTreeState, Tier } from './types';
 
 // ------------------------------------------------------------------ sessão
@@ -58,15 +59,15 @@ export function useAchievements() {
   return useQuery({ queryKey: ['achievements'], queryFn: () => api.get<Achievements>('/me/achievements') });
 }
 
-export function useHistory() {
-  return useQuery({ queryKey: ['history'], queryFn: () => api.get<LedgerEntry[]>('/me/history') });
+export function useHistory(offset = 0) {
+  return useQuery({ queryKey: ['history', offset], queryFn: () => api.get<{ items: LedgerEntry[]; total: number }>(`/me/history/page?limit=50&offset=${offset}`) });
 }
 
 export function useUndoUnlock() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (aircraftId: string) => api.post<{ balance: number }>('/techtree/undo', { aircraftId }),
-    onSettled: () => Promise.all(['techtree', 'history', 'me', 'profile'].map((k) => qc.invalidateQueries({ queryKey: [k] }))),
+    onSettled: () => invalidatePlayerData(qc),
   });
 }
 
@@ -77,7 +78,7 @@ export function useSetGoal() {
     mutationFn: (aircraftId: string | null) => api.put('/me/goal', { aircraftId }),
     onSuccess: (_r, aircraftId) => {
       qc.setQueryData<Me | null>(['me'], (m) => (m ? { ...m, goalAircraftId: aircraftId } : m));
-      qc.invalidateQueries({ queryKey: ['profile'] });
+      return invalidatePlayerData(qc);
     },
   });
 }
@@ -99,24 +100,17 @@ export function useUnlock() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (aircraftId: string) => api.post<{ balance: number; undoSeconds: number; achievements: MedalLite[] }>('/techtree/unlock', { aircraftId }),
-    onSettled: () => Promise.all([
-      qc.invalidateQueries({ queryKey: ['techtree'] }),
-      qc.invalidateQueries({ queryKey: ['history'] }),
-      qc.invalidateQueries({ queryKey: ['me'] }),
-      qc.invalidateQueries({ queryKey: ['profile'] }),
-      qc.invalidateQueries({ queryKey: ['achievements'] }),
-      qc.invalidateQueries({ queryKey: ['news'] }),
-    ]),
+    onSettled: () => invalidatePlayerData(qc),
   });
 }
 
 // ------------------------------------------------------------------ admin
 
-export function usePlayers(search: string) {
+export function usePlayers(search: string, offset = 0, filter = 'all', sort = 'earned', direction = 'desc') {
   return useQuery({
-    queryKey: ['admin', 'players', search],
-    queryFn: () => api.get<{ players: PlayerRow[]; total: number }>(
-      `/admin/players?limit=1000${search ? `&search=${encodeURIComponent(search)}` : ''}`),
+    queryKey: ['admin', 'players', search, offset, filter, sort, direction],
+    queryFn: () => api.get<{ players: PlayerRow[]; total: number; summary: { active: number; banned: number; circ: number; online: number } }>(
+      `/admin/players?limit=50&offset=${offset}&filter=${filter}&sort=${sort}&direction=${direction}${search ? `&search=${encodeURIComponent(search)}` : ''}`),
     placeholderData: (prev) => prev,
   });
 }
@@ -139,12 +133,7 @@ function useAdminMutation<V, R = unknown>(fn: (v: V) => Promise<R>) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: fn,
-    onSuccess: () => Promise.all([
-      qc.invalidateQueries({ queryKey: ['admin'] }),
-      qc.invalidateQueries({ queryKey: ['me'] }),
-      qc.invalidateQueries({ queryKey: ['techtree'] }),
-      qc.invalidateQueries({ queryKey: ['profile'] }),
-    ]),
+    onSettled: () => invalidatePlayerData(qc),
   });
 }
 
@@ -186,8 +175,8 @@ export const useSaveTier = () =>
 export const useSaveSettings = () =>
   useAdminMutation((v: { baseMissionPoints: number }) => api.put('/admin/settings', v));
 
-export function useApprovals(enabled = true) {
-  return useQuery({ queryKey: ['admin', 'approvals'], queryFn: () => api.get<Approvals>('/admin/approvals'), refetchInterval: 60_000, enabled });
+export function useApprovals(enabled = true, offset = 0) {
+  return useQuery({ queryKey: ['admin', 'approvals', offset], queryFn: () => api.get<Approvals>(`/admin/approvals?limit=50&offset=${offset}`), refetchInterval: 60_000, enabled });
 }
 
 export const useDecideApproval = () =>
@@ -198,14 +187,14 @@ export function useOverview() {
   return useQuery({ queryKey: ['admin', 'overview'], queryFn: () => api.get<Overview>('/admin/overview') });
 }
 
-export function useActivity(group: string, limit: number) {
+export function useActivity(group: string, limit: number, offset = 0) {
   return useQuery({
-    queryKey: ['admin', 'activity', group, limit],
-    queryFn: () => api.get<Activity>(`/admin/activity?limit=${limit}${group ? `&group=${group}` : ''}`),
+    queryKey: ['admin', 'activity', group, limit, offset],
+    queryFn: () => api.get<Activity>(`/admin/activity?limit=${limit}&offset=${offset}${group ? `&group=${group}` : ''}`),
     placeholderData: (prev) => prev,
   });
 }
 
-export function useRanking() {
-  return useQuery({ queryKey: ['ranking'], queryFn: () => api.get<Ranking>('/ranking') });
+export function useRanking(offset = 0) {
+  return useQuery({ queryKey: ['ranking', offset], queryFn: () => api.get<Ranking>(`/ranking?limit=50&offset=${offset}`) });
 }

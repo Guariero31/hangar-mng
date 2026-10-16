@@ -32,17 +32,15 @@ export async function findUserById(id: string): Promise<User | null> {
 
 export async function getBalance(userId: string, q: Queryable = db): Promise<number> {
   const { rows } = await q.query<{ balance: number }>(
-    'select coalesce(sum(amount), 0)::int as balance from points_ledger where user_id = $1', [userId]);
+    'select coalesce(sum(amount), 0)::float8 as balance from points_ledger where user_id = $1', [userId]);
   return rows[0].balance;
 }
 
 /** Cria ou atualiza o usuário a partir dos dados do Google (ou do login de desenvolvimento) */
 export async function upsertLogin(p: { sub: string; email: string; name?: string | null; picture?: string | null }): Promise<User> {
-  // Primeiro acesso: entra direto se for admin por e-mail, se a aprovação estiver desligada
-  // ou se ainda não existe nenhum admin (para não travar a instalação nova). Senão, fica pendente.
+  // Only configured administrators bypass approval, including during initial setup.
   const email = p.email.toLowerCase();
-  const { rows: [{ admins }] } = await db.query<{ admins: number }>(`select count(*)::int as admins from users where role = 'admin' and status = 'active'`);
-  const startStatus = !config.requireApproval || config.adminEmails.includes(email) || admins === 0 ? 'active' : 'pending';
+  const startStatus = !config.requireApproval || config.adminEmails.includes(email) ? 'active' : 'pending';
   const { rows: known } = await db.query('select 1 from users where google_sub = $1', [p.sub]);
   const { rows } = await db.query<User>(
     `insert into users (google_sub, email, name, avatar_url, last_login_at, status)
@@ -157,10 +155,18 @@ export async function markNewsSeen(user: User) {
   await db.query('update users set news_seen_at = now() where id = $1', [user.id]);
 }
 
-export async function getHistory(userId: string, limit = 50) {
+export async function getHistory(userId: string, limit = 50, offset = 0) {
   const { rows } = await db.query(
     `select id, amount, reason, source, created_at as "createdAt"
        from points_ledger where user_id = $1
-      order by created_at desc, id desc limit $2`, [userId, limit]);
+      order by created_at desc, id desc limit $2 offset $3`, [userId, limit, offset]);
   return rows;
+}
+
+export async function getHistoryPage(userId: string, limit = 50, offset = 0) {
+  const [items, { rows: [count] }] = await Promise.all([
+    getHistory(userId, limit, offset),
+    db.query<{ total: number }>('select count(*)::float8 as total from points_ledger where user_id = $1', [userId]),
+  ]);
+  return { items, total: count.total };
 }

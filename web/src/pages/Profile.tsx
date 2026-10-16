@@ -1,4 +1,5 @@
 // Perfil privado do piloto: resumo, progresso, próximos objetivos, frota, PM por semana e linha do tempo.
+import { History } from './History';
 import { Link } from 'react-router-dom';
 import { useAchievements, useMe, useProfile, useSetGoal, useTechTree } from '../api/hooks';
 import { planPath } from '../lib/path';
@@ -65,6 +66,7 @@ function ProfileView({ p }: { p: Profile }) {
 
       <div className="pf-grid">
         <Medals />
+        <History />
         <GoalCard balance={totals.balance} perMission={estimate.perMission} />
         {/* ------------------------------------------------ progresso por tier */}
         <section className="card pf-card">

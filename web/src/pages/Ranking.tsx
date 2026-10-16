@@ -1,4 +1,6 @@
 // Ranking do esquadrão: posição por PM ganhos, frota e medalhas de vitrine. Saldo e e-mail não aparecem.
+import { useState } from 'react';
+import { Pagination } from '../components/Pagination';
 import { useRanking } from '../api/hooks';
 import { errorMessage } from '../api/client';
 import { MedalStrip } from '../components/MedalStrip';
@@ -6,10 +8,11 @@ import { fmtPoints } from '../lib/format';
 import './ranking.css';
 
 export function RankingPage() {
-  const { data, isLoading, error } = useRanking();
+  const [offset, setOffset] = useState(0);
+  const { data, isLoading, isFetching, error } = useRanking(offset);
   if (isLoading) return <div className="loading">CARREGANDO…</div>;
   if (error || !data) return <div className="empty">{errorMessage(error)}</div>;
-  const top = data.items.slice(0, 3);
+  const top = offset === 0 ? data.items.slice(0, 3) : [];
 
   return (
     <div className="rk">
@@ -61,6 +64,7 @@ export function RankingPage() {
             </tbody>
           </table>
         </div>
+        <Pagination offset={offset} total={data.total} busy={isFetching} onChange={setOffset} />
       </section>
     </div>
   );

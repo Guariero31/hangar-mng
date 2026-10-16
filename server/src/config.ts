@@ -44,7 +44,7 @@ export const config = {
 
   /** Vazio = usa o Postgres embutido (PGlite), salvo em PGLITE_DIR */
   databaseUrl,
-  pgliteDir: path.resolve(SERVER_ROOT, env.PGLITE_DIR || 'data/pglite'),
+  pgliteDir: env.PGLITE_DIR === 'memory://' ? 'memory://' : path.resolve(SERVER_ROOT, env.PGLITE_DIR || 'data/pglite'),
 
   googleClientId,
   /** Login sem Google, só para desenvolvimento. Liga sozinho quando não há GOOGLE_CLIENT_ID. */

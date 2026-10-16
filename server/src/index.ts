@@ -9,6 +9,8 @@ import { seed } from './seed.js';
 import { AppError } from './errors.js';
 import { api } from './routes.js';
 import { rateLimit, securityHeaders } from './security.js';
+import { drainServer } from './shutdown.js';
+import { startAchievementRefresh } from './services/achievement-refresh.js';
 
 console.log('\n  Hangar MNG — API');
 console.log(`  banco: ${db.kind === 'pglite' ? `Postgres embutido (${path.relative(process.cwd(), config.pgliteDir)})` : 'PostgreSQL'}`);
@@ -63,10 +65,15 @@ const server = app.listen(config.port, config.host, () => {
   console.log(`  login: ${config.googleClientId ? 'Google' : ''}${config.googleClientId && config.devLogin ? ' + ' : ''}${config.devLogin ? 'desenvolvimento (sem Google)' : ''}\n`);
 });
 
+const stopAchievementRefresh = startAchievementRefresh();
+let shuttingDown = false;
 async function shutdown() {
-  server.close();
-  await db.close();
-  process.exit(0);
+  if (shuttingDown) return;
+  shuttingDown = true;
+  try {
+    await drainServer(server, async () => { await stopAchievementRefresh(); await db.close(); });
+    process.exitCode = 0;
+  } catch (error) { console.error(error); process.exitCode = 1; }
 }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);

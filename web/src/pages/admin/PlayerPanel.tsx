@@ -1,3 +1,4 @@
+import { runOperation } from '../../lib/mutations';
 import { useState } from 'react';
 import { errorMessage } from '../../api/client';
 import {
@@ -42,7 +43,7 @@ export function PlayerPanel({ id, onDeleted }: { id: string; onDeleted?: () => v
   const banned = user.status === 'banned';
 
   const run = (p: Promise<unknown>, ok: string) =>
-    p.then(() => toast(ok)).catch((e) => toast(errorMessage(e), 'err'));
+    runOperation(p, () => toast(ok), error => toast(errorMessage(error), 'err'));
 
   function submitPoints(e: React.FormEvent) {
     e.preventDefault();
@@ -50,7 +51,7 @@ export function PlayerPanel({ id, onDeleted }: { id: string; onDeleted?: () => v
     if (!n) return toast('Informe uma quantidade diferente de zero.', 'err');
     if (!reason.trim()) return toast('Informe o motivo.', 'err');
     run(addPoints.mutateAsync({ id, amount: n, reason }), `${fmtSigned(n)} PM para ${label}`)
-      .then(() => { setAmount(''); setReason(''); });
+      .then(success => { if (success) { setAmount(''); setReason(''); } });
   }
 
   return (
@@ -65,7 +66,7 @@ export function PlayerPanel({ id, onDeleted }: { id: string; onDeleted?: () => v
         ) : (
           <form className="nick-row" onSubmit={(e) => {
             e.preventDefault();
-            run(rename.mutateAsync({ id, nickname: newNick.trim() }), `Nickname alterado para ${newNick.trim()}.`).then(() => setRenaming(false));
+            run(rename.mutateAsync({ id, nickname: newNick.trim() }), `Nickname alterado para ${newNick.trim()}.`).then(success => { if (success) setRenaming(false); });
           }}>
             <input className="input" value={newNick} maxLength={16} autoFocus aria-label="Novo nickname"
               onChange={(e) => setNewNick(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && setRenaming(false)} />

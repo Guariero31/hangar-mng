@@ -1,7 +1,7 @@
 // Conquistas: regras fixas calculadas com dados que já existem (frota, PM, tiers, meta).
 // Ao cumprir uma regra, a conquista é gravada com a data e passa a ser permanente.
 import { db } from '../db.js';
-import { evaluate, getOwnedIds, getTree } from './techtree.js';
+import { evaluate, getOwnedIds, getTree, type Tree } from './techtree.js';
 import type { User } from './users.js';
 
 type Rarity = 'common' | 'rare' | 'legendary';
@@ -74,16 +74,16 @@ export async function topMedals(userIds: string[], n = 3) {
 
 export async function achievementCount(userIds: string[]) {
   const { rows } = await db.query<{ user_id: string; n: number }>(
-    'select user_id, count(*)::int as n from user_achievements where user_id = any($1) group by user_id', [userIds]);
+    'select user_id, count(*)::float8 as n from user_achievements where user_id = any($1) group by user_id', [userIds]);
   return new Map(rows.map((r) => [r.user_id, r.n]));
 }
 
-async function buildCtx(user: User): Promise<Ctx> {
+async function buildCtx(user: User, catalog?: Tree): Promise<Ctx> {
   const [tree, ownedIds, run, goal] = await Promise.all([
-    getTree({ onlyActive: true }),
+    catalog ?? getTree({ onlyActive: true }),
     getOwnedIds(user.id),
     db.query<{ m: number }>(
-      `select coalesce(max(run), 0)::int as m from (
+      `select coalesce(max(run), 0)::float8 as m from (
          select sum(amount) over (order by created_at, id) as run from points_ledger where user_id = $1) t`, [user.id]),
     db.query<{ goal_aircraft_id: string | null }>('select goal_aircraft_id from users where id = $1', [user.id]),
   ]);
@@ -99,8 +99,8 @@ async function buildCtx(user: User): Promise<Ctx> {
 }
 
 /** Confere todas as regras e grava as que acabaram de ser cumpridas. Também apaga as recém-ganhas que deixaram de valer (compra desfeita). */
-export async function syncAchievements(user: User) {
-  const ctx = await buildCtx(user);
+export async function syncAchievements(user: User, catalog?: Tree) {
+  const ctx = await buildCtx(user, catalog);
   const met = new Map(ACHIEVEMENTS.map((d) => { const p = d.progress(ctx); return [d.key, p.target > 0 && p.current >= p.target]; }));
   const { rows } = await db.query<{ key: string; earned_at: Date }>('select key, earned_at from user_achievements where user_id = $1', [user.id]);
   const have = new Set(rows.map((r) => r.key));

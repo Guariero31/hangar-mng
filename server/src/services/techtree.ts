@@ -6,6 +6,7 @@
 import { db, type Queryable } from '../db.js';
 import { fail } from '../errors.js';
 import { getBalance } from './users.js';
+import { refundAcquisition, type Acquisition } from './acquisitions.js';
 
 export type Role = 'fighter' | 'multi' | 'attack' | 'aheli' | 'theli' | 'tplane';
 
@@ -61,11 +62,11 @@ type LockReason = 'previous_tier' | 'bound' | null;
 /** Calcula o estado de cada aeronave para um jogador */
 export function evaluate(tree: Tree, owned: Set<string>, balance: number) {
   const tierOf = new Map(tree.tiers.map((t) => [t.tier, t]));
+  const activeIds = new Set(tree.aircraft.filter(aircraft => aircraft.active).map(aircraft => aircraft.id));
   return tree.aircraft.map((a) => {
     const cost = tierOf.get(a.tier)?.cost ?? 0;
     const isOwned = owned.has(a.id);
     const hasPrevTier = tierOf.has(a.tier - 1);
-    const activeIds = new Set(tree.aircraft.map((x) => x.id));
     const parents = a.parents.filter((id) => activeIds.has(id));
     const prevTierOk = !hasPrevTier
       || (parents.length > 0
@@ -124,12 +125,16 @@ export async function unlockAircraft(userId: string, aircraftId: string): Promis
     }
     if (balance < target.cost) throw fail('INSUFFICIENT_POINTS', `Faltam ${target.cost - balance} PM.`);
 
+    let purchaseLedgerId: string | null = null;
     if (target.cost > 0) {
-      await q.query(
-        `insert into points_ledger (user_id, amount, reason, source, created_by, aircraft_id) values ($1, $2, $3, 'unlock', $1, $4)`,
+      const { rows: [purchase] } = await q.query<{ id: string }>(
+        `insert into points_ledger (user_id, amount, reason, source, created_by, aircraft_id) values ($1, $2, $3, 'unlock', $1, $4) returning id::text as id`,
         [userId, -target.cost, `Desbloqueio: ${target.name}`, aircraftId]);
+      purchaseLedgerId = purchase.id;
     }
-    await q.query('insert into user_aircraft (user_id, aircraft_id) values ($1, $2)', [userId, aircraftId]);
+    await q.query(
+      `insert into user_aircraft (user_id, aircraft_id, paid_amount, purchase_ledger_id, acquisition_kind)
+       values ($1, $2, $3, $4, 'purchase')`, [userId, aircraftId, target.cost, purchaseLedgerId]);
     return balance - target.cost;
   });
 }
@@ -141,21 +146,14 @@ export const UNDO_SECONDS = 15;
 export async function undoUnlock(userId: string, aircraftId: string): Promise<number> {
   return db.tx(async (q) => {
     await q.query('select 1 from users where id = $1 for update', [userId]);
-    const { rows: [last] } = await q.query<{ aircraft_id: string; age: number; granted_by: string | null }>(
-      `select aircraft_id, extract(epoch from now() - unlocked_at)::float8 as age, granted_by
-         from user_aircraft where user_id = $1 order by unlocked_at desc limit 1`, [userId]);
-    if (!last || last.aircraft_id !== aircraftId || last.granted_by) throw fail('UNDO_UNAVAILABLE');
+    const { rows: [last] } = await q.query<Acquisition & { age: number }>(
+      `select aircraft_id, paid_amount, purchase_ledger_id::text, acquisition_kind, extract(epoch from now() - unlocked_at)::float8 as age
+         from user_aircraft where user_id = $1 order by unlocked_at desc, purchase_ledger_id desc nulls last, aircraft_id limit 1`, [userId]);
+    if (!last || last.aircraft_id !== aircraftId || last.acquisition_kind !== 'purchase') throw fail('UNDO_UNAVAILABLE');
     if (last.age > UNDO_SECONDS) throw fail('UNDO_EXPIRED');
 
-    const { rows: [paid] } = await q.query<{ amount: number; name: string }>(
-      `select -l.amount as amount, a.name from points_ledger l join aircraft a on a.id = l.aircraft_id
-        where l.user_id = $1 and l.aircraft_id = $2 and l.source = 'unlock' order by l.id desc limit 1`, [userId, aircraftId]);
     await q.query('delete from user_aircraft where user_id = $1 and aircraft_id = $2', [userId, aircraftId]);
-    if (paid && paid.amount > 0) {
-      await q.query(
-        `insert into points_ledger (user_id, amount, reason, source, created_by, aircraft_id) values ($1, $2, $3, 'refund', $1, $4)`,
-        [userId, paid.amount, `Compra desfeita: ${paid.name}`, aircraftId]);
-    }
+    await refundAcquisition(q, userId, last, userId, `Compra desfeita: ${aircraftId}`);
     return getBalance(userId, q);
   });
 }

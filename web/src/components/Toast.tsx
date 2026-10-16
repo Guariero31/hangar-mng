@@ -1,49 +1,45 @@
 import { MedalArt } from './MedalArt';
 import type { MedalLite } from '../api/types';
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 
 type Kind = 'ok' | 'err';
 export interface ToastOptions {
-  /** botão de ação no aviso (ex.: "Desfazer") */
   action?: { label: string; onClick: () => void };
-  /** quanto tempo o aviso fica na tela, em ms */
   duration?: number;
-  /** medalha mostrada no aviso (conquistas) */
   medal?: Pick<MedalLite, 'icon' | 'rarity'>;
 }
 type Show = (message: string, kind?: Kind, opts?: ToastOptions) => void;
-
+interface Notice extends ToastOptions { id: number; message: string; kind: Kind; duration: number; expiresAt: number }
 const ToastContext = createContext<Show>(() => {});
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toast, setToast] = useState<{ message: string; kind: Kind; show: boolean; action?: ToastOptions['action']; medal?: ToastOptions['medal']; duration: number; key: number }>(
-    { message: '', kind: 'ok', show: false, duration: 3200, key: 0 });
-  const timer = useRef<number>();
-
-  const hide = useCallback(() => { window.clearTimeout(timer.current); setToast((t) => ({ ...t, show: false })); }, []);
-
-  const show = useCallback<Show>((message, kind = 'ok', opts = {}) => {
-    window.clearTimeout(timer.current);
-    const duration = opts.duration ?? (opts.action ? 8000 : 3200);
-    setToast((t) => ({ message, kind, show: true, action: opts.action, medal: opts.medal, duration, key: t.key + 1 }));
-    timer.current = window.setTimeout(hide, duration);
-  }, [hide]);
-
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const sequence = useRef(0);
+  const dismiss = useCallback((id: number) => setNotices(current => current.filter(notice => notice.id !== id)), []);
+  const show = useCallback<Show>((message, kind = 'ok', options = {}) => {
+    const duration = options.duration ?? (options.action ? 8000 : 3200);
+    const notice = { ...options, id: ++sequence.current, message, kind, duration, expiresAt: Date.now() + duration };
+    setNotices(current => [...current, notice]);
+  }, []);
+  useEffect(() => {
+    const timers = notices.map(notice => window.setTimeout(() => dismiss(notice.id), Math.max(0, notice.expiresAt - Date.now())));
+    return () => timers.forEach(timer => window.clearTimeout(timer));
+  }, [notices, dismiss]);
   return (
     <ToastContext.Provider value={show}>
       {children}
-      <div id="toast" role="status" className={`toast ${toast.show ? 'show' : ''} ${toast.kind} ${toast.action ? 'has-action' : ''} ${toast.medal ? 'has-medal' : ''}`}>
-        {toast.medal && <MedalArt className="toast-medal" icon={toast.medal.icon} rarity={toast.medal.rarity} />}
-        <span>{toast.message}</span>
-        {toast.action && (
-          <button type="button" className="toast-action" onClick={() => { const a = toast.action!; hide(); a.onClick(); }}>
-            {toast.action.label}
-          </button>
-        )}
-        {toast.action && toast.show && <i key={toast.key} className="toast-timer" style={{ animationDuration: `${toast.duration}ms` }} />}
+      <div className="toast-stack" aria-live="polite">
+        {notices.map(notice => (
+          <div key={notice.id} role="status" className={`toast show ${notice.kind} ${notice.action ? 'has-action' : ''} ${notice.medal ? 'has-medal' : ''}`}>
+            {notice.medal && <MedalArt className="toast-medal" icon={notice.medal.icon} rarity={notice.medal.rarity} />}
+            <span>{notice.message}</span>
+            {notice.action && <button type="button" className="toast-action" onClick={() => { dismiss(notice.id); notice.action?.onClick(); }}>{notice.action.label}</button>}
+            <button type="button" className="toast-action" aria-label="Fechar aviso" onClick={() => dismiss(notice.id)}>×</button>
+            {notice.action && <i className="toast-timer" style={{ animationDuration: `${notice.duration}ms` }} />}
+          </div>
+        ))}
       </div>
     </ToastContext.Provider>
   );
 }
-
 export const useToast = () => useContext(ToastContext);
