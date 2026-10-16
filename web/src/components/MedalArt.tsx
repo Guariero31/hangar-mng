@@ -196,6 +196,6 @@ const IMG: Record<string, string> = {
 export function MedalArt({ icon, rarity, className, large = false }: { icon: string; rarity: Rarity; className?: string; large?: boolean }) {
   const f = IMG[icon];
   if (!f) return <SvgMedal icon={icon} rarity={rarity} className={className} />;
-  return <img className={className} src={`/medalhas/${large ? 'grandes/' : ''}${f}.png`} alt="" loading={large ? 'eager' : 'lazy'} decoding="async" draggable={false}
+  return <img className={className} src={large ? `/medalhas/grandes/${f}.webp` : `/medalhas/${f}.png`} alt="" loading={large ? 'eager' : 'lazy'} decoding="async" draggable={false}
     style={{ display: 'block', objectFit: 'contain', ...(className ? {} : { width: '100%', height: '100%' }) }} />;
 }
