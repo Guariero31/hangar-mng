@@ -3,6 +3,7 @@ import { fail, isUniqueViolation } from '../errors.js';
 import { getBalance, NICKNAME_RULE, RESERVED, type User } from './users.js';
 import { getTree, type Role } from './techtree.js';
 import { getAchievements } from './achievements.js';
+import { sendApproved, sendRejected } from './mail.js';
 
 async function audit(q: Queryable, adminId: string, action: string, targetUserId: string | null, details: object) {
   await q.query(
@@ -147,14 +148,17 @@ export async function listApprovals() {
 
 export async function decideApproval(admin: User, userId: string, decision: 'approve' | 'reject') {
   if (userId === admin.id) throw fail('CANNOT_CHANGE_OWN_STATUS');
-  await db.tx(async (q) => {
+  const target = await db.tx(async (q) => {
     const status = decision === 'approve' ? 'active' : 'rejected';
-    const { rows } = await q.query(
+    const { rows } = await q.query<{ email: string; name: string | null }>(
       `update users set status = $2, decided_at = now()
-        where id = $1 and status in ('pending', 'rejected') returning email`, [userId, status]);
+        where id = $1 and status in ('pending', 'rejected') returning email, name`, [userId, status]);
     if (!rows.length) throw fail('USER_NOT_FOUND', 'Este cadastro não está mais na fila.');
     await audit(q, admin.id, decision === 'approve' ? 'approve_user' : 'reject_user', userId, { email: rows[0].email });
+    return rows[0];
   });
+  // fora da transação: o e-mail nunca desfaz nem atrasa a decisão
+  if (decision === 'approve') sendApproved(target); else sendRejected(target);
 }
 
 export async function setStatus(admin: User, userId: string, status: 'active' | 'banned') {

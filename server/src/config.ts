@@ -65,6 +65,18 @@ export const config = {
   /** Cria jogadores de exemplo quando o banco está vazio */
   seedDemo: bool(env.SEED_DEMO, !databaseUrl),
 
+  /** Endereço público do site (links nos e-mails). Em produção vem de DOMAIN. */
+  appUrl: (env.APP_URL?.trim() || (env.DOMAIN?.trim() ? `https://${env.DOMAIN.trim()}` : 'http://localhost:5173')).replace(/\/+$/, ''),
+
+  /** E-mails de boas-vindas/aprovação. Sem SMTP_HOST, nada é enviado (só aparece no log). */
+  smtp: {
+    host: env.SMTP_HOST?.trim() || '',
+    port: Number(env.SMTP_PORT || 465),
+    user: env.SMTP_USER?.trim() || '',
+    pass: env.SMTP_PASS?.replace(/\s+/g, '') || '',
+    from: env.MAIL_FROM?.trim() || (env.SMTP_USER?.trim() ? `Hangar MNG <${env.SMTP_USER.trim()}>` : ''),
+  },
+
   /** Fase 2: chave que o servidor DCS usa para enviar eventos */
   serverApiKey: env.SERVER_API_KEY || '',
 };

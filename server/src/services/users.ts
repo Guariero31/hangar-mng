@@ -3,6 +3,7 @@ import { getTechTreeState } from './techtree.js';
 import { db, type Queryable } from '../db.js';
 import { config } from '../config.js';
 import { fail, isUniqueViolation } from '../errors.js';
+import { sendWelcome } from './mail.js';
 
 export interface User {
   id: string;
@@ -42,6 +43,7 @@ export async function upsertLogin(p: { sub: string; email: string; name?: string
   const email = p.email.toLowerCase();
   const { rows: [{ admins }] } = await db.query<{ admins: number }>(`select count(*)::int as admins from users where role = 'admin' and status = 'active'`);
   const startStatus = !config.requireApproval || config.adminEmails.includes(email) || admins === 0 ? 'active' : 'pending';
+  const { rows: known } = await db.query('select 1 from users where google_sub = $1', [p.sub]);
   const { rows } = await db.query<User>(
     `insert into users (google_sub, email, name, avatar_url, last_login_at, status)
      values ($1, $2, $3, $4, now(), $5)
@@ -55,6 +57,8 @@ export async function upsertLogin(p: { sub: string; email: string; name?: string
   if (user.role !== 'admin' && config.adminEmails.includes(user.email)) {
     ({ rows: [user] } = await db.query<User>(`update users set role = 'admin', status = case when status in ('pending') then 'active' else status end where id = $1 returning *`, [user.id]));
   }
+  // e-mail de boas-vindas: só no primeiro cadastro que ficou aguardando aprovação
+  if (!known.length && user.status === 'pending') sendWelcome(user);
   return user;
 }
 
