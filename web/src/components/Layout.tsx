@@ -1,7 +1,6 @@
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useApprovals, useLogout, useMe } from '../api/hooks';
 import { fmtPoints, SITE_NAME } from '../lib/format';
-import { MedalStrip } from './MedalStrip';
 import { NewsBell } from './NewsBell';
 
 export function BrandMark() {
@@ -35,7 +34,6 @@ export function Layout() {
           </span>
           {me.avatarUrl && <img className="avatar" src={me.avatarUrl} alt="" referrerPolicy="no-referrer" />}
           <span className="callsign-wrap">
-            <MedalStrip medals={me.medals ?? []} size={18} />
             <Link className="callsign" to="/perfil" title="Meu perfil">{me.nickname}</Link>
           </span>
           <button
