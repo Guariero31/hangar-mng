@@ -3,3 +3,5 @@ dist/
 server/data/
 server/.env
 *.log
+.env
+backups/

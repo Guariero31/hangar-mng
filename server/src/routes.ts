@@ -17,6 +17,12 @@ export const api = Router();
 
 // ------------------------------------------------------------------ autenticação
 
+// Verificação de saúde (Docker/monitoramento): confere se o banco responde
+api.get('/health', async (_req, res) => {
+  await db.query('select 1');
+  res.json({ ok: true });
+});
+
 api.get('/auth/config', (_req, res) => {
   res.json({ googleClientId: config.googleClientId || null, devLogin: config.devLogin });
 });

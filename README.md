@@ -99,3 +99,6 @@ A API passa a entregar o site já compilado em http://localhost:3001. Em produç
 ## Próxima fase: automação com o servidor DCS
 O banco já tem `dcs_links` (vínculo com o UCID), `link_codes` e `points_ledger.external_ref` (evita lançar o mesmo evento duas vezes).
 Falta criar: a rota que recebe eventos do servidor (protegida por `SERVER_API_KEY`), o vínculo por código no chat do DCS e o script Lua.
+
+## Publicar na internet
+Veja **DEPLOY-VPS.md** (VPS com Docker, HTTPS automático e backup) e **GOOGLE-LOGIN.md** (login com Google).

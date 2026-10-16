@@ -9,7 +9,7 @@ export const securityHeaders: RequestHandler = (_req, res, next) => {
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; " +
+    "default-src 'self'; script-src 'self' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://accounts.google.com https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; " +
       "img-src 'self' data: https:; connect-src 'self' https://accounts.google.com; frame-src https://accounts.google.com; " +
       "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'",
   );
