@@ -14,7 +14,7 @@ import { fmtPoints } from '../lib/format';
 import './techtree.css';
 
 // Medidas do desenho (px)
-const TILE = 76, CHIP = 22, CW = 250, G = 56, HEAD = 84, PAD = 30, RH = 110, BGAP = 36;
+const TILE = 76, CHIP = 22, CW = 250, G = 56, HEAD = 50, PAD = 30, RH = 110, BGAP = 36;
 
 export function TechTree() {
   const { data, isLoading, error } = useTechTree();
