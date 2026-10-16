@@ -101,6 +101,7 @@
 .tt .tn { position: absolute; left: 5px; bottom: 3px; font-family: var(--f-display); font-size: 11px; font-weight: 700; color: var(--faint); letter-spacing: .06em; }
 .tt .ic { position: absolute; left: 50%; top: 55%; width: 54px; height: 54px; transform: translate(-50%, -50%); color: var(--rc); filter: drop-shadow(0 0 6px var(--rc)); }
 .tt .lk { position: absolute; right: 4px; bottom: 4px; width: 11px; height: 11px; color: var(--faint); display: none; }
+.tt .legend .st.lk { position: static; display: inline-block; width: 16px; height: 16px; }
 .tt .node.locked .lk { display: block; }
 .tt .node.locked .tile { border-color: #2a2718; background: rgba(14, 13, 10, .94); }
 .tt .node.locked .ic { color: #4d4836; filter: none; }
@@ -187,11 +188,94 @@
 .tt .confirm b.pm { color: var(--pm); }
 .tt .confirm .tip-actions button { flex: 1; }
 
-/* Tema claro: só o topo e a legenda clareiam. O mapa e o painel flutuante continuam escuros. */
-:root[data-theme="light"] .tt .tt-top, :root[data-theme="light"] .tt .toolbar {
-  --fg: #0a0a08; --mute: #5f5a49; --faint: #5f5a49; --line: #dcd7c8; --line2: #cbc5b2; --hud: #b36b00; --pm: #a85f00; --sel: #0a0a08;
+/* Light palette preserves map geometry and the existing aircraft states. */
+:root[data-theme="light"] .tt {
+  --bg: #f4f1e8; --panel: #fbf9f3;
+  --fg: #0a0a08; --mute: #5f5a49; --faint: #706a59; --line: #dcd7c8; --line2: #bcb49f; --hud: #a76300; --pm: #985800; --sel: #25251e;
+  --sel-soft: rgba(37, 37, 30, .12); --bound: #a92273; --own: #247637;
+  --r-fighter: #236eb5; --r-multi: #7547b4; --r-attack: #bf3040; --r-aheli: #b94f22; --r-theli: #8b7000; --r-tplane: #187b55;
   color: var(--fg);
 }
-:root[data-theme="light"] .tt .toolbar .st { background: #0b0a07; }
+:root[data-theme="light"] .tt .toolbar .st { background: transparent; }
 :root[data-theme="light"] .tt .info-pop { background: #fbf9f3; box-shadow: 0 12px 30px rgba(10, 10, 8, .14); }
 :root[data-theme="light"] .tt .tt-top select { background: #fbf9f3; color: var(--fg); }
+:root[data-theme="light"] .tt .chart {
+  background: radial-gradient(1px 1px at 23px 41px, rgba(92, 79, 47, .2), transparent 1.5px), #f8f5ec;
+  background-size: 120px 120px; border-color: var(--line2);
+}
+:root[data-theme="light"] .tt .stage { background-image: linear-gradient(rgba(102, 88, 54, .06) 1px, transparent 1px), linear-gradient(90deg, rgba(102, 88, 54, .06) 1px, transparent 1px); }
+:root[data-theme="light"] .tt .patch { opacity: .15; }
+:root[data-theme="light"] .tt .band { border-color: rgba(122, 89, 27, .2); background: linear-gradient(90deg, rgba(179, 107, 0, .055), transparent 35%); }
+:root[data-theme="light"] .tt .col { border-color: rgba(122, 89, 27, .13); }
+:root[data-theme="light"] .tt .thead { background: linear-gradient(#f1ecdf, rgba(241, 236, 223, .94)); }
+:root[data-theme="light"] .tt .th b i { box-shadow: none; }
+:root[data-theme="light"] .tt .e.soft { stroke: #a59a80; }
+:root[data-theme="light"] .tt .e.soft.lit { stroke: var(--own); }
+:root[data-theme="light"] .tt .e.bound,
+:root[data-theme="light"] .tt .e.bound.met,
+:root[data-theme="light"] .tt .e.hl,
+:root[data-theme="light"] .tt .e.pathe { filter: none; }
+:root[data-theme="light"] .tt .tile { border-color: #bcb49f; background: linear-gradient(160deg, #ffffff, #efeade); }
+:root[data-theme="light"] .tt .nm { color: var(--fg); }
+:root[data-theme="light"] .tt .ic { filter: none; }
+:root[data-theme="light"] .tt .node.locked .tile { border-color: #c9c2b1; background: #e9e4d8; }
+:root[data-theme="light"] .tt .node.locked .ic { color: #8a8372; }
+:root[data-theme="light"] .tt .node.locked .nm { color: #645e4f; }
+:root[data-theme="light"] .tt .node.owned .tile {
+  border-color: var(--rc); background: linear-gradient(160deg, color-mix(in srgb, var(--rc) 12%, #fffdf8), #fffdf8 85%);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--rc) 14%, transparent), inset 0 0 14px color-mix(in srgb, var(--rc) 6%, transparent);
+}
+:root[data-theme="light"] .tt .node.avail .tile { border-color: var(--sel); }
+:root[data-theme="light"] .tt .node.avail .ic { opacity: 1; filter: none; }
+:root[data-theme="light"] .tt .node.avail.afford .tile { animation: tt-pulse-light 2.2s ease-in-out infinite; }
+@keyframes tt-pulse-light { 0%, 100% { box-shadow: 0 0 0 0 var(--sel-soft); } 50% { box-shadow: 0 0 0 4px var(--sel-soft); } }
+:root[data-theme="light"] .tt .node.path .tile { box-shadow: 0 0 0 2px rgba(167, 99, 0, .12); }
+:root[data-theme="light"] .tt .node.path .ic { filter: none; }
+:root[data-theme="light"] .tt .slot { background: #fbf9f3; color: var(--mute); border-color: var(--line2); }
+:root[data-theme="light"] .tt .k-own { color: var(--own); border-color: var(--own); }
+:root[data-theme="light"] .tt .k-av { color: var(--sel); border-color: var(--sel); }
+:root[data-theme="light"] .tt .k-b { color: var(--bound); border-color: var(--bound); }
+:root[data-theme="light"] .tt .k-r,
+:root[data-theme="light"] .tt .k-goal { color: var(--pm); border-color: var(--pm); }
+:root[data-theme="light"] .tt .tip { background: #fbf9f3; box-shadow: 0 12px 30px rgba(10, 10, 8, .16); }
+:root[data-theme="light"] .tt .tip .head svg { filter: none; }
+:root[data-theme="light"] .tt .tip button.buy { background: rgba(37, 37, 30, .06); color: var(--fg); }
+:root[data-theme="light"] .tt .tip button.buy:hover:not(:disabled) { background: rgba(37, 37, 30, .12); }
+:root[data-theme="light"] .tt .step { color: #fff; box-shadow: none; }
+:root[data-theme="light"] .tt .star { text-shadow: none; }
+:root[data-theme="light"] .tt .goal-btn.on { background: rgba(167, 99, 0, .1) !important; text-shadow: none; }
+:root[data-theme="light"] .tt .confirm { background: rgba(37, 37, 30, .04); border-color: var(--line2); }
+:root[data-theme="light"] .tt .confirm b { color: var(--fg); }
+:root[data-theme="light"] .tt .confirm b.pm { color: var(--pm); }
+:root[data-theme="light"] .tt .ln.d { border-color: #a59a80; }
+@media (prefers-reduced-motion: reduce) { :root[data-theme="light"] .tt .node.avail.afford .tile { animation: none; } }
+
+/* Motion is limited to the inspected route and a confirmed acquisition. */
+.tt .route-reveal {
+  fill: none; stroke: #fff; stroke-width: 16; stroke-linejoin: round; stroke-linecap: butt;
+  stroke-dasharray: 1; stroke-dashoffset: 1;
+  animation: tt-route-reveal 650ms ease-out both;
+}
+@keyframes tt-route-reveal { to { stroke-dashoffset: 0; } }
+.tt .e.route-flow {
+  stroke: var(--hud); stroke-width: 2.6; stroke-linecap: round;
+  stroke-dasharray: 5 19; filter: none; pointer-events: none;
+  animation: tt-route-flow 1.6s linear infinite;
+}
+@keyframes tt-route-flow { to { stroke-dashoffset: -48; } }
+.tt .node.just-unlocked .tile::after {
+  content: ''; position: absolute; inset: -3px; pointer-events: none;
+  border: 2px solid var(--own);
+  background: linear-gradient(120deg, transparent 20%, color-mix(in srgb, var(--own) 24%, transparent), transparent 80%);
+  animation: tt-unlock-reveal 1.35s ease-out both;
+}
+@keyframes tt-unlock-reveal {
+  0% { opacity: 0; transform: scale(.92); }
+  18% { opacity: .9; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.3); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tt .route-reveal { animation: none; stroke-dashoffset: 0; }
+  .tt .e.route-flow { display: none; animation: none; }
+  .tt .node.just-unlocked .tile::after { animation: none; background: none; opacity: .7; }
+}

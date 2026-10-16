@@ -195,6 +195,10 @@ export function useActivity(group: string, limit: number, offset = 0) {
   });
 }
 
-export function useRanking(offset = 0) {
-  return useQuery({ queryKey: ['ranking', offset], queryFn: () => api.get<Ranking>(`/ranking?limit=50&offset=${offset}`) });
+export function useRanking(offset = 0, period: 'all' | 'month' = 'all') {
+  return useQuery({
+    queryKey: ['ranking', offset, period],
+    queryFn: () => api.get<Ranking>(`/ranking?limit=20&offset=${offset}&period=${period}`),
+    refetchInterval: 60_000,
+  });
 }

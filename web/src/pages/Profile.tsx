@@ -6,7 +6,7 @@ import { errorMessage } from '../api/client';
 import type { Achievement, Profile } from '../api/types';
 import { AircraftIcon, fmtMult, iconOf, ROLE_LABEL } from '../lib/aircraft';
 import { fmtDate, fmtPoints, fmtSigned, SOURCE_LABEL } from '../lib/format';
-import { MedalArt } from '../components/MedalArt';
+import { MedalPreview } from '../components/MedalPreview';
 import './profile.css';
 
 export function ProfilePage() {
@@ -272,7 +272,7 @@ function Medal({ a }: { a: Achievement }) {
   const p = pct(a.current, a.target);
   return (
     <li className={`medal ${a.rarity} ${done ? 'done' : ''}`} title={a.desc}>
-      <MedalArt className="medal-art" icon={a.icon} rarity={a.rarity} />
+      <MedalPreview achievement={a} />
       <div className="medal-body">
         <strong>{a.name}</strong>
         <span className="medal-desc">{a.desc}</span>

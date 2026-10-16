@@ -3,7 +3,7 @@
 //  Porte em React da tela original (tech-tree-dcs.html), agora ligada
 //  aos dados reais: saldo, frota e compras vêm do servidor.
 // =====================================================================
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useMe, useSetGoal, useTechTree, useUndoUnlock, useUnlock } from '../api/hooks';
 import { planPath, type PathPlan } from '../lib/path';
 import { errorMessage } from '../api/client';
@@ -215,16 +215,25 @@ function TechTreeView({ state }: { state: TechTreeState }) {
   }, [fit]);
 
   // ------------------------------------------------------------ compra
+  const [unlockedId, setUnlockedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!unlockedId) return;
+    const timeout = window.setTimeout(() => setUnlockedId(null), 1400);
+    return () => window.clearTimeout(timeout);
+  }, [unlockedId]);
+
   function buy(a: TreeAircraft) {
     unlock.mutate(a.id, {
       onSuccess: (r) => {
+        setUnlockedId(a.id);
         r.achievements?.forEach((m, i) => setTimeout(() => toast(`Conquista: ${m.name}`, 'ok', { duration: 5000, medal: m }), 600 + i * 5200));
         toast(`${a.name} adicionada à frota · ${fmtPoints(a.cost)} PM`, 'ok', {
         duration: Math.max(3000, (r.undoSeconds - 2) * 1000),
         action: {
           label: 'Desfazer',
           onClick: () => undo.mutate(a.id, {
-            onSuccess: () => toast(`Compra desfeita: ${fmtPoints(a.cost)} PM devolvidos.`),
+            onSuccess: () => { setUnlockedId(null); toast(`Compra desfeita: ${fmtPoints(a.cost)} PM devolvidos.`); },
             onError: (e) => toast(errorMessage(e), 'err'),
           }),
         },
@@ -248,6 +257,21 @@ function TechTreeView({ state }: { state: TechTreeState }) {
     () => (tip && !tip.owned && !tip.available ? planPath(aircraft, tiers, tip.id) : null),
     [tip, aircraft, tiers]);
   const pathIds = useMemo(() => new Set(path?.steps.map((s) => s.id) ?? []), [path]);
+  const routeMaskId = useId().replace(/:/g, '');
+  const routeDelays = useMemo(() => {
+    const active = edges.filter((edge) => edge.to === tipId || (pathIds.has(edge.to) && (pathIds.has(edge.from) || byId[edge.from]?.owned)));
+    const levels = new Map<string, number>();
+    const levelOf = (id: string, visited = new Set<string>()): number => {
+      if (levels.has(id)) return levels.get(id)!;
+      if (visited.has(id)) return 0;
+      const ancestors = new Set([...visited, id]);
+      const incoming = active.filter((edge) => edge.to === id);
+      const level = incoming.length ? Math.max(...incoming.map((edge) => levelOf(edge.from, ancestors) + 1)) : 0;
+      levels.set(id, level);
+      return level;
+    };
+    return new Map(active.map((edge) => [edge.key, levelOf(edge.from) * 550]));
+  }, [edges, tipId, pathIds, byId]);
   const firstTier = tiers[0]?.tier;
 
   return (
@@ -326,11 +350,28 @@ function TechTreeView({ state }: { state: TechTreeState }) {
                 </div>
               ))}
             </div>
-            <svg className="edges" width={L.W} height={L.H}>
+            <svg className="edges" width={L.W} height={L.H} aria-hidden="true">
               {/* o caminho destacado vai por último para ficar por cima */}
-              {[...edges.filter((e) => e.to !== tipId), ...edges.filter((e) => e.to === tipId)].map((e) => (
-                <path key={e.key} className={`${e.cls}${e.to === tipId ? ' hl' : ''}${pathIds.has(e.to) && e.to !== tipId && (pathIds.has(e.from) || byId[e.from]?.owned) ? ' pathe' : ''}`} d={e.d} />
-              ))}
+              {[...edges.filter((e) => e.to !== tipId), ...edges.filter((e) => e.to === tipId)].map((e) => {
+                const selected = e.to === tipId;
+                const onPath = pathIds.has(e.to) && !selected && (pathIds.has(e.from) || byId[e.from]?.owned);
+                const maskId = `${routeMaskId}-${e.key}`;
+                return <g key={`${tipId ?? 'idle'}-${e.key}`}>
+                  <path className={e.cls} d={e.d} />
+                  {(selected || onPath) && <>
+                    <defs>
+                      <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width={L.W} height={L.H}>
+                        <path className="route-reveal" pathLength="1" d={e.d}
+                          style={{ animationDelay: `${routeDelays.get(e.key) ?? 0}ms` }} />
+                      </mask>
+                    </defs>
+                    <g mask={`url(#${maskId})`}>
+                      <path className={`${e.cls}${selected ? ' hl' : ' pathe'}`} d={e.d} />
+                      <path className="e route-flow" d={e.d} />
+                    </g>
+                  </>}
+                </g>;
+              })}
             </svg>
             {aircraft.map((a) => {
               const p = L.pos(a);
@@ -341,6 +382,7 @@ function TechTreeView({ state }: { state: TechTreeState }) {
                 a.owned && 'owned', a.available && 'avail', afford && 'afford',
                 !a.owned && !a.available && 'locked', a.id === tipId && 'sel',
                 pathIds.has(a.id) && a.id !== tipId && 'path', a.id === goalId && 'goal',
+                a.id === unlockedId && 'just-unlocked',
               ].filter(Boolean).join(' ');
               const step = path ? path.steps.findIndex((x) => x.id === a.id) + 1 : 0;
               return (
@@ -386,6 +428,7 @@ function TechTreeView({ state }: { state: TechTreeState }) {
           role="tooltip"
           style={{ left: tipPos.x, top: tipPos.y, '--rc': `var(--r-${tip.role})` } as React.CSSProperties}
           onMouseEnter={() => window.clearTimeout(hideTimer.current)}
+          onFocusCapture={() => window.clearTimeout(hideTimer.current)}
           onMouseLeave={hideSoon}
         >
           <TipContent

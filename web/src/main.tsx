@@ -7,6 +7,7 @@ import { ToastProvider } from './components/Toast';
 import { App } from './App';
 import './styles.css';
 import './mobile.css';
+import './honor-theme.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -35,7 +35,7 @@ const KIND: Record<string, { label: string; tone: string }> = {
 function describe(it: ActivityItem): string {
   const d = it.details;
   switch (it.action) {
-    case 'add_points': return `${d.amount > 0 ? 'Lançou' : 'Retirou'} ${fmtPoints(Math.abs(d.amount))} PM — ${d.reason}${d.batch ? ` (lote de ${d.batch})` : ''}`;
+    case 'add_points': return `${(d.amount ?? 0) > 0 ? 'Lançou' : 'Retirou'} ${fmtPoints(Math.abs(d.amount ?? 0))} PM — ${d.reason}${d.batch ? ` (lote de ${d.batch})` : ''}`;
     case 'grant_aircraft': return `Liberou ${d.aircraftName ?? d.aircraft}`;
     case 'revoke_aircraft': return `Removeu ${d.aircraftName ?? d.aircraft}${d.refund ? ' e devolveu os PM' : ' sem devolver PM'}`;
     case 'set_status': return d.status === 'banned' ? 'Suspendeu a conta' : 'Reativou a conta';

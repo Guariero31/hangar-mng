@@ -1,13 +1,129 @@
-.rk-podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
-.rk-pod { --pc: var(--rank-base); background: none; border: 0; border-top: 2px solid var(--pc); padding: 16px 14px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
-.rk-pod.p1 { --pc: var(--gold); }
-.rk-pod.p2 { --pc: var(--silver); }
-.rk-pod.p3 { --pc: var(--bronze); }
-.rk-pod.me { background: var(--hover-accent); }
-.rk-pos { font: 700 26px var(--font-display, inherit); color: var(--pc); }
-.rk-avatar { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2px solid var(--pc); }
-.rk-initial { display: grid; place-items: center; background: var(--bg-2); font: 700 22px var(--font-display, inherit); color: var(--pc); }
-.rk-earned { font: 700 20px var(--font-display, inherit); }
-.rk-earned small { font-size: 11px; color: var(--muted); }
-.rk-table td { vertical-align: middle; }
-@media (max-width: 700px) { .rk-podium { grid-template-columns: 1fr; } }
+.ranking-honor {
+  --rh-surface: color-mix(in srgb, var(--bg) 96%, var(--text));
+  --rh-raised: color-mix(in srgb, var(--bg) 92%, var(--text));
+  --rh-gold: var(--gold);
+  color: var(--text);
+}
+.ranking-honor button { font-family: var(--font-body); }
+.ranking-honor button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.ranking-honor .rh-heading { display: flex; justify-content: space-between; gap: 20px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 22px; }
+.ranking-honor .rh-eyebrow { margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: 1.8px; text-transform: uppercase; color: var(--accent); }
+.ranking-honor .rh-heading h1 { font: 600 clamp(28px, 4vw, 38px)/1.15 var(--font-display); letter-spacing: -.7px; text-transform: none; }
+.ranking-honor .rh-description { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+.ranking-honor .rh-period { display: flex; gap: 4px; padding: 4px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--rh-surface); }
+.ranking-honor .rh-period button { border: 0; background: transparent; color: var(--muted); border-radius: 5px; padding: 10px 19px; font-size: 13px; cursor: pointer; }
+.ranking-honor .rh-period button[aria-pressed="true"] { background: var(--rh-gold); color: var(--on-accent); font-weight: 600; }
+.ranking-honor .rh-honors { position: relative; overflow: hidden; padding: 24px 25px 0; border: 1px solid var(--line-2); border-radius: 10px; background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--rh-gold) 8%, transparent), transparent 70%), var(--rh-surface); }
+.ranking-honor .rh-honors::before { content: ''; position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(var(--hover) 1px, transparent 1px), linear-gradient(90deg, var(--hover) 1px, transparent 1px); background-size: 40px 40px; opacity: .35; }
+.ranking-honor .rh-watermark { position: absolute; width: 235px; height: 235px; right: -30px; top: -30px; opacity: .055; pointer-events: none; object-fit: contain; }
+.ranking-honor .rh-honors-title { display: flex; justify-content: center; align-items: center; gap: 12px; position: relative; margin: 0; font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--muted); text-align: center; }
+.ranking-honor .rh-honors-title::before, .ranking-honor .rh-honors-title::after { content: ''; height: 1px; width: 45px; background: var(--line-2); flex-shrink: 0; }
+.ranking-honor .rh-podium { display: flex; justify-content: center; gap: 20px; align-items: flex-end; position: relative; margin: 20px auto 0; max-width: 790px; }
+.ranking-honor .rh-pilot { --podium-color: var(--rank-base); text-align: center; padding: 10px 8px 0; flex: 1 1 0; min-width: 0; max-width: 270px; }
+.ranking-honor .rh-pilot.rank-1 { --podium-color: var(--rh-gold); }
+.ranking-honor .rh-pilot.rank-2 { --podium-color: var(--silver); }
+.ranking-honor .rh-pilot.rank-3 { --podium-color: var(--bronze); }
+.ranking-honor .rh-pilot.slot-1 { order: 2; flex-grow: 1.18; }
+.ranking-honor .rh-pilot.slot-2 { order: 1; }
+.ranking-honor .rh-pilot.slot-3 { order: 3; }
+.ranking-honor .rh-crown { height: 37px; display: flex; align-items: flex-start; justify-content: center; color: var(--rh-gold); }
+.ranking-honor .rh-crown svg { width: 27px; height: 27px; }
+.ranking-honor .rk-portrait { position: relative; width: 68px; height: 68px; display: grid; place-items: center; margin: auto; border-radius: 50%; border: 1px solid var(--podium-color); background: var(--rh-raised); color: var(--podium-color); font: 600 26px var(--font-display); box-shadow: 0 0 0 6px color-mix(in srgb, var(--podium-color) 6%, transparent); }
+.ranking-honor .rk-portrait img, .ranking-honor .rk-row-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.ranking-honor .slot-1 .rk-portrait { width: 88px; height: 88px; font-size: 34px; background: radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--rh-gold) 24%, var(--rh-surface)), var(--rh-surface) 80%); box-shadow: 0 0 0 7px color-mix(in srgb, var(--rh-gold) 5%, transparent), 0 0 40px color-mix(in srgb, var(--rh-gold) 7%, transparent); }
+.ranking-honor .rk-place-badge { position: absolute; bottom: -7px; right: -5px; width: 25px; height: 25px; display: grid; place-items: center; border: 3px solid var(--rh-surface); background: var(--podium-color); color: var(--bg); border-radius: 50%; font: 600 12px var(--font-display); }
+.ranking-honor .rh-pilot h2 { font: 600 21px var(--font-display); margin: 17px 0 4px; text-transform: none; letter-spacing: 0; overflow-wrap: anywhere; }
+.ranking-honor .rh-pilot.slot-1 h2 { font-size: 26px; }
+.ranking-honor .rh-medals { height: 39px; display: flex; justify-content: center; align-items: center; margin: 7px 0 10px; }
+.ranking-honor .rh-step { padding: 16px 10px 14px; min-height: 100px; border: 1px solid var(--line-2); border-bottom: 0; border-radius: 8px 8px 0 0; background: linear-gradient(180deg, color-mix(in srgb, var(--podium-color) 8%, var(--rh-surface)), var(--rh-surface)); }
+.ranking-honor .slot-1 .rh-step { min-height: 120px; border-color: color-mix(in srgb, var(--rh-gold) 35%, var(--line)); }
+.ranking-honor .slot-3 .rh-step { min-height: 88px; }
+.ranking-honor .rh-place { font-size: 11px; letter-spacing: .7px; text-transform: uppercase; color: var(--podium-color); margin: 0 0 5px; }
+.ranking-honor .rh-score { font: 600 28px var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -.7px; margin: 0; overflow-wrap: anywhere; }
+.ranking-honor .slot-1 .rh-score { font-size: 36px; color: var(--rh-gold); }
+.ranking-honor .rh-unit { margin: 0; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+.ranking-honor .rh-start { padding: 30px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--rh-surface); text-align: center; }
+.ranking-honor .rh-start h2 { font-size: 20px; text-transform: none; }
+.ranking-honor .rh-start p { color: var(--muted); margin: 8px 0 0; }
+.ranking-honor .rh-personal { display: grid; grid-template-columns: auto 1fr minmax(180px, .8fr) auto; align-items: center; gap: 22px; margin: 20px 0 25px; padding: 19px 22px; border: 1px solid color-mix(in srgb, var(--rh-gold) 40%, var(--line)); border-left: 3px solid var(--rh-gold); border-radius: 8px; background: linear-gradient(90deg, var(--hover-accent), var(--rh-surface) 65%); }
+.ranking-honor .rh-my-position { font: 600 34px/1 var(--font-display); color: var(--rh-gold); }
+.ranking-honor .rh-personal h2 { font: 600 17px var(--font-display); text-transform: none; letter-spacing: 0; margin: 0 0 4px; }
+.ranking-honor .rh-personal p { margin: 0; font-size: 12px; color: var(--muted); }
+.ranking-honor .rh-pursuit p { font-size: 13px; color: var(--text); overflow-wrap: anywhere; }
+.ranking-honor .rh-pursuit strong { color: var(--rh-gold); font-weight: 600; }
+.ranking-honor .rh-track { height: 5px; border-radius: 5px; background: var(--line-2); overflow: hidden; margin-top: 10px; }
+.ranking-honor .rh-track span { display: block; height: 100%; border-radius: 5px; background: var(--rh-gold); }
+.ranking-honor .rh-list-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 15px; margin: 0 0 15px; flex-wrap: wrap; }
+.ranking-honor .rh-list-heading h2 { font: 600 20px var(--font-display); letter-spacing: 0; text-transform: none; }
+.ranking-honor .rh-list-heading>span { font-size: 12px; color: var(--muted); }
+.ranking-honor .rh-board { border: 1px solid var(--line-2); border-radius: 9px; overflow: hidden; background: var(--rh-surface); }
+.ranking-honor .rh-columns, .ranking-honor .rh-row { display: grid; grid-template-columns: 40px minmax(145px, 1fr) 130px 90px 115px; align-items: center; gap: 14px; }
+.ranking-honor .rh-columns { padding: 12px 20px; font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; background: var(--rh-raised); }
+.ranking-honor .rh-columns>:last-child { text-align: right; }
+.ranking-honor .rh-list { list-style: none; margin: 0; padding: 0; max-height: 1440px; overflow-y: auto; }
+.ranking-honor .rh-row { width: 100%; padding: 14px 20px; min-height: 72px; text-align: left; border: 0; border-top: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer; }
+.ranking-honor .rh-row:hover { background: var(--hover); }
+.ranking-honor .rh-row.is-me { background: var(--hover-accent); box-shadow: inset 3px 0 var(--rh-gold); }
+.ranking-honor .rh-row[aria-expanded="true"] { background: var(--rh-raised); }
+.ranking-honor .rh-row:focus-visible { outline-offset: -3px; }
+.ranking-honor .rh-number { font: 500 15px var(--font-display); color: var(--muted); }
+.ranking-honor .rh-number.is-top { color: var(--rh-gold); }
+.ranking-honor .rh-identity { display: flex; gap: 12px; align-items: center; min-width: 0; }
+.ranking-honor .rk-row-avatar { width: 35px; height: 35px; display: grid; place-items: center; flex-shrink: 0; border: 1px solid var(--line-2); background: var(--rh-raised); border-radius: 50%; color: var(--muted); font: 600 15px var(--font-display); }
+.ranking-honor .rh-name { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.ranking-honor .rh-you { color: var(--accent); background: var(--hover-accent); padding: 2px 5px; border-radius: 3px; font-size: 10px; letter-spacing: .6px; text-transform: uppercase; }
+.ranking-honor .rh-no-medals { font-size: 12px; color: var(--muted); }
+.ranking-honor .rh-fleet { font-size: 13px; font-variant-numeric: tabular-nums; }
+.ranking-honor .rh-fleet>span { color: var(--muted); }
+.ranking-honor .rh-points { font: 500 19px var(--font-display); font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+.ranking-honor .is-me .rh-points { color: var(--rh-gold); }
+.ranking-honor .rh-mobile-meta, .ranking-honor .rh-mobile-unit { display: none; }
+.ranking-honor .rh-details { display: flex; gap: 15px 22px; align-items: center; flex-wrap: wrap; padding: 14px 20px 17px 74px; border-top: 1px solid var(--line); background: var(--rh-raised); color: var(--muted); font-size: 13px; }
+.ranking-honor .rh-details[hidden] { display: none; }
+.ranking-honor .rh-details strong { color: var(--text); font-weight: 600; }
+.ranking-honor .rh-note { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; color: var(--muted); font-size: 12px; padding-top: 15px; }
+@media (max-width: 900px) {
+  .ranking-honor .rh-personal { grid-template-columns: auto 1fr auto; gap: 15px; }
+  .ranking-honor .rh-pursuit { grid-column: 2; grid-row: 2; }
+  .ranking-honor .rh-personal>button { grid-column: 3; grid-row: 1/3; }
+  .ranking-honor .rh-columns, .ranking-honor .rh-row { grid-template-columns: 30px minmax(120px, 1fr) 95px 70px 95px; gap: 10px; }
+}
+@media (max-width: 650px) {
+  .ranking-honor .rh-heading { gap: 16px; align-items: flex-start; }
+  .ranking-honor .rh-period { width: 100%; }
+  .ranking-honor .rh-period button { flex: 1; min-height: 42px; }
+  .ranking-honor .rh-honors { padding: 18px 12px 0; }
+  .ranking-honor .rh-honors-title { font-size: 10px; letter-spacing: 1.4px; gap: 8px; }
+  .ranking-honor .rh-honors-title::before, .ranking-honor .rh-honors-title::after { width: 25px; }
+  .ranking-honor .rh-podium { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 14px; }
+  .ranking-honor .rh-pilot { max-width: none; padding: 0; }
+  .ranking-honor .rh-pilot.slot-1 { grid-column: 1/-1; grid-row: 1; }
+  .ranking-honor .rh-pilot.slot-2 { grid-column: 1; grid-row: 2; }
+  .ranking-honor .rh-pilot.slot-3 { grid-column: 2; grid-row: 2; }
+  .ranking-honor .rh-crown { height: 28px; }
+  .ranking-honor .rh-crown svg { width: 21px; height: 21px; }
+  .ranking-honor .slot-1 .rk-portrait { width: 72px; height: 72px; font-size: 28px; }
+  .ranking-honor .rk-portrait { width: 49px; height: 49px; font-size: 21px; }
+  .ranking-honor .rh-pilot h2 { font-size: 18px; margin-top: 13px; }
+  .ranking-honor .rh-pilot.slot-1 h2 { font-size: 23px; }
+  .ranking-honor .rh-medals { margin: 4px 0 8px; height: 35px; }
+  .ranking-honor .rh-step, .ranking-honor .slot-3 .rh-step { padding: 10px 5px; min-height: 85px; }
+  .ranking-honor .slot-1 .rh-step { min-height: 0; padding: 9px; max-width: 260px; margin: auto; border-radius: 7px; border-bottom: 1px solid color-mix(in srgb, var(--rh-gold) 35%, var(--line)); }
+  .ranking-honor .rh-score { font-size: 23px; }
+  .ranking-honor .slot-1 .rh-score { font-size: 30px; }
+  .ranking-honor .rh-personal { padding: 15px; grid-template-columns: auto 1fr; gap: 12px 15px; }
+  .ranking-honor .rh-my-position { font-size: 30px; }
+  .ranking-honor .rh-pursuit { grid-column: 1/-1; grid-row: 2; }
+  .ranking-honor .rh-personal>button { grid-column: 1/-1; grid-row: 3; min-height: 42px; margin-top: 5px; }
+  .ranking-honor .rh-columns { display: none; }
+  .ranking-honor .rh-row { grid-template-columns: 24px minmax(0, 1fr) minmax(65px, 90px); padding: 14px 12px; gap: 9px; }
+  .ranking-honor .rh-row-medals, .ranking-honor .rh-row>.rh-fleet { display: none; }
+  .ranking-honor .rh-mobile-meta { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; }
+  .ranking-honor .rh-mobile-unit { display: block; font: 11px var(--font-body); color: var(--muted); }
+  .ranking-honor .rk-row-avatar { width: 29px; height: 29px; font-size: 13px; }
+  .ranking-honor .rh-identity { gap: 8px; }
+  .ranking-honor .rh-name { font-size: 14px; gap: 5px; }
+  .ranking-honor .rh-points { font-size: 18px; }
+  .ranking-honor .rh-details { padding: 14px 17px; gap: 9px 20px; }
+  .ranking-honor .rh-list-heading h2 { font-size: 18px; }
+}

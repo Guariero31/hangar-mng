@@ -103,8 +103,8 @@ api.get('/me/achievements', requireUser, requireNickname, async (req, res) => {
 });
 
 api.get('/ranking', requireUser, requireNickname, async (req, res) => {
-  const { limit, offset } = pagination.parse(req.query);
-  res.json(await getRanking(req.user, limit, offset));
+  const { limit, offset, period } = pagination.extend({ period: z.enum(['all', 'month']).default('all') }).parse(req.query);
+  res.json(await getRanking(req.user, limit, offset, period));
 });
 
 api.get('/me/profile', requireUser, requireNickname, async (req, res) => {

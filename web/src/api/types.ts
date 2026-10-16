@@ -154,12 +154,17 @@ export interface Achievements { earned: number; total: number; items: Achievemen
 
 export interface ActivityItem {
   id: string; action: string; createdAt: string;
-  adminId: string; adminNickname: string | null; adminEmail: string;
+  adminId: string | null; adminNickname: string | null; adminEmail: string | null;
   targetId: string | null; targetNickname: string | null; targetEmail: string | null;
-  details: Record<string, any>;
+  details: {
+    amount?: number; reason?: string; batch?: number; aircraftName?: string; aircraft?: string;
+    refund?: boolean; status?: string; from?: string | null; to?: string; email?: string;
+    nickname?: string; role?: string; name?: string; id?: string; active?: boolean;
+    label?: string; tier?: number; cost?: number; multiplier?: number; baseMissionPoints?: number;
+  };
 }
 export interface ApprovalItem { id: string; email: string; name: string | null; avatarUrl: string | null; status: 'pending' | 'rejected'; createdAt: string; decidedAt: string | null }
-export interface Approvals { pending: number; items: ApprovalItem[] }
+export interface Approvals { total: number; pending: number; items: ApprovalItem[] }
 export interface Activity { total: number; items: ActivityItem[] }
 
 export interface OverviewAircraft { id: string; name: string; role: AircraftRole; icon: string | null; tier: number; tierLabel: string; cost: number; owners?: number }
@@ -176,6 +181,14 @@ export interface Overview {
 
 export interface RankingItem {
   id: string; nickname: string; avatarUrl: string | null; createdAt: string;
-  pos: number; earned: number; fleet: number; medals: MedalLite[]; medalCount: number;
+  pos: number; earned: number; fleet: number; medals: MedalLite[]; medalCount: number; tied: number;
 }
-export interface Ranking { meId: string; aircraftTotal: number; items: RankingItem[] }
+export type RankingPeriod = 'all' | 'month';
+export interface Ranking {
+  meId: string; total: number; aircraftTotal: number; items: RankingItem[];
+  period: RankingPeriod; periodLabel: string; podium: RankingItem[];
+  personal: {
+    pilot: RankingItem; next: { nickname: string; earned: number; pos: number } | null;
+    gap: number; progress: number; pageOffset: number;
+  } | null;
+}
