@@ -10,7 +10,7 @@
   display: flex; flex-direction: column; gap: 12px;
 }
 /* Ocupa exatamente a altura da tela (menos a barra do topo): a árvore estica para preencher o que sobra */
-.tt.tt-screen { height: calc(100vh - 60px - 36px); min-height: 520px; }
+.tt.tt-screen { height: calc(100vh - 60px - 36px); height: calc(100dvh - 60px - 36px); min-height: 520px; }
 .tt .tt-top { display: flex; align-items: stretch; gap: 16px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
 .tt .tt-top .tt-head { border: 0; padding: 0; display: flex; flex-direction: column; justify-content: center; flex: none; }
 .tt .tt-top .stats { flex: 1 1 640px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
@@ -148,7 +148,7 @@
 @media (prefers-reduced-motion: reduce) { .tt .node.avail.afford .tile { animation: none; } .tt .tile { transition: none; } }
 
 /* A página da Tech Tree usa a largura toda */
-.page.wide { max-width: none; padding: 18px 24px 40px; }
+.page.wide { max-width: none; padding: 18px 24px 18px; }
 @media (max-width: 680px) { .page.wide { padding: 16px 12px 40px; } }
 
 /* Ícone de informação com as regras */
