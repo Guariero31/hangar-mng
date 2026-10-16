@@ -93,3 +93,8 @@ table.players td { padding: 9px 14px; }
 }
 @media (max-width: 1500px) { .hide-md { display: none; } }
 @media (max-width: 1200px) { .hide-sm { display: none; } }
+
+/* Colunas secundárias somem conforme a largura da própria tabela (não da janela), para nunca precisar de rolagem horizontal */
+.admin-grid > section.card { container-type: inline-size; }
+@container (max-width: 860px) { .hide-md { display: none; } table.players th, table.players td { padding-left: 9px; padding-right: 9px; } }
+@container (max-width: 700px) { .hide-sm { display: none; } }
