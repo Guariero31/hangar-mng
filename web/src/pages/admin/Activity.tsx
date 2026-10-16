@@ -23,6 +23,7 @@ const KIND: Record<string, { label: string; tone: string }> = {
   set_role: { label: 'Permissão', tone: 'info' },
   approve_user: { label: 'Cadastro aprovado', tone: 'ok' },
   reject_user: { label: 'Cadastro recusado', tone: 'danger' },
+  delete_user: { label: 'Conta excluída', tone: 'danger' },
   rename_player: { label: 'Nickname', tone: 'info' },
   create_aircraft: { label: 'Nova aeronave', tone: 'info' },
   update_aircraft: { label: 'Aeronave editada', tone: 'info' },
@@ -40,6 +41,7 @@ function describe(it: ActivityItem): string {
     case 'set_status': return d.status === 'banned' ? 'Suspendeu a conta' : 'Reativou a conta';
     case 'rename_player': return `Renomeou ${d.from ?? '(sem nickname)'} para ${d.to}`;
     case 'approve_user': return `Aprovou o cadastro de ${d.email ?? 'um jogador'}`;
+    case 'delete_user': return `Excluiu a conta de ${d.nickname ?? d.email ?? 'um jogador'}`;
     case 'reject_user': return `Recusou o cadastro de ${d.email ?? 'um jogador'}`;
     case 'set_role': return d.role === 'admin' ? 'Tornou administrador' : 'Removeu o acesso de administrador';
     case 'create_aircraft': return `Criou ${d.aircraftName ?? d.name}`;

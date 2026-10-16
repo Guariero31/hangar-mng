@@ -170,6 +170,25 @@ export async function setStatus(admin: User, userId: string, status: 'active' | 
   });
 }
 
+/** Exclui a conta e todo o histórico dela (PM, frota, medalhas). Não dá para desfazer. */
+export async function deleteUser(admin: User, userId: string) {
+  if (userId === admin.id) throw fail('CANNOT_CHANGE_OWN_STATUS', 'Você não pode excluir a sua própria conta.');
+  await db.tx(async (q) => {
+    const { rows: [u] } = await q.query<{ email: string; nickname: string | null; role: string }>(
+      'select email, nickname, role from users where id = $1 for update', [userId]);
+    if (!u) throw fail('USER_NOT_FOUND');
+    if (u.role === 'admin') throw fail('CANNOT_DELETE_ADMIN');
+    const { rows: [t] } = await q.query<{ earned: number }>(
+      `select coalesce(sum(amount) filter (where amount > 0), 0)::int as earned from points_ledger where user_id = $1`, [userId]);
+    // registros que apontam para esta conta ficam, só perdem o vínculo
+    await q.query('update points_ledger set created_by = null where created_by = $1', [userId]);
+    await q.query('update user_aircraft set granted_by = null where granted_by = $1', [userId]);
+    await q.query('update admin_audit_log set target_user_id = null where target_user_id = $1', [userId]);
+    await audit(q, admin.id, 'delete_user', null, { email: u.email, nickname: u.nickname, earned: t.earned });
+    await q.query('delete from users where id = $1', [userId]);
+  });
+}
+
 export async function setRole(admin: User, userId: string, role: 'player' | 'admin') {
   if (userId === admin.id) throw fail('CANNOT_CHANGE_OWN_STATUS', 'Você não pode alterar o seu próprio papel.');
   await db.tx(async (q) => {
@@ -313,7 +332,7 @@ export async function saveSettings(admin: User, input: { baseMissionPoints: numb
 // ---------------------------------------------------------------- atividade (auditoria)
 
 const ACTION_GROUPS: Record<string, string[]> = {
-  players: ['add_points', 'grant_aircraft', 'revoke_aircraft', 'set_status', 'set_role', 'rename_player', 'approve_user', 'reject_user'],
+  players: ['add_points', 'grant_aircraft', 'revoke_aircraft', 'set_status', 'set_role', 'rename_player', 'approve_user', 'reject_user', 'delete_user'],
   tree: ['create_aircraft', 'update_aircraft', 'create_tier', 'update_tier'],
   settings: ['update_settings'],
 };

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { errorMessage } from '../../api/client';
 import {
-  useAddPoints, useAdminTree, useGrantAircraft, useMe, usePlayer, useRenamePlayer, useRevokeAircraft, useUpdatePlayer,
+  useAddPoints, useAdminTree, useDeletePlayer, useGrantAircraft, useMe, usePlayer, useRenamePlayer, useRevokeAircraft, useUpdatePlayer,
 } from '../../api/hooks';
 import './admin.css';
 import { MedalGrid } from '../../components/MedalStrip';
@@ -9,7 +9,7 @@ import { useToast } from '../../components/Toast';
 import { fmtDate, fmtPoints, fmtSigned, SOURCE_LABEL } from '../../lib/format';
 
 /** Painel lateral com os dados e as ações de um jogador */
-export function PlayerPanel({ id }: { id: string }) {
+export function PlayerPanel({ id, onDeleted }: { id: string; onDeleted?: () => void }) {
   const { data: me } = useMe();
   const { data, isLoading, error } = usePlayer(id);
   const { data: tree } = useAdminTree();
@@ -18,6 +18,8 @@ export function PlayerPanel({ id }: { id: string }) {
   const revoke = useRevokeAircraft();
   const update = useUpdatePlayer();
   const rename = useRenamePlayer();
+  const del = useDeletePlayer();
+  const [confirmText, setConfirmText] = useState('');
   const [renaming, setRenaming] = useState(false);
   const [newNick, setNewNick] = useState('');
   const toast = useToast();
@@ -187,6 +189,27 @@ export function PlayerPanel({ id }: { id: string }) {
           ))}
         </ul>
       </div>
+
+      {!isMe && user.role !== 'admin' && (
+        <div className="section danger-zone">
+          <span className="label" style={{ color: 'var(--danger)' }}>Excluir conta</span>
+          <p className="muted" style={{ fontSize: 13, margin: '6px 0 10px' }}>
+            Apaga a conta de <b>{label}</b> e todo o histórico dela: PM, frota, medalhas e meta. Não dá para desfazer.
+            Para só bloquear o acesso, use Suspender.
+          </p>
+          <label className="muted" style={{ fontSize: 13 }}>Digite <b className="mono">{label}</b> para confirmar</label>
+          <div className="row-inline" style={{ marginTop: 6 }}>
+            <input className="input" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder={label} autoComplete="off" />
+            <button className="btn danger" id="delete-user" disabled={del.isPending || confirmText.trim() !== label}
+              onClick={() => run(del.mutateAsync(id), `Conta de ${label} excluída.`).then(() => { setConfirmText(''); onDeleted?.(); })}>
+              Excluir
+            </button>
+          </div>
+        </div>
+      )}
+      {!isMe && user.role === 'admin' && (
+        <div className="section"><span className="muted" style={{ fontSize: 13 }}>Para excluir uma conta de admin, remova antes o acesso de admin dela.</span></div>
+      )}
     </>
   );
 }

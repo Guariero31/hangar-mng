@@ -224,6 +224,11 @@ adminApi.patch('/players/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
+adminApi.delete('/players/:id', async (req, res) => {
+  await admin.deleteUser(req.user, userIdParam.parse(req.params.id));
+  res.json({ ok: true });
+});
+
 const aircraftBody = z.object({
   name: z.string().trim().min(1).max(60),
   tier: z.number().int().min(1).max(50),

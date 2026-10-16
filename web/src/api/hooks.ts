@@ -168,6 +168,9 @@ export const useUpdatePlayer = () =>
   useAdminMutation((v: { id: string; status?: 'active' | 'banned'; role?: 'player' | 'admin' }) =>
     api.patch(`/admin/players/${v.id}`, { status: v.status, role: v.role }));
 
+export const useDeletePlayer = () =>
+  useAdminMutation((id: string) => api.del(`/admin/players/${id}`));
+
 export const useRenamePlayer = () =>
   useAdminMutation((v: { id: string; nickname: string }) =>
     api.put(`/admin/players/${v.id}/nickname`, { nickname: v.nickname }));

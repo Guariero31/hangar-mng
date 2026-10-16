@@ -22,6 +22,7 @@ const CATALOG = {
   TIER_EXISTS:              [409, 'Esse tier já existe.'],
   ALREADY_UNLOCKED:         [409, 'Essa aeronave já está na frota.'],
   PREV_TIER_MISSING:        [400, 'Compre antes uma aeronave do tier anterior.'],
+  CANNOT_DELETE_ADMIN:      [400, 'Remova antes o acesso de admin desta conta para poder excluí-la.'],
   BOUND_MISSING:            [400, 'Compre antes a aeronave Bound.'],
   INSUFFICIENT_POINTS:      [400, 'PM insuficientes.'],
   AMOUNT_ZERO:              [400, 'Informe uma quantidade diferente de zero.'],

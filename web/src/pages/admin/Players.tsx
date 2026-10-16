@@ -168,7 +168,7 @@ export function Players() {
         </section>
 
         <aside className="card detail">
-          {selectedId ? <PlayerPanel id={selectedId} /> : <div className="empty detail-empty"><strong>Nenhum jogador selecionado</strong><span>Clique em uma linha para lançar PM, liberar ou remover aeronaves, renomear ou suspender.</span><span className="muted">Dica: marque várias caixas para lançar PM em lote.</span></div>}
+          {selectedId ? <PlayerPanel key={selectedId} id={selectedId} onDeleted={() => setParams({}, { replace: true })} /> : <div className="empty detail-empty"><strong>Nenhum jogador selecionado</strong><span>Clique em uma linha para lançar PM, liberar ou remover aeronaves, renomear ou suspender.</span><span className="muted">Dica: marque várias caixas para lançar PM em lote.</span></div>}
         </aside>
       </div>
     </>
