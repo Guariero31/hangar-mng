@@ -31,6 +31,14 @@
 }
 
 * { box-sizing: border-box; }
+
+/* Barras de rolagem finas, iguais em todo o sistema */
+* { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 0; }
+*::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+*::-webkit-scrollbar-button { display: none; }
 html, body { margin: 0; min-height: 100%; }
 
 body {

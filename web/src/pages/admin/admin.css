@@ -95,5 +95,5 @@ table.players td { padding: 9px 14px; }
 @media (max-width: 1200px) { .hide-sm { display: none; } }
 
 /* Lista com rolagem própria (cabeçalho fixo) */
-.table-scroll { max-height: calc(35px + 20 * 53px + 1px); min-height: 320px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+.table-scroll { max-height: calc(35px + 20 * 53px + 1px); min-height: 320px; overflow-y: auto;}
 .table-scroll thead th { position: sticky; top: 0; z-index: 1; background: var(--bg); }
