@@ -8,7 +8,7 @@
 .pf-hero { display: grid; grid-template-columns: 1fr auto auto; gap: 40px; align-items: center; padding: 0 0 20px; border-bottom: var(--rule); }
 .pf-id { display: flex; gap: 18px; align-items: center; min-width: 0; }
 .pf-avatar { width: 64px; height: 64px; object-fit: cover; flex: none; border-radius: 50%; }
-.pf-initial { display: grid; place-items: center; background: var(--text); color: var(--bg); font: 700 30px var(--font-display); text-transform: uppercase; }
+.pf-initial { display: grid; place-items: center; background: rgba(255, 168, 15, .12); color: var(--accent); font: 700 30px var(--font-display); text-transform: uppercase; }
 .pf-name { font: 600 clamp(28px, 4vw, 40px)/1 var(--font-display); letter-spacing: .06em; margin: 6px 0 6px; overflow-wrap: anywhere; }
 .pf-meta { font-size: 13px; display: block; margin-top: 2px; }
 .pf-rank, .pf-fleetpct { display: grid; gap: 4px; min-width: 150px; padding-left: 24px; border-left: var(--rule); }
@@ -42,7 +42,7 @@
 .pf-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--c); flex: none; }
 .pf-bar { height: 2px; background: var(--line); position: relative; }
 .pf-bar i { position: absolute; inset: 0 auto 0 0; background: var(--accent); transition: width .4s; }
-.pf-bar.role i { background: color-mix(in srgb, var(--c) 82%, #000); }
+.pf-bar.role i { background: var(--c); }
 .pf-bar.big { height: 3px; }
 .pf-bar-val { font: 14px var(--font-mono); text-align: right; color: var(--text); }
 
@@ -50,7 +50,7 @@
 .pf-goals { list-style: none; margin: 0; padding: 0; display: grid; }
 .pf-goals li { display: grid; grid-template-columns: 32px 1fr auto; gap: 14px; align-items: center; padding: 8px 0; border-top: var(--rule); }
 .pf-goals li:first-child { border-top: 0; padding-top: 0; }
-.pf-goal-icon { width: 32px; height: 32px; filter: none; color: color-mix(in srgb, currentColor 80%, #000); }
+.pf-goal-icon { width: 32px; height: 32px; filter: none; color: currentColor; }
 .pf-goal-text { display: grid; gap: 2px; color: var(--text); }
 .pf-goal-text span { font: 12px var(--font-mono); color: var(--muted); }
 .pf-missing { white-space: nowrap; font-size: 13px; color: var(--muted); text-align: right; display: grid; }
@@ -67,7 +67,7 @@
 
 /* ---------- frota ---------- */
 .pf-fleet { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 18px 12px; }
-.pf-ac { position: relative; display: grid; justify-items: center; gap: 8px; padding: 0; background: none; border: 0; box-shadow: none; color: color-mix(in srgb, var(--c) 82%, #000); }
+.pf-ac { position: relative; display: grid; justify-items: center; gap: 8px; padding: 0; background: none; border: 0; box-shadow: none; color: var(--c); }
 .pf-ac-icon { width: 38px; height: 38px; filter: none; }
 .pf-ac-name { font: 11px var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--text); text-align: center; }
 .pf-ac-tier { position: static; font: 600 10px var(--font-display); letter-spacing: .18em; color: var(--muted); }
@@ -89,7 +89,7 @@
 .pf-goal.empty { grid-template-columns: 1fr auto; align-items: center; text-align: left; padding: 24px 0; }
 .pf-goal.empty p { margin: 0; max-width: 60ch; }
 .pf-goal-main { display: grid; grid-template-columns: auto auto 1fr auto; gap: 28px; align-items: center; }
-.pf-goal-big { width: 52px; height: 52px; color: color-mix(in srgb, var(--c) 82%, #000); filter: none; }
+.pf-goal-big { width: 52px; height: 52px; color: var(--c); filter: none; }
 .pf-goal-name { font: 600 clamp(24px, 3vw, 32px)/1 var(--font-display); letter-spacing: .06em; margin: 8px 0 6px; }
 .pf-goal-progress { display: grid; gap: 10px; min-width: 0; }
 .pf-goal-nums { display: flex; justify-content: space-between; align-items: baseline; font: 14px var(--font-mono); color: var(--muted); }
@@ -98,7 +98,7 @@
 .pf-goal-sub { font-size: 13px; }
 .pf-goal-done { font: 600 22px var(--font-display); color: var(--pm); letter-spacing: .06em; text-transform: uppercase; }
 .pf-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px 28px; }
-.pf-steps li { display: flex; align-items: center; gap: 10px; padding: 0; background: none; border: 0; color: color-mix(in srgb, currentColor 80%, #000); }
+.pf-steps li { display: flex; align-items: center; gap: 10px; padding: 0; background: none; border: 0; color: currentColor; }
 .pf-steps li.next .pf-step-name { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 4px; }
 .pf-step-n { font: 400 13px var(--font-mono); color: var(--muted); background: none; width: auto; height: auto; border-radius: 0; }
 .pf-step-n::after { content: '.'; }
@@ -108,16 +108,16 @@
 
 /* ---------- conquistas: PNG solto ---------- */
 .medals { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 20px 40px; }
-.medal { --mc: #8a5a2b; display: flex; gap: 18px; padding: 0; align-items: center; border: 0; background: none; box-shadow: none; }
-.medal.rare { --mc: #5b6675; }
+.medal { --mc: #c0793d; display: flex; gap: 18px; padding: 0; align-items: center; border: 0; background: none; box-shadow: none; }
+.medal.rare { --mc: #aab4c2; }
 .medal.legendary { --mc: var(--accent); }
-.medal-art { flex: none; width: 52px; height: 73px; filter: drop-shadow(0 4px 6px rgba(10, 10, 8, .22)); }
-.medal:not(.done) .medal-art { opacity: .35; filter: grayscale(100%); }
+.medal-art { flex: none; width: 52px; height: 73px; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .55)); }
+.medal:not(.done) .medal-art { opacity: .55; filter: grayscale(100%); }
 .medal-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .medal-body strong { font: 600 14px var(--font-display); letter-spacing: .08em; text-transform: uppercase; }
 .medal:not(.done) .medal-body strong { color: var(--muted); }
 .medal-desc { font-size: 13px; color: var(--muted); }
-.medal-when { font: 11px var(--font-mono); letter-spacing: .04em; color: color-mix(in srgb, var(--mc) 85%, #000); }
+.medal-when { font: 11px var(--font-mono); letter-spacing: .04em; color: var(--mc); }
 .medal-bar { height: 2px; background: var(--line); margin-top: 6px; }
 .medal-bar i { display: block; height: 100%; background: var(--mc); }
 

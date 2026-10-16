@@ -3,7 +3,7 @@
 .seg button { background: transparent; color: var(--muted); border: 0; padding: 8px 14px; font: 600 13px var(--font-body, inherit); cursor: pointer; }
 .seg button + button { border-left: 1px solid var(--line-2); }
 .seg button:hover { color: var(--text); }
-.seg button.on { background: var(--text); color: var(--bg); }
+.seg button.on { background: var(--accent); color: var(--accent-ink); }
 .act td { vertical-align: top; }
 .more { padding: 14px; text-align: center; border-top: 1px solid var(--line); }
 
@@ -39,7 +39,7 @@
 @media (max-width: 900px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ov-grid { grid-template-columns: 1fr; } }
 
 /* lançamento em lote */
-.batch { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 12px 14px; background: rgba(179, 107, 0, .07); border-bottom: 1px solid var(--accent); }
+.batch { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 12px 14px; background: rgba(255, 168, 15, .08); border-bottom: 1px solid var(--accent); }
 .batch .input { height: 36px; font-size: 14px; }
 .batch input[type=number] { width: 150px; }
 .batch-reason { flex: 1; min-width: 200px; }
@@ -61,7 +61,7 @@ table.players input[type=checkbox] { accent-color: var(--accent); width: 16px; h
 .approval-row:first-of-type { border-top: 0; }
 .approval-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--line); object-fit: cover; flex: none; display: inline-block; }
 .approval-who { flex: 1; min-width: 180px; display: flex; flex-direction: column; font-size: 14px; }
-.tab-badge { margin-left: 6px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; border-radius: 9px; padding: 1px 6px; }
+.tab-badge { margin-left: 6px; background: var(--accent); color: #000; font-size: 11px; font-weight: 700; border-radius: 9px; padding: 1px 6px; }
 
 /* Tela de jogadores */
 .pl-stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -79,7 +79,7 @@ table.players th.sortable.on { color: var(--accent); }
 table.players th .arr { display: inline-block; width: 12px; font-size: 9px; margin-left: 4px; }
 table.players td.neg { color: var(--danger); }
 .who-cell { display: flex; align-items: center; gap: 12px; }
-.pl-av { width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center; background: var(--text); border: 0; color: var(--bg); font: 700 14px var(--font-mono, monospace); }
+.pl-av { width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center; background: rgba(255, 168, 15, .12); border: 1px solid rgba(255, 168, 15, .35); color: var(--accent); font: 700 14px var(--font-mono, monospace); }
 .pl-av { object-fit: cover; }
 .pl-id { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
 .pl-id small { font-size: 12px; overflow: hidden; text-overflow: ellipsis; }

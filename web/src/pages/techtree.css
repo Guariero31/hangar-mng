@@ -9,19 +9,6 @@
   color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.4;
   display: flex; flex-direction: column; gap: 12px;
 }
-/* Faixa de cima (título, números, legenda): tema claro. O mapa (.chart) e o painel flutuante continuam escuros. */
-.tt .tt-top, .tt .toolbar { --fg: #0a0a08; --mute: #5f5a49; --faint: #5f5a49; --line: #dcd7c8; --line2: #cbc5b2; --hud: #b36b00; --pm: #a85f00; --panel: transparent; --sel: #0a0a08; }
-.tt .tt-top, .tt .toolbar { color: var(--fg); }
-.tt .tt-top .stat { background: none; border: 0; border-left: 1px solid var(--line); clip-path: none; padding-left: 20px; }
-.tt .tt-top .stat::before { display: none; }
-.tt .tt-top .num.pm, .tt .tt-top .num { text-shadow: none; }
-.tt .tt-top select { background: #fbf9f3; color: var(--fg); border-color: var(--line2); }
-.tt .tt-top button:not(.node), .tt .toolbar button:not(.node) { background: transparent; color: var(--hud); border-color: var(--hud); }
-.tt .toolbar .st { background: #0b0a07; }
-.tt .toolbar .sq, .tt .toolbar .ln { box-shadow: none; }
-.tt .tt-top .info svg { filter: none; }
-.tt .info-pop { background: #fbf9f3 !important; box-shadow: 0 12px 30px rgba(10, 10, 8, .14) !important; }
-.tt .info-pop em { color: var(--fg); }
 /* Ocupa exatamente a altura da tela (menos a barra do topo): a árvore estica para preencher o que sobra */
 .tt.tt-screen { height: calc(100vh - 60px - 36px); min-height: 520px; }
 .tt .tt-top { display: flex; align-items: stretch; gap: 16px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
