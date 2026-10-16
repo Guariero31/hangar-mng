@@ -39,10 +39,12 @@ const AUDIO_RECOVERY = `<script>
 </script>`;
 
 const HIDDEN_CONTROLS = `<style>
-#keys { display: none !important; }
+@media (hover: none) and (pointer: coarse) {
+  #keys { display: none !important; }
+}
 </style>`;
 
-/** Adapt uploaded briefings for audio activation and hide their control bar without changing stored files. */
+/** Adapt uploaded briefings for audio activation and hide keyboard hints on touch devices. */
 export function withBriefingAudioRecovery(content: Buffer): Buffer {
   const html = content.toString('utf8');
   const enhancements = AUDIO_RECOVERY + HIDDEN_CONTROLS;
