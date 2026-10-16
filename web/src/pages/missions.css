@@ -33,6 +33,31 @@
 .ms-count { color: var(--muted); font-size: 14px; }
 .ms-count b { color: var(--text); font: 400 16px var(--font-mono); }
 
+.mission-upload { display: grid; gap: 12px; padding: 18px; border: 1px dashed var(--line-2); border-radius: 8px; background: var(--surface-raised); }
+.mission-upload input[type=file] { height: auto; padding: 10px; }
+.mission-upload input::file-selector-button { padding: 8px 12px; margin-right: 12px; border: 1px solid var(--line-2); border-radius: 5px; background: var(--surface); color: var(--text); cursor: pointer; }
+.mission-upload-current { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; overflow-wrap: anywhere; }
+.mission-upload-current > span { flex: 1; min-width: 0; color: var(--ok); }
+.mission-upload-preview { max-width: 100%; max-height: 220px; object-fit: contain; border-radius: 6px; }
+.op-interactive-callout { border-left: 3px solid var(--gold); }
+.mission-briefing-page { position: fixed; inset: 0; z-index: 40; width: 100%; height: 100dvh; display: flex; flex-direction: column; background: var(--bg); overflow: hidden; }
+.mission-briefing-toolbar { display: flex; align-items: center; gap: 20px; flex: none; min-height: 52px; padding: 8px 16px; border-bottom: 1px solid var(--line-2); }
+.mission-briefing-toolbar > a { white-space: nowrap; font-size: 13px; }
+.mission-briefing-toolbar h1 { flex: 1; min-width: 0; font: 600 16px var(--font-display); text-transform: none; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mission-briefing-toolbar .btn { height: 32px; font-size: 12px; padding-inline: 12px; }
+.mission-briefing-page > p, .mission-briefing-page > div[role=alert] { padding: 12px 16px; margin: 0; }
+.mission-briefing-viewer { flex: 1; min-height: 0; background: #010611; overflow: hidden; }
+.mission-briefing-viewer iframe { display: block; width: 100%; height: 100%; border: 0; background: #010611; }
+.mission-briefing-viewer:fullscreen { width: 100%; height: 100%; border-radius: 0; border: 0; }
+.mission-briefing-start { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; gap: 20px; text-align: center; color: #efe9da; background: radial-gradient(ellipse at center, #192b39, #010611); }
+.mission-briefing-start h2 { text-transform: none; letter-spacing: -.5px; }
+.mission-briefing-start p { max-width: 45ch; }
+@media (max-width: 560px) {
+  .mission-briefing-toolbar { gap: 10px; padding: 8px 10px; padding-top: max(8px, env(safe-area-inset-top)); }
+  .mission-briefing-toolbar h1 { display: none; }
+  .mission-briefing-toolbar .btn { margin-left: auto; }
+}
+
 /* Mission planning editor. */
 .mission-editor { margin: 20px 0 28px; }
 .mission-editor-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 26px 28px; border-bottom: 1px solid var(--line); background: linear-gradient(110deg, var(--hover-accent), transparent); border-radius: 10px 10px 0 0; }

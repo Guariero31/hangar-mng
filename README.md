@@ -106,7 +106,16 @@ Reembolsos usam o débito da aquisição removida, nunca o preço atual. Concess
 
 Novos usuários ficam pendentes mesmo antes do primeiro administrador. Configure `ADMIN_EMAILS` antes de publicar. As conquistas do esquadrão são atualizadas em segundo plano a cada minuto; o ranking apenas consulta os resultados.
 
+## Arquivos e briefings das missões
+
+No cadastro ou edição de uma missão, administradores podem enviar uma imagem PNG/JPG/WebP (até 10 MB) e um ZIP de briefing interativo (até 25 MB). Os anexos só ficam associados à missão depois de salvar; o envio de um novo arquivo preserva o anterior quando ocorre erro.
+
+O ZIP deve conter um único HTML de entrada ou um `index.html` na raiz, mantendo os nomes e pastas usados pelos links do documento. Inclua imagens, módulos JavaScript, CSS e áudio local. Limites: 128 itens, 20 MB por arquivo e 80 MB descompactados. Não são aceitos caminhos que saem do pacote, links simbólicos, arquivos criptografados ou tipos executáveis de sistema. O exemplo “Ace Combat” espera `Ace combat briefing.mp3` ao lado do HTML.
+
+Os pilotos abrem o anexo em **Ver operação → Abrir briefing interativo → Iniciar briefing**, com opção de tela cheia. O briefing escrito permanece disponível como alternativa. O visualizador usa sandbox sem acesso à sessão, URLs temporárias de leitura e recursos limitados ao pacote, Three.js no jsDelivr e fontes Google. A música depende de interação e dos controles do próprio briefing. Arquivos usam o banco de dados em blocos, incluindo o banco embutido, e acompanham os backups PostgreSQL. Remover um anexo da missão desvincula o arquivo; não apaga cópias referenciadas por outras missões.
+
 ## Próxima fase: automação com o servidor DCS
+
 O banco já tem `dcs_links` (vínculo com o UCID), `link_codes` e `points_ledger.external_ref` (evita lançar o mesmo evento duas vezes).
 Falta criar: a rota que recebe eventos do servidor (protegida por `SERVER_API_KEY`), o vínculo por código no chat do DCS e o script Lua.
 

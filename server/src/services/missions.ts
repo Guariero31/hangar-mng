@@ -5,6 +5,7 @@ import { fail } from '../errors.js';
 import { getOwnedIds } from './techtree.js';
 import type { User } from './users.js';
 import { sendNewMission } from './mail.js';
+import { missionAssetMetadata, validateMissionAssets } from './mission-files.js';
 
 async function audit(q: Queryable, adminId: string, action: string, details: object) {
   await q.query('insert into admin_audit_log (admin_id, action, target_user_id, details) values ($1, $2, null, $3)',
@@ -12,7 +13,8 @@ async function audit(q: Queryable, adminId: string, action: string, details: obj
 }
 
 const MISSION_COLS = `m.id, m.title, m.briefing, m.starts_at as "startsAt", m.default_pm as "defaultPm",
-  m.status, m.series_id as "seriesId", m.closed_at as "closedAt", m.map_name as "mapName", m.briefing_image_url as "briefingImageUrl"`;
+  m.status, m.series_id as "seriesId", m.closed_at as "closedAt", m.map_name as "mapName", m.briefing_image_url as "briefingImageUrl",
+  m.image_asset_id as "imageAssetId", m.briefing_asset_id as "briefingAssetId"`;
 
 async function signupsOf(q: Queryable, ids: string[]) {
   if (!ids.length) return [];
@@ -24,11 +26,12 @@ async function signupsOf(q: Queryable, ids: string[]) {
   return rows;
 }
 
-async function withSignups<T extends { id: string }>(rows: T[], me?: string) {
+async function withSignups<T extends { id: string; imageAssetId?: string | null; briefingAssetId?: string | null }>(rows: T[], me?: string) {
   const all = await signupsOf(db, rows.map((r) => r.id));
+  const assets = await missionAssetMetadata(rows.flatMap((row) => [row.imageAssetId, row.briefingAssetId].filter((id): id is string => !!id)));
   return rows.map((m) => {
     const signups = all.filter((s) => s.missionId === m.id);
-    return { ...m, signups, mine: me ? signups.find((s) => s.userId === me) ?? null : null };
+    return { ...m, imageAsset: assets.get(m.imageAssetId ?? '') ?? null, briefingAsset: assets.get(m.briefingAssetId ?? '') ?? null, signups, mine: me ? signups.find((s) => s.userId === me) ?? null : null };
   });
 }
 
@@ -82,19 +85,20 @@ export async function cancelSignup(user: User, missionId: string) {
   });
 }
 
-export interface MissionInput { title: string; briefing: string; startsAt: string; defaultPm: number | null; mapName?: string; briefingImageUrl?: string }
+export interface MissionInput { title: string; briefing: string; startsAt: string; defaultPm: number | null; mapName?: string; briefingImageUrl?: string; imageAssetId?: string | null; briefingAssetId?: string | null }
 
 /** Cria a missão; com repeatWeeks > 0 cria também cópias semanais (mesma série). */
 export async function createMission(admin: User, input: MissionInput, repeatWeeks: number) {
+  await validateMissionAssets(input.imageAssetId, input.briefingAssetId);
   const result = await db.tx(async (q) => {
     const seriesId = repeatWeeks > 0 ? (await q.query<{ id: string }>('select gen_random_uuid() as id')).rows[0].id : null;
     const ids: string[] = [];
     for (let i = 0; i <= repeatWeeks; i++) {
       const at = new Date(new Date(input.startsAt).getTime() + i * 7 * 86400_000).toISOString();
       const { rows } = await q.query<{ id: string }>(
-        `insert into missions (title, briefing, starts_at, default_pm, series_id, created_by, map_name, briefing_image_url)
-         values ($1, $2, $3, $4, $5, $6, $7, $8) returning id`,
-        [input.title.trim(), input.briefing.trim(), at, input.defaultPm, seriesId, admin.id, input.mapName?.trim() ?? '', input.briefingImageUrl?.trim() ?? '']);
+        `insert into missions (title, briefing, starts_at, default_pm, series_id, created_by, map_name, briefing_image_url, image_asset_id, briefing_asset_id)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id`,
+        [input.title.trim(), input.briefing.trim(), at, input.defaultPm, seriesId, admin.id, input.mapName?.trim() ?? '', input.briefingImageUrl?.trim() ?? '', input.imageAssetId ?? null, input.briefingAssetId ?? null]);
       ids.push(rows[0].id);
     }
     await audit(q, admin.id, 'create_mission', { title: input.title.trim(), startsAt: input.startsAt, copies: ids.length });
@@ -114,11 +118,12 @@ async function notifyPilots(input: MissionInput, weeks: number) {
 }
 
 export async function updateMission(admin: User, id: string, input: MissionInput) {
+  await validateMissionAssets(input.imageAssetId, input.briefingAssetId);
   await db.tx(async (q) => {
     const m = await lockMission(q, id);
     if (m.status !== 'scheduled') throw fail('MISSION_NOT_OPEN');
-    await q.query('update missions set title = $2, briefing = $3, starts_at = $4, default_pm = $5, map_name = $6, briefing_image_url = $7 where id = $1',
-      [id, input.title.trim(), input.briefing.trim(), input.startsAt, input.defaultPm, input.mapName?.trim() ?? '', input.briefingImageUrl?.trim() ?? '']);
+    await q.query('update missions set title = $2, briefing = $3, starts_at = $4, default_pm = $5, map_name = $6, briefing_image_url = $7, image_asset_id=$8, briefing_asset_id=$9 where id = $1',
+      [id, input.title.trim(), input.briefing.trim(), input.startsAt, input.defaultPm, input.mapName?.trim() ?? '', input.briefingImageUrl?.trim() ?? '', input.imageAssetId ?? null, input.briefingAssetId ?? null]);
     await audit(q, admin.id, 'update_mission', { id, title: input.title.trim() });
   });
 }

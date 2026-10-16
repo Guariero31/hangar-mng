@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { MissionFileUpload } from '../../components/MissionFileUpload';
 import { useAdminMissions, useCloseMission, useSaveMission } from '../../api/hooks';
 import { errorMessage } from '../../api/client';
 import { fmtPoints } from '../../lib/format';
@@ -22,6 +23,11 @@ function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () 
   const [briefing, setBriefing] = useState(editing?.briefing ?? '');
   const [mapName, setMapName] = useState(editing?.mapName ?? '');
   const [briefingImageUrl, setBriefingImageUrl] = useState(editing?.briefingImageUrl ?? '');
+  const [imageAsset, setImageAsset] = useState(editing?.imageAsset ?? null);
+  const [briefingAsset, setBriefingAsset] = useState(editing?.briefingAsset ?? null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [briefingUploading, setBriefingUploading] = useState(false);
+  const uploading = imageUploading || briefingUploading;
   const [date, setDate] = useState(editing ? toLocalInput(editing.startsAt).slice(0, 10) : '');
   const [time, setTime] = useState(editing ? toLocalInput(editing.startsAt).slice(11) : '');
   const [pm, setPm] = useState(editing?.defaultPm != null ? String(editing.defaultPm) : '');
@@ -30,10 +36,12 @@ function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () 
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (uploading) return;
     setErr('');
     if (!date || !time) return setErr('Informe a data e a hora.');
     const input = {
       title, briefing, mapName, briefingImageUrl, startsAt: new Date(`${date}T${time}:00-03:00`).toISOString(),
+      imageAssetId: imageAsset?.id ?? null, briefingAssetId: briefingAsset?.id ?? null,
       defaultPm: pm.trim() === '' ? null : Number(pm),
       ...(editing ? {} : { repeatWeeks: Number(repeat) || 0 }),
     };
@@ -72,7 +80,9 @@ function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () 
           {!briefing && <button type="button" className="btn ghost sm" onClick={() => setBriefing('CONTEXTO\n\nOBJETIVOS\n\nPLANO DE VOO\n\nAMEAÇAS\n\nCOMUNICAÇÕES')}>Usar roteiro</button>}
         </div>
         <label className="field"><span className="label">Briefing</span><textarea className="input mission-brief-input" rows={10} maxLength={2000} placeholder="Descreva o que os pilotos precisam saber…" value={briefing} onChange={(e) => setBriefing(e.target.value)} /><span className="mission-character-count">{briefing.length} / 2.000 caracteres</span></label>
-        <label className="field"><span className="label">Imagem do mapa / briefing <small>Opcional</small></span><input className="input" type="url" placeholder="https://…" maxLength={2000} value={briefingImageUrl} onChange={(event) => setBriefingImageUrl(event.target.value)} /><span className="hint">Use o endereço HTTPS de uma imagem acessível aos pilotos.</span></label>
+        <MissionFileUpload kind="image" value={imageAsset} onChange={setImageAsset} onBusy={setImageUploading} />
+        {!imageAsset && <label className="field"><span className="label">Ou use um link de imagem <small>Opcional</small></span><input className="input" type="url" placeholder="https://…" maxLength={2000} value={briefingImageUrl} onChange={(event) => setBriefingImageUrl(event.target.value)} /></label>}
+        <MissionFileUpload kind="briefing" value={briefingAsset} onChange={setBriefingAsset} onBusy={setBriefingUploading} />
       </fieldset>
       </div><aside className="mission-editor-preview" aria-label="Prévia da missão">
         <span className="label">Resumo da operação</span><h3>{title.trim() || 'Nome da missão'}</h3>
@@ -83,7 +93,7 @@ function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () 
       </aside></div>
       <footer className="mission-editor-footer">
         <div>{err ? <p className="op-error" role="alert">{err}</p> : <p className="muted">{editing ? 'As alterações serão exibidas aos pilotos após salvar.' : 'A missão ficará disponível para inscrições após a criação.'}</p>}</div>
-        <div className="ms-actions"><button type="button" className="btn ghost" disabled={save.isPending} onClick={onDone}>Cancelar edição</button><button className="btn" disabled={save.isPending}>{save.isPending ? 'Salvando…' : editing ? 'Salvar alterações' : 'Criar missão'}</button></div>
+        <div className="ms-actions"><button type="button" className="btn ghost" disabled={save.isPending || uploading} onClick={onDone}>Cancelar edição</button><button className="btn" disabled={save.isPending || uploading}>{uploading ? 'Enviando arquivos…' : save.isPending ? 'Salvando…' : editing ? 'Salvar alterações' : 'Criar missão'}</button></div>
       </footer>
     </form>
   );

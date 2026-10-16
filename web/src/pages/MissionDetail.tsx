@@ -120,7 +120,8 @@ export function MissionDetail() {
             {mission.briefing.trim() ? <div className="op-briefing">{mission.briefing.split(/\n\s*\n/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
               : <p className="muted">O briefing será publicado pela administração. Volte antes do início da operação para conferir os detalhes.</p>}
           </section>
-          {mission.briefingImageUrl && <BriefingImage key={mission.briefingImageUrl} url={mission.briefingImageUrl} title={mission.title} />}
+          {mission.briefingAsset && <section className="card op-section op-interactive-callout"><span className="label">Experiência interativa</span><h2>Briefing da missão</h2><p className="muted">Explore o cenário, os objetivos e os materiais da operação. Ative a música pelos controles do briefing.</p><Link className="btn" to={`/missoes/${mission.id}/briefing`}>Abrir briefing interativo →</Link></section>}
+          {(mission.imageAsset?.url || mission.briefingImageUrl) && <BriefingImage key={mission.imageAsset?.url || mission.briefingImageUrl} url={mission.imageAsset?.url || mission.briefingImageUrl} title={mission.title} />}
           <MissionManagement key={mission.id} mission={mission} />
           <section className="card op-section"><div className="op-section-head"><h2>{mission.status === 'closed' ? 'Participação e resultados' : 'Pilotos inscritos'}</h2><span className="ms-badge">{mission.signups.length} pilotos</span></div>
             {!mission.signups.length ? <p className="muted">Nenhum piloto inscrito. Seja o primeiro a participar.</p>

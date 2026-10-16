@@ -27,6 +27,15 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 }
 
 export const api = {
+  upload: async <T>(path: string, file: File): Promise<T> => {
+    let response: Response;
+    try {
+      response = await fetch(`/api${path}?name=${encodeURIComponent(file.name)}`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/octet-stream' }, body: file });
+    } catch { throw new ApiError('Não foi possível enviar o arquivo. Confira sua conexão.', 0, 'NETWORK'); }
+    const data = await response.json().catch(() => null);
+    if (!response.ok) throw new ApiError(data?.error?.message || 'Não foi possível enviar o arquivo.', response.status, data?.error?.code || 'UPLOAD');
+    return data as T;
+  },
   get: <T>(path: string) => request<T>('GET', path),
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body ?? {}),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body ?? {}),

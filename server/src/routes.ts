@@ -1,5 +1,5 @@
 // Todas as rotas da API (/api/...)
-import { Router } from 'express';
+import { Router, raw } from 'express';
 import { z } from 'zod';
 import { config } from './config.js';
 import { db } from './db.js';
@@ -13,11 +13,41 @@ import { rateLimit } from './security.js';
 import { getRanking } from './services/ranking.js';
 import { getProfile } from './services/profile.js';
 import * as missions from './services/missions.js';
+import { readMissionFile, uploadMissionAsset } from './services/mission-files.js';
+import { withBriefingAudioRecovery } from './services/briefing-audio.js';
 
 export const api = Router();
 const pagination = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
   offset: z.coerce.number().int().min(0).max(Number.MAX_SAFE_INTEGER).default(0),
+});
+
+api.get(/^\/mission-files\/([^/]+)\/(.+)$/, async (req, res) => {
+  const file = await readMissionFile(req.params[0], req.params[1]);
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cache-Control', 'private, no-store');
+  const assetRoot = `${new URL(`${req.protocol}://${req.get('host')}`).origin}/api/mission-files/${req.params[0]}/`;
+  res.setHeader('Content-Security-Policy', `sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline' ${assetRoot} https://cdn.jsdelivr.net; style-src 'unsafe-inline' ${assetRoot} https://fonts.googleapis.com; font-src ${assetRoot} https://fonts.gstatic.com; img-src ${assetRoot} data: blob:; media-src ${assetRoot} blob: data:; connect-src ${assetRoot} https://cdn.jsdelivr.net; frame-ancestors 'self'; base-uri 'none'; form-action 'none'; object-src 'none'`);
+  const content = file.mime.startsWith('text/html') ? withBriefingAudioRecovery(file.content) : Buffer.from(file.content);
+  res.type(file.mime);
+  if (file.mime.startsWith('audio/')) {
+    res.setHeader('Accept-Ranges', 'bytes');
+    const ranges = req.range(content.length);
+    if (ranges === -1) {
+      res.setHeader('Content-Range', `bytes */${content.length}`);
+      res.status(416).end();
+      return;
+    }
+    if (ranges && ranges !== -2 && ranges.type === 'bytes' && ranges.length === 1) {
+      const { start, end } = ranges[0];
+      res.setHeader('Content-Range', `bytes ${start}-${end}/${content.length}`);
+      res.status(206).send(content.subarray(start, end + 1));
+      return;
+    }
+  }
+  res.send(content);
 });
 
 // ------------------------------------------------------------------ autenticação
@@ -170,6 +200,13 @@ api.post('/me/news/seen', requireUser, async (req, res) => {
 const adminApi = Router();
 api.use('/admin', requireUser, requireNickname, requireAdmin, adminApi);
 
+adminApi.post('/mission-files/:kind', rateLimit({ windowMs: 60_000, max: 10 }), raw({ type: 'application/octet-stream', limit: '25mb' }), async (req, res) => {
+  const kind = z.enum(['image', 'briefing']).parse(req.params.kind);
+  const name = z.string().trim().min(1).max(160).parse(req.query.name);
+  if (!Buffer.isBuffer(req.body)) throw fail('VALIDATION', 'Envie o arquivo como conteúdo binário.');
+  res.status(201).json(await uploadMissionAsset(req.user.id, kind, name, req.body));
+});
+
 const userIdParam = z.string().uuid();
 
 adminApi.get('/overview', async (_req, res) => {
@@ -279,6 +316,8 @@ const aircraftBody = z.object({
 
 // Árvore completa (inclui aeronaves inativas), tiers, faixas e configurações
 const missionBody = z.object({
+  imageAssetId: z.string().uuid().nullable().default(null),
+  briefingAssetId: z.string().uuid().nullable().default(null),
   title: z.string().trim().min(1).max(80),
   briefing: z.string().max(2000).default(''),
   mapName: z.string().trim().max(80).default(''),

@@ -14,6 +14,7 @@ import { Overview } from './pages/admin/Overview';
 import { Activity } from './pages/admin/Activity';
 import { Missions } from './pages/Missions';
 import { MissionDetail } from './pages/MissionDetail';
+import { MissionBriefing } from './pages/MissionBriefing';
 import { MissionsAdmin } from './pages/admin/MissionsAdmin';
 import { AircraftAdmin } from './pages/admin/AircraftAdmin';
 
@@ -31,6 +32,7 @@ export function App() {
         <Route path="perfil" element={<ProfilePage />} />
         <Route path="missoes" element={<Missions />} />
         <Route path="missoes/:id" element={<MissionDetail />} />
+        <Route path="missoes/:id/briefing" element={<MissionBriefing />} />
         <Route path="ranking" element={<RankingPage />} />
         <Route path="admin" element={<RequireUser admin><Outlet /></RequireUser>}>
           <Route index element={<Players />} />

@@ -84,12 +84,14 @@ export interface TechTreeState {
 
 export interface MissionSignup { missionId: string; userId: string; nickname: string; aircraftId: string; aircraftName: string; attended: boolean; pmAwarded: number }
 export interface Mission {
+  imageAsset: MissionAsset | null; briefingAsset: MissionAsset | null;
   mapName: string; briefingImageUrl: string;
   id: string; title: string; briefing: string; startsAt: string; defaultPm: number | null;
   status: 'scheduled' | 'closed' | 'cancelled'; seriesId: string | null; closedAt: string | null;
   signups: MissionSignup[]; mine: MissionSignup | null;
 }
-export interface MissionInput { title: string; briefing: string; startsAt: string; defaultPm: number | null; repeatWeeks?: number; mapName?: string; briefingImageUrl?: string }
+export interface MissionAsset { id: string; name: string; url: string }
+export interface MissionInput { title: string; briefing: string; startsAt: string; defaultPm: number | null; repeatWeeks?: number; mapName?: string; briefingImageUrl?: string; imageAssetId?: string | null; briefingAssetId?: string | null }
 
 export interface AdminTree {
   tiers: Tier[];
