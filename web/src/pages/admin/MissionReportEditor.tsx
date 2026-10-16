@@ -1,3 +1,4 @@
+import { useToast } from '../../components/Toast';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -11,6 +12,7 @@ import { previewPilot, reportPayload, reportPilot, REPORT_TARGETS, reportWhen } 
 import '../mission-report.css';
 
 function ReportEditor({ mission, initial }: { mission: Mission; initial: MissionReport }) {
+  const toast = useToast();
   const [report, setReport] = useState<MissionReport>(() => ({ ...initial, pilots: [...initial.pilots, ...mission.signups.filter((signup) => !initial.pilots.some((pilot) => pilot.userId === signup.userId)).map((signup) => reportPilot(signup.userId, signup.nickname, signup.aircraftId, signup.aircraftName))] }));
   const [step, setStep] = useState(0);
   const [expanded, setExpanded] = useState('');
@@ -42,6 +44,7 @@ function ReportEditor({ mission, initial }: { mission: Mission; initial: Mission
     ? api.post<MissionReport>(`/admin/missions/${mission.id}/report/publish`, reportPayload(report))
     : api.put<MissionReport>(`/admin/missions/${mission.id}/report`, reportPayload(report)),
     onSuccess: async (saved, publish) => {
+      toast(publish ? 'Relatório publicado e missão finalizada.' : 'Rascunho salvo com sucesso.');
       setReport(saved); setDirty(false); setConfirmed(false); setMessage('Rascunho salvo. Nenhum ponto foi distribuído.');
       queryClient.setQueryData(['admin', 'mission-report', mission.id], saved);
       if (publish) { await Promise.all([invalidatePlayerData(queryClient), queryClient.invalidateQueries({ queryKey: ['missions'] })]); navigate(`/missoes/${mission.id}/relatorio`); }

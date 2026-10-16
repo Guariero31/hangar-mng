@@ -1,3 +1,5 @@
+import { createPortal } from 'react-dom';
+import './toast.css';
 import { MedalArt } from './MedalArt';
 import type { MedalLite } from '../api/types';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
@@ -28,17 +30,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={show}>
       {children}
-      <div className="toast-stack" aria-live="polite">
+      {createPortal(<div className="toast-stack" aria-live="polite" aria-relevant="additions">
         {notices.map(notice => (
           <div key={notice.id} role="status" className={`toast show ${notice.kind} ${notice.action ? 'has-action' : ''} ${notice.medal ? 'has-medal' : ''}`}>
             {notice.medal && <MedalArt className="toast-medal" icon={notice.medal.icon} rarity={notice.medal.rarity} />}
+            {!notice.medal && <span className="toast-symbol" aria-hidden="true">{notice.kind === 'ok' ? '✓' : '!'}</span>}
             <span>{notice.message}</span>
             {notice.action && <button type="button" className="toast-action" onClick={() => { dismiss(notice.id); notice.action?.onClick(); }}>{notice.action.label}</button>}
-            <button type="button" className="toast-action" aria-label="Fechar aviso" onClick={() => dismiss(notice.id)}>×</button>
+            <button type="button" className="toast-close" aria-label="Fechar aviso" onClick={() => dismiss(notice.id)}>×</button>
             {notice.action && <i className="toast-timer" style={{ animationDuration: `${notice.duration}ms` }} />}
           </div>
         ))}
-      </div>
+      </div>, document.body)}
     </ToastContext.Provider>
   );
 }

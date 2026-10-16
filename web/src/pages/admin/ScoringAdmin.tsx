@@ -1,3 +1,4 @@
+import { useToast } from '../../components/Toast';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -23,6 +24,7 @@ const TARGETS: { key: Target; label: string; description: string; category: 'com
 ];
 
 function ScoringForm({ initial }: { initial: ScoringRules }) {
+  const toast = useToast();
   const [rules, setRules] = useState(initial);
   const [target, setTarget] = useState<Target>('airborneAircraft');
   const [quantity, setQuantity] = useState(5);
@@ -31,7 +33,7 @@ function ScoringForm({ initial }: { initial: ScoringRules }) {
   const queryClient = useQueryClient();
   const save = useMutation({
     mutationFn: () => api.put<ScoringRules>('/admin/scoring', rules),
-    onSuccess: (saved) => { setRules(saved); queryClient.setQueryData(['admin', 'scoring'], saved); setMessage('Regras de pontuação salvas.'); },
+    onSuccess: (saved) => { setRules(saved); queryClient.setQueryData(['admin', 'scoring'], saved); setMessage('Regras de pontuação salvas.'); toast('Regras de pontuação salvas.'); },
   });
   const update = <K extends keyof ScoringRules>(key: K, value: ScoringRules[K]) => { setRules((current) => ({ ...current, [key]: value })); setMessage(''); save.reset(); };
   const subtotal = rules[target] * quantity;

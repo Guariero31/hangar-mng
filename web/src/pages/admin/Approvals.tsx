@@ -1,3 +1,4 @@
+import { useToast } from '../../components/Toast';
 import { Pagination } from '../../components/Pagination';
 import { useEffect, useRef, useState } from 'react';
 import { useApprovals, useDecideApproval } from '../../api/hooks';
@@ -7,6 +8,7 @@ import { AdminTabs } from './AdminTabs';
 import './admin.css';
 
 export function Approvals() {
+  const toast = useToast();
   const [offset, setOffset] = useState(0);
   const { data, isLoading, isFetching, error } = useApprovals(true, offset);
   const decide = useDecideApproval();
@@ -32,7 +34,7 @@ export function Approvals() {
     setMessageError(false);
     setConfirmationError('');
     decide.mutate({ id, decision }, {
-      onSuccess: () => { setConfirmation(null); setMsg(decision === 'approve' ? `${email} aprovado.` : `${email} recusado.`); },
+      onSuccess: () => { setConfirmation(null); toast(decision === 'approve' ? 'Cadastro aprovado.' : 'Cadastro recusado.'); setMsg(decision === 'approve' ? `${email} aprovado.` : `${email} recusado.`); },
       onError: (exception) => setConfirmationError(errorMessage(exception)),
     });
   }

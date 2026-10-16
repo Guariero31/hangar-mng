@@ -1,3 +1,4 @@
+import { useToast } from '../components/Toast';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useCancelMission, useMe, useMission, useMissionSignup, useTechTree } from '../api/hooks';
@@ -15,6 +16,7 @@ function Participation({ mission }: { mission: Mission }) {
   const tree = useTechTree();
   const signup = useMissionSignup();
   const [pick, setPick] = useState(mission.mine?.aircraftId ?? '');
+  const toast = useToast();
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   useEffect(() => { setPick(mission.mine?.aircraftId ?? ''); }, [mission.mine?.aircraftId]);
@@ -22,7 +24,7 @@ function Participation({ mission }: { mission: Mission }) {
   const submit = (aircraftId: string | null) => {
     setError(''); setMessage('');
     signup.mutate({ id: mission.id, aircraftId }, {
-      onSuccess: () => setMessage(aircraftId ? (mission.mine ? 'Aeronave atualizada.' : 'Inscrição confirmada. Bom voo!') : 'Inscrição cancelada.'),
+      onSuccess: () => { const feedback = aircraftId ? (mission.mine ? 'Aeronave atualizada.' : 'Inscrição confirmada. Bom voo!') : 'Inscrição cancelada.'; setMessage(feedback); toast(feedback); },
       onError: (exception) => setError(errorMessage(exception)),
     });
   };
@@ -61,6 +63,7 @@ function MissionManagement({ mission }: { mission: Mission }) {
   const { data: me } = useMe();
   const cancel = useCancelMission();
   const [error, setError] = useState('');
+  const toast = useToast();
   const [message, setMessage] = useState('');
   if (me?.role !== 'admin' || (mission.status !== 'scheduled' && !message)) return null;
 
@@ -68,7 +71,7 @@ function MissionManagement({ mission }: { mission: Mission }) {
     if (!window.confirm(`Cancelar "${mission.title}" para todos os pilotos? As inscrições serão encerradas e nenhum PM será lançado.`)) return;
     setError('');
     cancel.mutate(mission.id, {
-      onSuccess: () => setMessage('Operação cancelada. As inscrições foram encerradas.'),
+      onSuccess: () => { setMessage('Operação cancelada. As inscrições foram encerradas.'); toast('Operação cancelada.'); },
       onError: (exception) => setError(errorMessage(exception)),
     });
   }

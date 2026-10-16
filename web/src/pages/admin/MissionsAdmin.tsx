@@ -1,3 +1,4 @@
+import { useToast } from '../../components/Toast';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MissionFileUpload } from '../../components/MissionFileUpload';
@@ -19,6 +20,7 @@ const toLocalInput = (iso: string) => {
 };
 
 function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () => void }) {
+  const toast = useToast();
   const save = useSaveMission();
   const [title, setTitle] = useState(editing?.title ?? '');
   const [briefing, setBriefing] = useState(editing?.briefing ?? '');
@@ -47,7 +49,7 @@ function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () 
       defaultPm: pm.trim() === '' ? null : Number(pm),
       ...(editing ? {} : { repeatWeeks: Number(repeat) || 0 }),
     };
-    save.mutate({ id: editing?.id, input }, { onSuccess: onDone, onError: (x) => setErr(errorMessage(x)) });
+    save.mutate({ id: editing?.id, input }, { onSuccess: () => { toast(editing ? 'Missão atualizada com sucesso.' : 'Missão criada com sucesso.'); onDone(); }, onError: (x) => setErr(errorMessage(x)) });
   }
 
   return (
