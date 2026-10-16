@@ -1,0 +1,111 @@
+/* Versão para celular. Tudo aqui vale só em telas estreitas e NÃO altera o mapa de aeronaves da tech tree
+   (cartões, linhas, faixas e fundo continuam exatamente iguais). */
+.nav-short { display: none; }
+
+@media (max-width: 680px) {
+  :root { --nav-h: 58px; --safe-b: env(safe-area-inset-bottom, 0px); }
+  body { padding-bottom: calc(var(--nav-h) + var(--safe-b)); }
+
+  /* barra do topo: marca + sino + PM + sair numa linha só */
+  .topbar { height: 54px; padding: 0 12px; gap: 8px; backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(10, 10, 8, .97); }
+  .brand { font-size: 15px; letter-spacing: .1em; gap: 8px; white-space: nowrap; }
+  .brand-logo { width: 30px; height: 30px; }
+  .pilot { gap: 8px; }
+  .pilot .avatar { display: none; }
+  .chip { height: 28px; padding: 0 9px; font-size: 13px; }
+  .pilot .btn.sm { padding: 0 10px; height: 32px; font-size: 12px; }
+
+  /* menu principal fixo embaixo, ao alcance do polegar */
+  .nav { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0; position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    height: calc(var(--nav-h) + var(--safe-b)); padding-bottom: var(--safe-b);
+    background: rgba(10, 10, 8, .96); backdrop-filter: blur(10px); border-top: 1px solid var(--line-2); }
+  .nav a { display: flex; align-items: center; justify-content: center; border-radius: 0; padding: 0 4px; font: 600 12px var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); position: relative; }
+  .nav a.active { background: rgba(255, 168, 15, .1); color: var(--accent-2); box-shadow: inset 0 2px 0 var(--accent); }
+  .nav-long { display: none; }
+  .nav-short { display: inline; }
+  .nav .tab-badge { position: absolute; top: 8px; right: calc(50% - 38px); margin: 0; }
+
+  /* avisos sobem para não ficar atrás do menu */
+  .toast { bottom: calc(var(--nav-h) + var(--safe-b) + 14px) !important; max-width: calc(100vw - 24px); }
+
+  /* alvos de toque confortáveis */
+  .btn, button { min-height: 40px; }
+  .news-btn { width: 38px; height: 38px; }
+  .news-pop { position: fixed; left: 12px; right: 12px; top: 62px; width: auto; max-width: none; }
+
+  /* títulos de página */
+  .page, .page.wide { padding: 16px 14px 28px; max-width: 100vw; overflow-x: clip; }
+  .page h1 { font-size: 26px; }
+  .page-head { margin-bottom: 14px; }
+
+  /* tech tree: cabeçalho e cartões de números compactos (o mapa não muda) */
+  .tt, .tt .tt-top, .tt .toolbar, .tt .legend { min-width: 0; max-width: 100%; }
+  .tt { gap: 8px; }
+  .tt .tt-top { gap: 8px; padding-bottom: 8px; }
+  .tt .tt-top .tt-head { width: 100%; }
+  .tt .kicker { font-size: 10px; letter-spacing: .16em; }
+  .tt h1 { font-size: 22px; }
+  .tt .tt-top .stats { flex: 1 1 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .tt .tt-top .stat { padding: 6px 10px 7px 12px; gap: 2px; }
+  .tt .tt-top .lbl { font-size: 9.5px; letter-spacing: .1em; }
+  .tt .tt-top .num { font-size: 19px; }
+  .tt .toolbar { flex-direction: column; align-items: stretch; gap: 8px; padding-bottom: 6px; }
+  .tt .legend { flex-wrap: nowrap; overflow-x: auto; white-space: nowrap; gap: 14px; padding-bottom: 4px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .tt .legend::-webkit-scrollbar { display: none; }
+  .tt .zoom { justify-content: flex-start; }
+  .tt .zoom button { min-width: 44px; min-height: 40px; }
+  .tt .chart { height: calc(100dvh - var(--nav-h) - var(--safe-b) - 150px); min-height: 380px; }
+
+  /* painel de detalhes da aeronave vira uma folha presa acima do menu (fecha tocando fora) */
+  .tt .tip { left: 8px !important; right: 8px; top: auto !important; bottom: calc(var(--nav-h) + var(--safe-b) + 8px); width: auto; max-width: none;
+    max-height: calc(100dvh - var(--nav-h) - var(--safe-b) - 90px); overflow-y: auto; z-index: 25; padding: 14px; gap: 9px; }
+  .tt .tip h2 { font-size: 22px; }
+  .tt .tip button { min-height: 44px; }
+
+  /* perfil */
+  .pf { gap: 12px; }
+  .pf-hero { padding: 16px; gap: 14px; }
+  .pf-id { gap: 14px; }
+  .pf-avatar { width: 60px; height: 60px; }
+  .pf-initial { font-size: 28px; }
+  .pf-name { font-size: 26px; }
+  .pf-rank { display: flex; align-items: baseline; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .pf-rank-num { font-size: 34px; margin: 0; }
+  .pf-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .pf-stat { padding: 10px 12px 11px 14px; }
+  .pf-stat-num { font-size: 22px; }
+  .pf-stat:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .medals { grid-template-columns: 1fr; gap: 8px; }
+  .pf-goal-main { grid-template-columns: auto 1fr; gap: 12px; }
+  .pf-goal-name { font-size: 22px; }
+
+  /* ranking */
+  .rk-podium { gap: 8px; }
+  .rk-pod { flex-direction: row; flex-wrap: wrap; justify-content: flex-start; text-align: left; align-items: center; gap: 4px 12px; padding: 12px; }
+  .rk-pos { font-size: 22px; min-width: 34px; }
+  .rk-avatar { width: 42px; height: 42px; }
+  .rk-earned { margin-left: auto; font-size: 18px; }
+
+  /* admin: tabelas rolam para o lado dentro do painel, a página não estoura */
+  .table-wrap, .players-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .subnav { overflow-x: auto; flex-wrap: nowrap; white-space: nowrap; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .subnav::-webkit-scrollbar { display: none; }
+  .subnav a { flex: none; padding: 10px 12px; }
+  .admin-grid { grid-template-columns: minmax(0, 1fr); }
+  .admin-grid > *, .card { min-width: 0; }
+  .card .toolbar { flex-wrap: wrap; }
+  .card .toolbar .input { flex: 1 1 100%; min-width: 0; }
+  .card .toolbar .seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .pl-stats { gap: 8px; }
+  .pl-stats > div, .pl-alert { min-width: 0; flex: 1 1 calc(50% - 8px); padding: 8px 12px; }
+  .pl-alert { flex-basis: 100%; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  /* login e telas de entrada */
+  .auth { padding: 16px; align-items: flex-start; padding-top: 8vh; }
+}
+
+@media (max-width: 380px) {
+  .brand span { display: none; }
+  .tt .tt-top .num { font-size: 17px; }
+}

@@ -102,10 +102,11 @@ function TechTreeView({ state }: { state: TechTreeState }) {
   const tipRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const hideTimer = useRef<number>();
+  const touchMode = useRef(false); // último toque foi com o dedo: o painel só fecha tocando fora
 
   const showTip = (id: string) => { window.clearTimeout(hideTimer.current); setTipId(id); };
   const hideNow = useCallback(() => { window.clearTimeout(hideTimer.current); setTipId(null); }, []);
-  const hideSoon = () => { window.clearTimeout(hideTimer.current); hideTimer.current = window.setTimeout(hideNow, 180); };
+  const hideSoon = () => { if (touchMode.current) return; window.clearTimeout(hideTimer.current); hideTimer.current = window.setTimeout(hideNow, 180); };
 
   useLayoutEffect(() => {
     if (!tipId || !tipRef.current) return;
@@ -120,10 +121,13 @@ function TechTreeView({ state }: { state: TechTreeState }) {
   }, [tipId, state]);
 
   useEffect(() => {
-    const onClick = (e: MouseEvent) => { if (!(e.target as Element).closest?.('.tt .node, .tt .tip')) hideNow(); };
-    document.addEventListener('mousedown', onClick);
+    const onClick = (e: PointerEvent) => {
+      touchMode.current = e.pointerType !== 'mouse';
+      if (!(e.target as Element).closest?.('.tt .node, .tt .tip')) hideNow();
+    };
+    document.addEventListener('pointerdown', onClick);
     window.addEventListener('scroll', hideNow, { passive: true });
-    return () => { document.removeEventListener('mousedown', onClick); window.removeEventListener('scroll', hideNow); };
+    return () => { document.removeEventListener('pointerdown', onClick); window.removeEventListener('scroll', hideNow); };
   }, [hideNow]);
 
   // ------------------------------------------------------------ zoom e arraste
