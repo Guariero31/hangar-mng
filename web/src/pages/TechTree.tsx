@@ -270,7 +270,7 @@ function TechTreeView({ state }: { state: TechTreeState }) {
       levels.set(id, level);
       return level;
     };
-    return new Map(active.map((edge) => [edge.key, levelOf(edge.from) * 550]));
+    return new Map(active.map((edge) => [edge.key, levelOf(edge.from) * 850]));
   }, [edges, tipId, pathIds, byId]);
   const firstTier = tiers[0]?.tier;
 
@@ -357,7 +357,7 @@ function TechTreeView({ state }: { state: TechTreeState }) {
                 const onPath = pathIds.has(e.to) && !selected && (pathIds.has(e.from) || byId[e.from]?.owned);
                 const maskId = `${routeMaskId}-${e.key}`;
                 return <g key={`${tipId ?? 'idle'}-${e.key}`}>
-                  <path className={e.cls} d={e.d} />
+                  {!(selected || onPath) && <path className={e.cls} d={e.d} />}
                   {(selected || onPath) && <>
                     <defs>
                       <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width={L.W} height={L.H}>
@@ -366,7 +366,7 @@ function TechTreeView({ state }: { state: TechTreeState }) {
                       </mask>
                     </defs>
                     <g mask={`url(#${maskId})`}>
-                      <path className={`${e.cls}${selected ? ' hl' : ' pathe'}`} d={e.d} />
+                      <path className={`${e.cls}${selected ? ' hl' : ' pathe'} route-track`} d={e.d} />
                       <path className="e route-flow" d={e.d} />
                     </g>
                   </>}

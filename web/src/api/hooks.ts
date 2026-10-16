@@ -187,6 +187,10 @@ export function useMissions() {
   return useQuery({ queryKey: ['missions'], queryFn: () => api.get<{ upcoming: Mission[]; past: Mission[] }>('/missions') });
 }
 
+export function useMission(id: string) {
+  return useQuery({ queryKey: ['missions', id], queryFn: () => api.get<Mission>(`/missions/${id}`), enabled: !!id, refetchInterval: 30_000 });
+}
+
 function useMissionMutation<V>(fn: (v: V) => Promise<unknown>) {
   const qc = useQueryClient();
   return useMutation({

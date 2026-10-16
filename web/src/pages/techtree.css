@@ -254,9 +254,10 @@
 .tt .route-reveal {
   fill: none; stroke: #fff; stroke-width: 16; stroke-linejoin: round; stroke-linecap: butt;
   stroke-dasharray: 1; stroke-dashoffset: 1;
-  animation: tt-route-reveal 650ms ease-out both;
+  animation: tt-route-reveal 850ms linear both;
 }
 @keyframes tt-route-reveal { to { stroke-dashoffset: 0; } }
+.tt .e.route-track { stroke-dasharray: none; opacity: .35; filter: none; }
 .tt .e.route-flow {
   stroke: var(--hud); stroke-width: 2.6; stroke-linecap: round;
   stroke-dasharray: 5 19; filter: none; pointer-events: none;
@@ -276,6 +277,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .tt .route-reveal { animation: none; stroke-dashoffset: 0; }
+  .tt .e.route-track { opacity: 1; }
   .tt .e.route-flow { display: none; animation: none; }
   .tt .node.just-unlocked .tile::after { animation: none; background: none; opacity: .7; }
 }

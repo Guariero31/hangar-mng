@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-const CONTACT = 'evandrocisco@gmail.com';
+const CONTACT = 'donodobarmng@gmail.com';
 
 /** Política de privacidade pública (exigida pelo Google para publicar o login) */
 export function Privacy() {

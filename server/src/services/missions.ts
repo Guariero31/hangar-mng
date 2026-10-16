@@ -12,7 +12,7 @@ async function audit(q: Queryable, adminId: string, action: string, details: obj
 }
 
 const MISSION_COLS = `m.id, m.title, m.briefing, m.starts_at as "startsAt", m.default_pm as "defaultPm",
-  m.status, m.series_id as "seriesId", m.closed_at as "closedAt"`;
+  m.status, m.series_id as "seriesId", m.closed_at as "closedAt", m.map_name as "mapName", m.briefing_image_url as "briefingImageUrl"`;
 
 async function signupsOf(q: Queryable, ids: string[]) {
   if (!ids.length) return [];
@@ -39,6 +39,12 @@ export async function listMissions(user: User) {
   const past = await db.query<{ id: string }>(
     `select ${MISSION_COLS} from missions m where m.status = 'closed' order by m.starts_at desc limit 10`);
   return { upcoming: await withSignups(upcoming.rows, user.id), past: await withSignups(past.rows, user.id) };
+}
+
+export async function getMission(user: User, id: string) {
+  const { rows } = await db.query<{ id: string }>(`select ${MISSION_COLS} from missions m where m.id = $1`, [id]);
+  if (!rows.length) throw fail('MISSION_NOT_FOUND');
+  return (await withSignups(rows, user.id))[0];
 }
 
 export async function adminListMissions(limit: number, offset: number) {
@@ -76,7 +82,7 @@ export async function cancelSignup(user: User, missionId: string) {
   });
 }
 
-export interface MissionInput { title: string; briefing: string; startsAt: string; defaultPm: number | null }
+export interface MissionInput { title: string; briefing: string; startsAt: string; defaultPm: number | null; mapName?: string; briefingImageUrl?: string }
 
 /** Cria a missão; com repeatWeeks > 0 cria também cópias semanais (mesma série). */
 export async function createMission(admin: User, input: MissionInput, repeatWeeks: number) {
@@ -86,9 +92,9 @@ export async function createMission(admin: User, input: MissionInput, repeatWeek
     for (let i = 0; i <= repeatWeeks; i++) {
       const at = new Date(new Date(input.startsAt).getTime() + i * 7 * 86400_000).toISOString();
       const { rows } = await q.query<{ id: string }>(
-        `insert into missions (title, briefing, starts_at, default_pm, series_id, created_by)
-         values ($1, $2, $3, $4, $5, $6) returning id`,
-        [input.title.trim(), input.briefing.trim(), at, input.defaultPm, seriesId, admin.id]);
+        `insert into missions (title, briefing, starts_at, default_pm, series_id, created_by, map_name, briefing_image_url)
+         values ($1, $2, $3, $4, $5, $6, $7, $8) returning id`,
+        [input.title.trim(), input.briefing.trim(), at, input.defaultPm, seriesId, admin.id, input.mapName?.trim() ?? '', input.briefingImageUrl?.trim() ?? '']);
       ids.push(rows[0].id);
     }
     await audit(q, admin.id, 'create_mission', { title: input.title.trim(), startsAt: input.startsAt, copies: ids.length });
@@ -111,8 +117,8 @@ export async function updateMission(admin: User, id: string, input: MissionInput
   await db.tx(async (q) => {
     const m = await lockMission(q, id);
     if (m.status !== 'scheduled') throw fail('MISSION_NOT_OPEN');
-    await q.query('update missions set title = $2, briefing = $3, starts_at = $4, default_pm = $5 where id = $1',
-      [id, input.title.trim(), input.briefing.trim(), input.startsAt, input.defaultPm]);
+    await q.query('update missions set title = $2, briefing = $3, starts_at = $4, default_pm = $5, map_name = $6, briefing_image_url = $7 where id = $1',
+      [id, input.title.trim(), input.briefing.trim(), input.startsAt, input.defaultPm, input.mapName?.trim() ?? '', input.briefingImageUrl?.trim() ?? '']);
     await audit(q, admin.id, 'update_mission', { id, title: input.title.trim() });
   });
 }

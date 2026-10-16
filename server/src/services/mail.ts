@@ -85,15 +85,15 @@ export function sendRejected(u: { email: string; name: string | null }) {
 }
 
 export function sendNewMission(to: { email: string; name: string | null }, m: { title: string; briefing: string; startsAt: Date; weeks: number }) {
-  const when = m.startsAt.toLocaleString('pt-BR', { timeZone: 'America/Cuiaba', dateStyle: 'full', timeStyle: 'short' });
+  const when = m.startsAt.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'full', timeStyle: 'short' });
   const subject = `Nova missão: ${m.title}`;
   const paras = [
     `Olá, ${esc(first(to.name))}!`,
     `Uma nova missão foi agendada: <b>${esc(m.title)}</b>.`,
-    `Quando: ${esc(when)} (horário de Cuiabá)${m.weeks > 1 ? `, repetindo por ${m.weeks} semanas` : ''}.`,
+    `Quando: ${esc(when)} (horário de Brasília)${m.weeks > 1 ? `, repetindo por ${m.weeks} semanas` : ''}.`,
     ...(m.briefing ? [esc(m.briefing).replace(/\n/g, '<br>')] : []),
     'Entre no Hangar e inscreva-se com uma aeronave da sua frota.',
   ];
   void send(to.email, subject, layout('Nova missão', paras, { label: 'Ver missões', url: `${config.appUrl.replace(/\/$/, '')}/missoes` }),
-    `Nova missão: ${m.title}\nQuando: ${when} (Cuiabá)\n${m.briefing}\n\nInscreva-se em ${config.appUrl}`);
+    `Nova missão: ${m.title}\nQuando: ${when} (Brasília)\n${m.briefing}\n\nInscreva-se em ${config.appUrl}`);
 }

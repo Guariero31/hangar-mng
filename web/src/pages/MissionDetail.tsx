@@ -1,0 +1,138 @@
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { useCancelMission, useMe, useMission, useMissionSignup, useTechTree } from '../api/hooks';
+import { errorMessage } from '../api/client';
+import type { Mission } from '../api/types';
+import { fmtPoints } from '../lib/format';
+import { DateBlock, fmtWhen } from './Missions';
+import './missions.css';
+
+const STATUS = { scheduled: 'Inscrições abertas', closed: 'Operação encerrada', cancelled: 'Operação cancelada' } as const;
+
+function Participation({ mission }: { mission: Mission }) {
+  const tree = useTechTree();
+  const signup = useMissionSignup();
+  const [pick, setPick] = useState(mission.mine?.aircraftId ?? '');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  useEffect(() => { setPick(mission.mine?.aircraftId ?? ''); }, [mission.mine?.aircraftId]);
+  const owned = tree.data?.aircraft.filter((aircraft) => aircraft.owned) ?? [];
+  const submit = (aircraftId: string | null) => {
+    setError(''); setMessage('');
+    signup.mutate({ id: mission.id, aircraftId }, {
+      onSuccess: () => setMessage(aircraftId ? (mission.mine ? 'Aeronave atualizada.' : 'Inscrição confirmada. Bom voo!') : 'Inscrição cancelada.'),
+      onError: (exception) => setError(errorMessage(exception)),
+    });
+  };
+  return <aside className="card op-participation" aria-labelledby="participation-title">
+    <span className="label">Prepare-se para voar</span><h2 id="participation-title">Sua participação</h2>
+    {mission.status !== 'scheduled' ? <>
+      <p>{mission.status === 'cancelled' ? 'Esta operação foi cancelada.' : mission.mine?.attended ? `Você voou de ${mission.mine.aircraftName} e recebeu ${fmtPoints(mission.mine.pmAwarded)} PM.` : mission.mine ? 'Sua presença não foi confirmada nesta operação.' : 'Você não participou desta operação.'}</p>
+      <span className="muted">As inscrições estão encerradas.</span>
+    </> : <>
+      {mission.mine && <p className="op-signed">Inscrição confirmada · <strong>{mission.mine.aircraftName}</strong></p>}
+      <p className="muted">Escolha uma aeronave da sua frota para esta operação.</p>
+      {tree.isLoading && <p className="muted">Carregando sua frota…</p>}
+      {tree.error && <div role="alert"><p>{errorMessage(tree.error)}</p><button className="btn ghost" onClick={() => tree.refetch()}>Recarregar frota</button></div>}
+      {tree.data && !owned.length && <p>Você não tem aeronaves disponíveis. <Link to="/">Ver árvore de aeronaves</Link></p>}
+      <form onSubmit={(event) => { event.preventDefault(); if (owned.some((aircraft) => aircraft.id === pick)) submit(pick); }}>
+        <label className="field"><span className="label">Sua aeronave</span>
+          <select className="input" value={pick} onChange={(event) => { setPick(event.target.value); setMessage(''); setError(''); }} disabled={signup.isPending || !tree.data}>
+            <option value="">Escolha uma aeronave…</option>
+            {owned.map((aircraft) => <option key={aircraft.id} value={aircraft.id}>{aircraft.name}</option>)}
+          </select>
+        </label>
+        <button className="btn block" disabled={signup.isPending || !owned.some((aircraft) => aircraft.id === pick) || pick === mission.mine?.aircraftId}>
+          {signup.isPending ? 'Salvando…' : mission.mine ? 'Trocar aeronave' : 'Confirmar inscrição'}
+        </button>
+      </form>
+      {mission.mine && <button className="btn ghost block" disabled={signup.isPending} onClick={() => submit(null)}>Cancelar inscrição</button>}
+      {error && <p role="alert" className="op-error">{error}</p>}
+      {message && <p role="status" className="op-signed">{message}</p>}
+    </>}
+    <div className="op-reward"><span className="label">Pontos de missão</span>
+      <strong>{mission.defaultPm == null ? 'A definir' : `${fmtPoints(mission.defaultPm)} PM sugeridos`}</strong>
+      <p className="muted">A presença e o valor final são confirmados pela administração ao encerrar a missão.</p>
+    </div>
+  </aside>;
+}
+
+function MissionManagement({ mission }: { mission: Mission }) {
+  const { data: me } = useMe();
+  const cancel = useCancelMission();
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  if (me?.role !== 'admin' || (mission.status !== 'scheduled' && !message)) return null;
+
+  function cancelOperation() {
+    if (!window.confirm(`Cancelar "${mission.title}" para todos os pilotos? As inscrições serão encerradas e nenhum PM será lançado.`)) return;
+    setError('');
+    cancel.mutate(mission.id, {
+      onSuccess: () => setMessage('Operação cancelada. As inscrições foram encerradas.'),
+      onError: (exception) => setError(errorMessage(exception)),
+    });
+  }
+
+  return <section className="card op-section">
+    <span className="label">Administração</span><h2>Gerenciar operação</h2>
+    {message ? <p role="status">{message}</p> : <>
+      <p className="muted">O cancelamento encerra as inscrições desta missão para todos os pilotos, sem lançar PM.</p>
+      <button type="button" className="btn danger" disabled={cancel.isPending} onClick={cancelOperation}>
+        {cancel.isPending ? 'Cancelando…' : 'Cancelar missão'}
+      </button>
+    </>}
+    {error && <p className="op-error" role="alert">{error}</p>}
+  </section>;
+}
+
+function BriefingImage({ url, title }: { url: string; title: string }) {
+  const [failed, setFailed] = useState(false);
+  return <section className="card op-section"><h2>Mapa e reconhecimento</h2>
+    {failed ? <p className="muted">Não foi possível carregar a imagem do briefing.</p>
+      : <a href={url} target="_blank" rel="noopener noreferrer" aria-label="Abrir imagem do briefing em tamanho original">
+        <img className="op-map" src={url} alt={`Mapa de apoio à operação ${title}`} loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
+      </a>}
+  </section>;
+}
+
+export function MissionDetail() {
+  const { id = '' } = useParams();
+  const { data: mission, isLoading, error, refetch } = useMission(id);
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [id]);
+  return <div className="operation">
+    <Link className="op-back" to="/missoes">← Todas as missões</Link>
+    {isLoading && <p className="loading">Carregando operação…</p>}
+    {error && <div className="card op-section" role="alert"><h1>Operação indisponível</h1><p>{errorMessage(error)}</p><button className="btn ghost" onClick={() => refetch()}>Tentar novamente</button></div>}
+    {mission && <>
+      <header className="card op-hero"><DateBlock iso={mission.startsAt} />
+        <div><span className="label">Hangar MNG / Operações</span><h1>{mission.title}</h1>
+          <span className={`ms-badge ${mission.status === 'scheduled' ? 'info' : 'off'}`}>{STATUS[mission.status]}</span>
+        </div>
+        <dl className="op-facts"><div><dt>Início da operação</dt><dd>{fmtWhen(mission.startsAt)} · Brasília (UTC−3)</dd></div>
+          <div><dt>Mapa</dt><dd>{mission.mapName || 'A definir'}</dd></div>
+          <div><dt>Pilotos inscritos</dt><dd>{mission.signups.length}</dd></div>
+        </dl>
+      </header>
+      <div className="op-layout">
+        <Participation key={mission.id} mission={mission} />
+        <div className="op-content">
+          <section className="card op-section"><span className="label">Informações da missão</span><h2>Briefing da operação</h2>
+            {mission.briefing.trim() ? <div className="op-briefing">{mission.briefing.split(/\n\s*\n/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
+              : <p className="muted">O briefing será publicado pela administração. Volte antes do início da operação para conferir os detalhes.</p>}
+          </section>
+          {mission.briefingImageUrl && <BriefingImage key={mission.briefingImageUrl} url={mission.briefingImageUrl} title={mission.title} />}
+          <MissionManagement key={mission.id} mission={mission} />
+          <section className="card op-section"><div className="op-section-head"><h2>{mission.status === 'closed' ? 'Participação e resultados' : 'Pilotos inscritos'}</h2><span className="ms-badge">{mission.signups.length} pilotos</span></div>
+            {!mission.signups.length ? <p className="muted">Nenhum piloto inscrito. Seja o primeiro a participar.</p>
+              : <ul className="op-roster">{mission.signups.map((pilot) => <li key={pilot.userId}>
+                <span className="op-pilot-initial" aria-hidden="true">{(pilot.nickname || '?').slice(0, 1)}</span>
+                <div><strong>{pilot.nickname || 'Piloto'}</strong><span className="muted">{pilot.aircraftName}</span></div>
+                {pilot.userId === mission.mine?.userId && <span className="ms-badge ok">Você</span>}
+                {mission.status === 'closed' && <span className="op-result">{pilot.attended ? `${fmtPoints(pilot.pmAwarded)} PM · presente` : 'Não confirmado'}</span>}
+              </li>)}</ul>}
+          </section>
+        </div>
+      </div>
+    </>}
+  </div>;
+}

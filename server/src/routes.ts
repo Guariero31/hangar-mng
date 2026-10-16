@@ -141,6 +141,10 @@ api.get('/missions', requireUser, requireNickname, async (req, res) => {
   res.json(await missions.listMissions(req.user));
 });
 
+api.get('/missions/:id', requireUser, requireNickname, async (req, res) => {
+  res.json(await missions.getMission(req.user, z.string().uuid().parse(req.params.id)));
+});
+
 api.put('/missions/:id/signup', requireUser, requireNickname, async (req, res) => {
   const { aircraftId } = z.object({ aircraftId: z.string().min(1) }).parse(req.body);
   await missions.signUp(req.user, z.string().uuid().parse(req.params.id), aircraftId);
@@ -277,6 +281,8 @@ const aircraftBody = z.object({
 const missionBody = z.object({
   title: z.string().trim().min(1).max(80),
   briefing: z.string().max(2000).default(''),
+  mapName: z.string().trim().max(80).default(''),
+  briefingImageUrl: z.union([z.literal(''), z.string().trim().max(2000).url().refine((value) => value.startsWith('https://'), 'Use uma imagem com endereço HTTPS.')]).default(''),
   startsAt: z.string().datetime({ offset: true }),
   defaultPm: z.number().int().min(0).max(1_000_000).nullable().default(null),
 });

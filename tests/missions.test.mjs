@@ -39,3 +39,30 @@ test('new mission shows in the bell once per series', async () => {
   const news = await users.getNews(fresh);
   assert.equal(news.items.filter((i) => i.kind === 'mission' && i.reason.includes('Serie Sino')).length, 1);
 });
+
+test('operation detail persists briefing metadata and personal signup across lifecycle', async () => {
+  const input = { title: 'Operação detalhada', briefing: 'Contexto\n\nObjetivo: proteger a base.', startsAt: '2032-02-03T21:00:00Z', defaultPm: 250, mapName: 'Syria', briefingImageUrl: 'https://example.invalid/map.png' };
+  const { ids } = await m.createMission(adm, input, 1);
+  const free = (await db.query(`select a.id from aircraft a join tiers t on t.tier=a.tier where t.cost=0 and a.active limit 1`)).rows[0].id;
+  let detail = await m.getMission(p1, ids[0]);
+  assert.equal(detail.mapName, input.mapName);
+  assert.equal(detail.briefing, input.briefing);
+  assert.equal(detail.briefingImageUrl, input.briefingImageUrl);
+  assert.equal(detail.mine, null);
+  assert.equal((await m.getMission(p1, ids[1])).mapName, 'Syria');
+  await m.signUp(p1, ids[0], free);
+  detail = await m.getMission(p1, ids[0]);
+  assert.equal(detail.mine.aircraftId, free);
+  assert.equal(detail.signups.length, 1);
+  assert.equal((await m.getMission(p2, ids[0])).mine, null);
+  assert.equal('email' in detail.signups[0], false);
+  await m.cancelSignup(p1, ids[0]);
+  assert.equal((await m.getMission(p1, ids[0])).mine, null);
+  await m.updateMission(adm, ids[0], { ...input, mapName: 'Caucasus', briefingImageUrl: '' });
+  detail = await m.getMission(p1, ids[0]);
+  assert.equal(detail.mapName, 'Caucasus');
+  assert.equal(detail.briefingImageUrl, '');
+  await m.cancelMission(adm, ids[0]);
+  assert.equal((await m.getMission(p1, ids[0])).status, 'cancelled');
+  await assert.rejects(m.getMission(p1, '00000000-0000-4000-8000-000000000000'), /encontrada/);
+});
