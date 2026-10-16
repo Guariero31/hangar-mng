@@ -45,7 +45,7 @@ export function Layout() {
           </button>
         </div>
       </header>
-      <main className={`page ${pathname === '/' || pathname === '/admin' ? 'wide' : ''}`}>
+      <main className={`page ${pathname === '/' ? 'wide' : ''}`}>
         <Outlet />
       </main>
     </>
