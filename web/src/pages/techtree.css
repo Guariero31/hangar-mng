@@ -186,3 +186,12 @@
 .tt .confirm b { color: #fff6e0; }
 .tt .confirm b.pm { color: var(--pm); }
 .tt .confirm .tip-actions button { flex: 1; }
+
+/* Tema claro: só o topo e a legenda clareiam. O mapa e o painel flutuante continuam escuros. */
+:root[data-theme="light"] .tt .tt-top, :root[data-theme="light"] .tt .toolbar {
+  --fg: #0a0a08; --mute: #5f5a49; --faint: #5f5a49; --line: #dcd7c8; --line2: #cbc5b2; --hud: #b36b00; --pm: #a85f00; --sel: #0a0a08;
+  color: var(--fg);
+}
+:root[data-theme="light"] .tt .toolbar .st { background: #0b0a07; }
+:root[data-theme="light"] .tt .info-pop { background: #fbf9f3; box-shadow: 0 12px 30px rgba(10, 10, 8, .14); }
+:root[data-theme="light"] .tt .tt-top select { background: #fbf9f3; color: var(--fg); }

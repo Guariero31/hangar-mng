@@ -108,10 +108,10 @@
 
 /* ---------- conquistas: PNG solto ---------- */
 .medals { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 20px 40px; }
-.medal { --mc: #c0793d; display: flex; gap: 18px; padding: 0; align-items: center; border: 0; background: none; box-shadow: none; }
-.medal.rare { --mc: #aab4c2; }
+.medal { --mc: var(--bronze); display: flex; gap: 18px; padding: 0; align-items: center; border: 0; background: none; box-shadow: none; }
+.medal.rare { --mc: var(--silver); }
 .medal.legendary { --mc: var(--accent); }
-.medal-art { flex: none; width: 52px; height: 73px; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .55)); }
+.medal-art { flex: none; width: 52px; height: 73px; filter: drop-shadow(0 4px 6px var(--art-shadow)); }
 .medal:not(.done) .medal-art { opacity: .55; filter: grayscale(100%); }
 .medal-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .medal-body strong { font: 600 14px var(--font-display); letter-spacing: .08em; text-transform: uppercase; }

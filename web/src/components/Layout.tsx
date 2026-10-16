@@ -1,3 +1,4 @@
+import { ThemeToggle } from './ThemeToggle';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useApprovals, useLogout, useMe } from '../api/hooks';
 import { fmtPoints, SITE_NAME } from '../lib/format';
@@ -28,6 +29,7 @@ export function Layout() {
           {me.role === 'admin' && <NavLink to="/admin"><span className="nav-long">Painel admin</span><span className="nav-short">Admin</span>{approvals?.pending ? <span className="tab-badge">{approvals.pending}</span> : null}</NavLink>}
         </nav>
         <div className="pilot">
+          <ThemeToggle />
           <NewsBell />
           <span className="chip points" title="Seus Pontos de Missão">
             <span className="chip-label">PM</span><span id="my-balance">{fmtPoints(me.balance)}</span>
