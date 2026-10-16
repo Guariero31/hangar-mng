@@ -12,6 +12,8 @@ import { Players } from './pages/admin/Players';
 import { RankingPage } from './pages/Ranking';
 import { Overview } from './pages/admin/Overview';
 import { Activity } from './pages/admin/Activity';
+import { Missions } from './pages/Missions';
+import { MissionsAdmin } from './pages/admin/MissionsAdmin';
 import { AircraftAdmin } from './pages/admin/AircraftAdmin';
 
 export function App() {
@@ -26,12 +28,14 @@ export function App() {
       <Route element={<RequireUser><Layout /></RequireUser>}>
         <Route index element={<TechTree />} />
         <Route path="perfil" element={<ProfilePage />} />
+        <Route path="missoes" element={<Missions />} />
         <Route path="ranking" element={<RankingPage />} />
         <Route path="admin" element={<RequireUser admin><Outlet /></RequireUser>}>
           <Route index element={<Players />} />
           <Route path="aeronaves" element={<AircraftAdmin />} />
           <Route path="visao-geral" element={<Overview />} />
           <Route path="aprovacoes" element={<Approvals />} />
+          <Route path="missoes" element={<MissionsAdmin />} />
           <Route path="atividade" element={<Activity />} />
         </Route>
       </Route>

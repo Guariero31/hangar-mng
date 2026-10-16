@@ -18,7 +18,7 @@ export interface Me {
 export type Rarity = 'common' | 'rare' | 'legendary';
 export interface MedalLite { key: string; name: string; icon: string; rarity: Rarity }
 
-export interface NewsItem { kind: 'points' | 'grant' | 'achievement' | 'goal'; amount: number; reason: string; createdAt: string; unread: boolean; icon?: string; rarity?: Rarity }
+export interface NewsItem { kind: 'points' | 'grant' | 'achievement' | 'goal' | 'mission'; amount: number; reason: string; createdAt: string; unread: boolean; icon?: string; rarity?: Rarity }
 export interface News { unread: number; items: NewsItem[] }
 
 export interface AuthConfig {
@@ -81,6 +81,14 @@ export interface TechTreeState {
   baseMissionPoints: number;
   aircraft: TreeAircraft[];
 }
+
+export interface MissionSignup { missionId: string; userId: string; nickname: string; aircraftId: string; aircraftName: string; attended: boolean; pmAwarded: number }
+export interface Mission {
+  id: string; title: string; briefing: string; startsAt: string; defaultPm: number | null;
+  status: 'scheduled' | 'closed' | 'cancelled'; seriesId: string | null; closedAt: string | null;
+  signups: MissionSignup[]; mine: MissionSignup | null;
+}
+export interface MissionInput { title: string; briefing: string; startsAt: string; defaultPm: number | null; repeatWeeks?: number }
 
 export interface AdminTree {
   tiers: Tier[];
@@ -161,6 +169,7 @@ export interface ActivityItem {
     refund?: boolean; status?: string; from?: string | null; to?: string; email?: string;
     nickname?: string; role?: string; name?: string; id?: string; active?: boolean;
     label?: string; tier?: number; cost?: number; multiplier?: number; baseMissionPoints?: number;
+    title?: string; copies?: number; pilots?: number; totalPm?: number;
   };
 }
 export interface ApprovalItem { id: string; email: string; name: string | null; avatarUrl: string | null; status: 'pending' | 'rejected'; createdAt: string; decidedAt: string | null }

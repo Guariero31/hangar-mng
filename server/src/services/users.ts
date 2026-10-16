@@ -119,6 +119,12 @@ export async function getNews(user: User) {
        select 'grant' as kind, 0 as amount, 'Aeronave liberada: ' || a.name as reason, ua.unlocked_at as "createdAt", ua.unlocked_at > $2 as unread
          from user_aircraft ua join aircraft a on a.id = ua.aircraft_id
         where ua.user_id = $1 and ua.granted_by is not null and ua.granted_by <> $1
+       union all
+       select 'mission' as kind, 0 as amount, 'Nova missão: ' || m.title as reason, m.created_at as "createdAt", m.created_at > $2 as unread
+         from missions m
+        where m.status = 'scheduled' and m.created_at > (select created_at from users where id = $1)
+          and m.created_at > now() - interval '30 days'
+          and (m.series_id is null or m.id = (select s.id from missions s where s.series_id = m.series_id order by s.starts_at limit 1))
      ) t order by "createdAt" desc limit 15`, [user.id, user.news_seen_at]);
   await syncAchievements(user);
   const goalItem = await goalReadyItem(user);

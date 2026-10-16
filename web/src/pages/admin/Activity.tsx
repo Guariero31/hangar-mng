@@ -12,6 +12,7 @@ const GROUPS = [
   { key: '', label: 'Tudo' },
   { key: 'players', label: 'Jogadores' },
   { key: 'tree', label: 'Tech tree' },
+  { key: 'missions', label: 'Missões' },
   { key: 'settings', label: 'Configurações' },
 ];
 
@@ -30,6 +31,10 @@ const KIND: Record<string, { label: string; tone: string }> = {
   create_tier: { label: 'Novo tier', tone: 'info' },
   update_tier: { label: 'Tier editado', tone: 'info' },
   update_settings: { label: 'Configuração', tone: 'info' },
+  create_mission: { label: 'Nova missão', tone: 'info' },
+  update_mission: { label: 'Missão editada', tone: 'info' },
+  cancel_mission: { label: 'Missão cancelada', tone: 'danger' },
+  close_mission: { label: 'Missão encerrada', tone: 'ok' },
 };
 
 function describe(it: ActivityItem): string {
@@ -49,6 +54,10 @@ function describe(it: ActivityItem): string {
     case 'create_tier': return `Criou o tier ${d.label ?? d.tier} (${fmtPoints(d.cost ?? 0)} PM)`;
     case 'update_tier': return `Editou o tier ${d.label ?? d.tier}: custo ${fmtPoints(d.cost ?? 0)} PM, bônus ${d.multiplier ?? ''}x`;
     case 'update_settings': return `PM base por missão: ${fmtPoints(d.baseMissionPoints ?? 0)}`;
+    case 'create_mission': return `Criou a missão ${d.title}${(d.copies ?? 1) > 1 ? ` (${d.copies} semanas)` : ''}`;
+    case 'update_mission': return `Editou a missão ${d.title}`;
+    case 'cancel_mission': return `Cancelou a missão ${d.title}`;
+    case 'close_mission': return `Encerrou ${d.title}: ${d.pilots} pilotos, ${fmtPoints(d.totalPm ?? 0)} PM`;
     default: return it.action;
   }
 }

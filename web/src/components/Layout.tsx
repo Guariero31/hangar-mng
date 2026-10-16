@@ -25,6 +25,7 @@ export function Layout() {
         <nav className="nav">
           <NavLink to="/" end><span className="nav-long">Árvore de aeronaves</span><span className="nav-short">Árvore</span></NavLink>
           <NavLink to="/perfil"><span className="nav-long">Meu perfil</span><span className="nav-short">Perfil</span></NavLink>
+          <NavLink to="/missoes">Missões</NavLink>
           <NavLink to="/ranking">Ranking</NavLink>
           {me.role === 'admin' && <NavLink to="/admin"><span className="nav-long">Painel admin</span><span className="nav-short">Admin</span>{approvals?.pending ? <span className="tab-badge">{approvals.pending}</span> : null}</NavLink>}
         </nav>

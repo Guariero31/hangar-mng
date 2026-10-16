@@ -12,6 +12,7 @@ import { getAchievements, syncAchievements } from './services/achievements.js';
 import { rateLimit } from './security.js';
 import { getRanking } from './services/ranking.js';
 import { getProfile } from './services/profile.js';
+import * as missions from './services/missions.js';
 
 export const api = Router();
 const pagination = z.object({
@@ -133,6 +134,21 @@ api.put('/me/goal', requireUser, requireNickname, async (req, res) => {
   const { aircraftId } = z.object({ aircraftId: z.string().min(1).nullable() }).parse(req.body);
   await syncAchievements(req.user); // grava "Meta Definida" antes de trocar a meta
   await setGoal(req.user, aircraftId);
+  res.json({ ok: true });
+});
+
+api.get('/missions', requireUser, requireNickname, async (req, res) => {
+  res.json(await missions.listMissions(req.user));
+});
+
+api.put('/missions/:id/signup', requireUser, requireNickname, async (req, res) => {
+  const { aircraftId } = z.object({ aircraftId: z.string().min(1) }).parse(req.body);
+  await missions.signUp(req.user, z.string().uuid().parse(req.params.id), aircraftId);
+  res.json({ ok: true });
+});
+
+api.delete('/missions/:id/signup', requireUser, requireNickname, async (req, res) => {
+  await missions.cancelSignup(req.user, z.string().uuid().parse(req.params.id));
   res.json({ ok: true });
 });
 
@@ -258,6 +274,40 @@ const aircraftBody = z.object({
 });
 
 // Árvore completa (inclui aeronaves inativas), tiers, faixas e configurações
+const missionBody = z.object({
+  title: z.string().trim().min(1).max(80),
+  briefing: z.string().max(2000).default(''),
+  startsAt: z.string().datetime({ offset: true }),
+  defaultPm: z.number().int().min(0).max(1_000_000).nullable().default(null),
+});
+
+adminApi.get('/missions', async (req, res) => {
+  const { limit, offset } = pagination.parse(req.query);
+  res.json(await missions.adminListMissions(limit, offset));
+});
+
+adminApi.post('/missions', async (req, res) => {
+  const repeatWeeks = z.number().int().min(0).max(12).default(0).parse(req.body?.repeatWeeks);
+  res.json(await missions.createMission(req.user, missionBody.parse(req.body), repeatWeeks));
+});
+
+adminApi.put('/missions/:id', async (req, res) => {
+  await missions.updateMission(req.user, z.string().uuid().parse(req.params.id), missionBody.parse(req.body));
+  res.json({ ok: true });
+});
+
+adminApi.post('/missions/:id/cancel', async (req, res) => {
+  await missions.cancelMission(req.user, z.string().uuid().parse(req.params.id));
+  res.json({ ok: true });
+});
+
+adminApi.post('/missions/:id/close', async (req, res) => {
+  const { attendees } = z.object({
+    attendees: z.array(z.object({ userId: z.string().uuid(), pm: z.number().int().min(0).max(1_000_000) })).max(500),
+  }).parse(req.body);
+  res.json(await missions.closeMission(req.user, z.string().uuid().parse(req.params.id), attendees));
+});
+
 adminApi.get('/tree', async (_req, res) => {
   res.json(await getTree());
 });

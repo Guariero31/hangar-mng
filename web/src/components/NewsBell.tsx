@@ -53,7 +53,7 @@ export function NewsBell() {
               <ul className="news-list">
                 {snapshot.map((n, i) => (
                   <li key={i} className={n.unread ? 'unread' : ''}>
-                    <span className={n.icon || n.kind === 'goal' ? 'news-medal' : ''}>{n.kind === 'goal' && <span className="news-goal" aria-hidden="true">★</span>}{n.icon && n.rarity && <MedalArt className="news-medal-art" icon={n.icon} rarity={n.rarity} />}{n.reason}</span>
+                    <span className={n.icon || n.kind === 'goal' || n.kind === 'mission' ? 'news-medal' : ''}>{(n.kind === 'goal' || n.kind === 'mission') && <span className="news-goal" aria-hidden="true">{n.kind === 'goal' ? '★' : '✈'}</span>}{n.icon && n.rarity && <MedalArt className="news-medal-art" icon={n.icon} rarity={n.rarity} />}{n.reason}</span>
                     {n.amount !== 0 ? <span className={`amt ${n.amount > 0 ? 'pos' : 'neg'}`}>{fmtSigned(n.amount)} PM</span> : <span />}
                     <span className="when">{fmtDate(n.createdAt)}</span>
                   </li>

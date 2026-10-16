@@ -2,7 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from './client';
 import { invalidatePlayerData } from './cache';
-import type { Approvals, MedalLite, Achievements, Ranking, Activity, Overview, News, Profile, AdminTree, Aircraft, AuthConfig, LedgerEntry, Me, PlayerDetail, PlayerRow, TechTreeState, Tier } from './types';
+import type { Mission, MissionInput, Approvals, MedalLite, Achievements, Ranking, Activity, Overview, News, Profile, AdminTree, Aircraft, AuthConfig, LedgerEntry, Me, PlayerDetail, PlayerRow, TechTreeState, Tier } from './types';
 
 // ------------------------------------------------------------------ sessão
 
@@ -182,6 +182,36 @@ export function useApprovals(enabled = true, offset = 0) {
 export const useDecideApproval = () =>
   useAdminMutation((v: { id: string; decision: 'approve' | 'reject' }) =>
     api.post(`/admin/approvals/${v.id}`, { decision: v.decision }));
+
+export function useMissions() {
+  return useQuery({ queryKey: ['missions'], queryFn: () => api.get<{ upcoming: Mission[]; past: Mission[] }>('/missions') });
+}
+
+function useMissionMutation<V>(fn: (v: V) => Promise<unknown>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: ['missions'] }), invalidatePlayerData(qc)]),
+  });
+}
+
+export const useMissionSignup = () =>
+  useMissionMutation((v: { id: string; aircraftId: string | null }) =>
+    v.aircraftId ? api.put(`/missions/${v.id}/signup`, { aircraftId: v.aircraftId }) : api.del(`/missions/${v.id}/signup`));
+
+export function useAdminMissions() {
+  return useQuery({ queryKey: ['admin', 'missions'], queryFn: () => api.get<{ items: Mission[]; total: number }>('/admin/missions?limit=100') });
+}
+
+export const useSaveMission = () =>
+  useMissionMutation((v: { id?: string; input: MissionInput }) =>
+    v.id ? api.put(`/admin/missions/${v.id}`, v.input) : api.post('/admin/missions', v.input));
+
+export const useCancelMission = () => useMissionMutation((id: string) => api.post(`/admin/missions/${id}/cancel`, {}));
+
+export const useCloseMission = () =>
+  useMissionMutation((v: { id: string; attendees: { userId: string; pm: number }[] }) =>
+    api.post<{ pilots: number; total: number }>(`/admin/missions/${v.id}/close`, { attendees: v.attendees }));
 
 export function useOverview() {
   return useQuery({ queryKey: ['admin', 'overview'], queryFn: () => api.get<Overview>('/admin/overview') });
