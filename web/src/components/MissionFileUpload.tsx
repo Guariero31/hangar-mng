@@ -3,7 +3,7 @@ import type { MissionAsset } from '../api/types';
 import { api, errorMessage } from '../api/client';
 
 export function MissionFileUpload({ kind, value, onChange, onBusy }: {
-  kind: 'image' | 'briefing'; value: MissionAsset | null;
+  kind: 'image' | 'briefing' | 'audio'; value: MissionAsset | null;
   onChange: (asset: MissionAsset | null) => void; onBusy: (busy: boolean) => void;
 }) {
   const [busy, setBusy] = useState(false);
@@ -11,18 +11,18 @@ export function MissionFileUpload({ kind, value, onChange, onBusy }: {
   const input = useRef<HTMLInputElement>(null);
   async function upload(file: File) {
     setError('');
-    const max = (kind === 'image' ? 10 : 25) * 1024 * 1024;
-    if (file.size > max) { setError(`O arquivo deve ter até ${kind === 'image' ? 10 : 25} MB.`); return; }
+    const limit = kind === 'image' ? 10 : 25;
+    if (file.size > limit * 1024 * 1024) { setError(`O arquivo deve ter até ${limit} MB.`); return; }
     setBusy(true); onBusy(true);
     try { onChange(await api.upload<MissionAsset>(`/admin/mission-files/${kind}`, file)); }
     catch (exception) { setError(errorMessage(exception)); }
     finally { setBusy(false); onBusy(false); if (input.current) input.current.value = ''; }
   }
   return <div className="mission-upload">
-    <label className="field"><span className="label">{kind === 'image' ? 'Enviar imagem do mapa' : 'Briefing interativo (ZIP)'}</span>
-      <input ref={input} className="input" type="file" accept={kind === 'image' ? '.png,.jpg,.jpeg,.webp' : '.zip'} disabled={busy}
+    <label className="field"><span className="label">{kind === 'image' ? 'Enviar imagem do mapa' : kind === 'audio' ? 'Música do briefing' : 'Briefing interativo (HTML ou ZIP)'}</span>
+      <input ref={input} className="input" type="file" accept={kind === 'image' ? '.png,.jpg,.jpeg,.webp' : kind === 'audio' ? '.mp3,.ogg,.wav' : '.html,.htm,.zip'} disabled={busy}
         onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(file); }} />
-      <span className="hint">{kind === 'image' ? 'PNG, JPG ou WebP · até 10 MB.' : 'Até 25 MB. Inclua o HTML, imagens e áudio nas pastas originais. Use index.html na raiz se houver vários HTMLs.'}</span>
+      <span className="hint">{kind === 'image' ? 'PNG, JPG ou WebP · até 10 MB.' : kind === 'audio' ? 'MP3, OGG ou WAV · até 25 MB. Toca só na tela do briefing.' : 'Um arquivo HTML, ou um ZIP com imagens e outros arquivos (index.html na raiz se houver vários HTMLs) · até 25 MB.'}</span>
     </label>
     {busy && <p role="status">Enviando e validando arquivo…</p>}
     {value && <div className="mission-upload-current"><span>✓ {value.name}</span><button type="button" className="btn ghost sm" disabled={busy} onClick={() => onChange(null)}>Remover anexo</button></div>}

@@ -1,0 +1,44 @@
+.scoring-stage { margin: 20px 0; padding: 14px 18px; border-left: 2px solid var(--accent); background: var(--hover-accent); color: var(--muted); line-height: 1.6; font-size: 13px; }
+.scoring-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
+.scoring-fields { display: grid; gap: 22px; padding: 0; margin: 0; border: 0; min-width: 0; }
+.scoring-card { overflow: hidden; }
+.scoring-card-head { padding: 24px 26px; border-bottom: 1px solid var(--line); }
+.scoring-card-head .label { color: var(--accent); }
+.scoring-card h2, .scoring-simulation h2 { margin: 9px 0; font-size: 24px; text-transform: none; letter-spacing: -.4px; }
+.scoring-card-head p, .scoring-simulation > p { margin: 0; color: var(--muted); line-height: 1.6; font-size: 13px; }
+.scoring-target { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 18px 26px; border-bottom: 1px solid var(--line); }
+.scoring-target:last-child { border-bottom: 0; }
+.scoring-target > span:first-child { display: grid; gap: 6px; }
+.scoring-target strong { font-size: 15px; font-weight: 600; }
+.scoring-target small { color: var(--muted); line-height: 1.5; }
+.scoring-value { display: flex; align-items: center; gap: 9px; flex: none; }
+.scoring-value .input { width: 105px; text-align: right; font-family: var(--font-mono); }
+.scoring-value > span { color: var(--muted); font: 11px var(--font-mono); }
+.scoring-bonus { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 24px; padding: 24px 26px; }
+.scoring-toggle { display: flex; align-items: center; gap: 10px; font-size: 13px; line-height: 1.5; }
+.scoring-toggle input { width: 17px; height: 17px; accent-color: var(--accent); flex: none; }
+.scoring-sidebar { display: grid; gap: 22px; }
+.scoring-simulation { padding: 26px; display: grid; gap: 18px; border-top: 2px solid var(--accent); }
+.scoring-simulation h2 { margin: 0; }
+.scoring-simulation > .label { color: var(--accent); }
+.scoring-breakdown { display: grid; gap: 12px; margin: 0; padding-top: 18px; border-top: 1px solid var(--line); }
+.scoring-breakdown > div { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; }
+.scoring-breakdown dt { color: var(--muted); }
+.scoring-breakdown dd { margin: 0; }
+.scoring-total { display: grid; gap: 10px; border-radius: 8px; background: var(--hover-accent); padding: 18px; }
+.scoring-total > span { color: var(--muted); font-size: 12px; }
+.scoring-total strong { color: var(--accent); font: 600 40px var(--font-display); }
+.scoring-total strong small { font-size: 14px; }
+.scoring-existing { padding: 0 8px; }
+.scoring-existing > .label { color: var(--accent); }
+.scoring-existing p { color: var(--muted); font-size: 13px; line-height: 1.7; }
+.scoring-existing > a { font-size: 13px; }
+.scoring-save { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-top: 24px; padding: 20px 26px; }
+.scoring-save p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+@media (max-width: 950px) { .scoring-layout { grid-template-columns: 1fr; } .scoring-sidebar { grid-row: 1; } }
+@media (max-width: 520px) {
+  .scoring-card-head, .scoring-target, .scoring-bonus, .scoring-simulation { padding: 20px 16px; }
+  .scoring-target { gap: 12px; align-items: start; }
+  .scoring-value .input { width: 82px; }
+  .scoring-save { flex-direction: column; align-items: stretch; padding: 20px 16px; }
+}

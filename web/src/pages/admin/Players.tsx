@@ -6,7 +6,6 @@ import type { PlayerRow } from '../../api/types';
 import { fmtAgo, fmtDate, fmtPoints } from '../../lib/format';
 import { AdminTabs } from './AdminTabs';
 import './admin.css';
-import { BatchBar } from './BatchBar';
 import { PlayerPanel } from './PlayerPanel';
 
 type SortKey = 'earned' | 'balance' | 'aircraftCount' | 'nickname' | 'lastLoginAt' | 'createdAt';
@@ -41,7 +40,6 @@ export function Players() {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: 'earned', dir: -1 });
   const [filter, setFilter] = useState('all');
-  const [picked, setPicked] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const t = setTimeout(() => setSearch(input.trim()), 300);
@@ -70,16 +68,6 @@ export function Players() {
     </th>
   );
 
-  const eligible = (p: PlayerRow) => p.status === 'active' && !!p.nickname;
-  const visibleEligible = rows.filter(eligible).map((p) => p.id);
-  const allPicked = visibleEligible.length > 0 && visibleEligible.every((id) => picked.has(id));
-  const toggle = (id: string) => setPicked((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const toggleAll = () => setPicked((s) => {
-    const n = new Set(s);
-    visibleEligible.forEach((id) => (allPicked ? n.delete(id) : n.add(id)));
-    return n;
-  });
-
   const select = (id: string) => setParams(id === selectedId ? {} : { p: id }, { replace: true });
 
   function exportCsv() {
@@ -98,7 +86,7 @@ export function Players() {
         <div>
           <span className="label">Administração</span>
           <h1>Jogadores</h1>
-          <p>Acompanhe o esquadrão, lance PM e gerencie contas.</p>
+          <p>Acompanhe o esquadrão, os saldos e gerencie contas.</p>
         </div>
         <button className="btn ghost" onClick={exportCsv} disabled={!rows.length}>Exportar CSV</button>
       </div>
@@ -122,27 +110,21 @@ export function Players() {
             </div>
             <span className="label count">{data ? `${rows.length} de ${data.total}` : ''}</span>
           </div>
-          {picked.size > 0 && <BatchBar ids={[...picked]} onClear={() => setPicked(new Set())} />}
           <div className="table-wrap table-scroll" style={{ ["--row-h" as string]: "57px" }}>
             <table className="players">
               <thead>
                 <tr>
-                  <th className="chk"><input type="checkbox" checked={allPicked} onChange={toggleAll} disabled={!visibleEligible.length} aria-label="Selecionar todos os visíveis" title="Selecionar todos os visíveis para lançar PM em lote" /></th>
                   <th className="hide-md">#</th><Th k="nickname">Piloto</Th>
                   <Th k="earned" num>PM ganhos</Th><Th k="balance" num>Saldo</Th><Th k="aircraftCount" num hide="hide-md">Frota</Th>
                   {anyDcs && <th>DCS</th>}<th>Status</th><Th k="lastLoginAt" hide="hide-sm">Último acesso</Th>
                 </tr>
               </thead>
               <tbody>
-                {isLoading && <tr><td colSpan={9} className="loading">CARREGANDO…</td></tr>}
-                {error && <tr><td colSpan={9} className="empty">{errorMessage(error)}</td></tr>}
-                {data && !rows.length && <tr><td colSpan={9} className="empty">Nenhum jogador encontrado{filter !== 'all' ? ' neste filtro' : ''}.</td></tr>}
+                {isLoading && <tr><td colSpan={anyDcs ? 8 : 7} className="loading">CARREGANDO…</td></tr>}
+                {error && <tr><td colSpan={anyDcs ? 8 : 7} className="empty">{errorMessage(error)}</td></tr>}
+                {data && !rows.length && <tr><td colSpan={anyDcs ? 8 : 7} className="empty">Nenhum jogador encontrado{filter !== 'all' ? ' neste filtro' : ''}.</td></tr>}
                 {rows.map((p, i) => (
                   <tr key={p.id} data-id={p.id} className={`${p.id === selectedId ? 'selected' : ''} ${p.status !== 'active' ? 'inactive' : ''}`} onClick={() => select(p.id)}>
-                    <td className="chk" onClick={(e) => e.stopPropagation()}>
-                      <input type="checkbox" checked={picked.has(p.id)} onChange={() => toggle(p.id)} disabled={!eligible(p)}
-                        aria-label={`Selecionar ${p.nickname ?? p.email}`} title={eligible(p) ? undefined : 'Suspenso ou sem nickname: não recebe PM'} />
-                    </td>
                     <td className="rank hide-md">{i + 1}</td>
                     <td>
                       <div className="who-cell">
@@ -170,7 +152,7 @@ export function Players() {
         </section>
 
         <aside className="card detail">
-          {selectedId ? <PlayerPanel key={selectedId} id={selectedId} onDeleted={() => setParams({}, { replace: true })} /> : <div className="empty detail-empty"><strong>Nenhum jogador selecionado</strong><span>Clique em uma linha para lançar PM, liberar ou remover aeronaves, renomear ou suspender.</span><span className="muted">Dica: marque várias caixas para lançar PM em lote.</span></div>}
+          {selectedId ? <PlayerPanel key={selectedId} id={selectedId} onDeleted={() => setParams({}, { replace: true })} /> : <div className="empty detail-empty"><strong>Nenhum jogador selecionado</strong><span>Clique em uma linha para consultar o histórico, gerenciar aeronaves, renomear ou suspender a conta.</span></div>}
         </aside>
       </div>
     </>

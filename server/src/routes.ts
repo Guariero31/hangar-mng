@@ -13,8 +13,11 @@ import { rateLimit } from './security.js';
 import { getRanking } from './services/ranking.js';
 import { getProfile } from './services/profile.js';
 import * as missions from './services/missions.js';
-import { readMissionFile, uploadMissionAsset } from './services/mission-files.js';
+import { adminErrorsRouter, clientErrorsRouter } from './error-routes.js';
+import { getMissionFile, uploadMissionAsset } from './services/mission-files.js';
 import { withBriefingAudioRecovery } from './services/briefing-audio.js';
+import { getScoringRules, saveScoringRules } from './services/scoring.js';
+import { getMissionReport, saveMissionReport } from './services/mission-reports.js';
 
 export const api = Router();
 const pagination = z.object({
@@ -23,31 +26,31 @@ const pagination = z.object({
 });
 
 api.get(/^\/mission-files\/([^/]+)\/(.+)$/, async (req, res) => {
-  const file = await readMissionFile(req.params[0], req.params[1]);
+  const file = await getMissionFile(req.params[0], req.params[1]);
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'no-referrer');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 'private, no-store');
   const assetRoot = `${new URL(`${req.protocol}://${req.get('host')}`).origin}/api/mission-files/${req.params[0]}/`;
   res.setHeader('Content-Security-Policy', `sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline' ${assetRoot} https://cdn.jsdelivr.net; style-src 'unsafe-inline' ${assetRoot} https://fonts.googleapis.com; font-src ${assetRoot} https://fonts.gstatic.com; img-src ${assetRoot} data: blob:; media-src ${assetRoot} blob: data:; connect-src ${assetRoot} https://cdn.jsdelivr.net; frame-ancestors 'self'; base-uri 'none'; form-action 'none'; object-src 'none'`);
-  const content = file.mime.startsWith('text/html') ? withBriefingAudioRecovery(file.content) : Buffer.from(file.content);
   res.type(file.mime);
   if (file.mime.startsWith('audio/')) {
     res.setHeader('Accept-Ranges', 'bytes');
-    const ranges = req.range(content.length);
+    const ranges = req.range(file.size);
     if (ranges === -1) {
-      res.setHeader('Content-Range', `bytes */${content.length}`);
+      res.setHeader('Content-Range', `bytes */${file.size}`);
       res.status(416).end();
       return;
     }
     if (ranges && ranges !== -2 && ranges.type === 'bytes' && ranges.length === 1) {
       const { start, end } = ranges[0];
-      res.setHeader('Content-Range', `bytes ${start}-${end}/${content.length}`);
-      res.status(206).send(content.subarray(start, end + 1));
+      res.setHeader('Content-Range', `bytes ${start}-${end}/${file.size}`);
+      res.status(206).send(await file.read({ start, end }));
       return;
     }
   }
-  res.send(content);
+  const content = await file.read();
+  res.send(file.mime.startsWith('text/html') ? withBriefingAudioRecovery(content) : content);
 });
 
 // ------------------------------------------------------------------ autenticação
@@ -175,6 +178,10 @@ api.get('/missions/:id', requireUser, requireNickname, async (req, res) => {
   res.json(await missions.getMission(req.user, z.string().uuid().parse(req.params.id)));
 });
 
+api.get('/missions/:id/report', requireUser, requireNickname, async (req, res) => {
+  res.json(await getMissionReport(req.user, z.string().uuid().parse(req.params.id)));
+});
+
 api.put('/missions/:id/signup', requireUser, requireNickname, async (req, res) => {
   const { aircraftId } = z.object({ aircraftId: z.string().min(1) }).parse(req.body);
   await missions.signUp(req.user, z.string().uuid().parse(req.params.id), aircraftId);
@@ -199,9 +206,11 @@ api.post('/me/news/seen', requireUser, async (req, res) => {
 
 const adminApi = Router();
 api.use('/admin', requireUser, requireNickname, requireAdmin, adminApi);
+adminApi.use('/errors', adminErrorsRouter);
+api.use('/client-errors', requireUser, clientErrorsRouter);
 
 adminApi.post('/mission-files/:kind', rateLimit({ windowMs: 60_000, max: 10 }), raw({ type: 'application/octet-stream', limit: '25mb' }), async (req, res) => {
-  const kind = z.enum(['image', 'briefing']).parse(req.params.kind);
+  const kind = z.enum(['image', 'briefing', 'audio']).parse(req.params.kind);
   const name = z.string().trim().min(1).max(160).parse(req.query.name);
   if (!Buffer.isBuffer(req.body)) throw fail('VALIDATION', 'Envie o arquivo como conteúdo binário.');
   res.status(201).json(await uploadMissionAsset(req.user.id, kind, name, req.body));
@@ -213,9 +222,12 @@ adminApi.get('/overview', async (_req, res) => {
   res.json(await admin.getOverview());
 });
 
+adminApi.get('/scoring', async (_req, res) => { res.json(await getScoringRules()); });
+adminApi.put('/scoring', async (req, res) => { res.json(await saveScoringRules(req.user, req.body)); });
+
 adminApi.get('/activity', async (req, res) => {
   const q = z.object({
-    group: z.enum(['players', 'tree', 'settings']).optional(),
+    group: z.enum(['players', 'tree', 'missions', 'settings']).optional(),
     limit: z.coerce.number().int().min(1).max(500).default(50),
     offset: z.coerce.number().int().min(0).default(0),
   }).parse(req.query);
@@ -318,6 +330,7 @@ const aircraftBody = z.object({
 const missionBody = z.object({
   imageAssetId: z.string().uuid().nullable().default(null),
   briefingAssetId: z.string().uuid().nullable().default(null),
+  audioAssetId: z.string().uuid().nullable().default(null),
   title: z.string().trim().min(1).max(80),
   briefing: z.string().max(2000).default(''),
   mapName: z.string().trim().max(80).default(''),
@@ -346,11 +359,18 @@ adminApi.post('/missions/:id/cancel', async (req, res) => {
   res.json({ ok: true });
 });
 
-adminApi.post('/missions/:id/close', async (req, res) => {
-  const { attendees } = z.object({
-    attendees: z.array(z.object({ userId: z.string().uuid(), pm: z.number().int().min(0).max(1_000_000) })).max(500),
-  }).parse(req.body);
-  res.json(await missions.closeMission(req.user, z.string().uuid().parse(req.params.id), attendees));
+adminApi.post('/missions/:id/close', async (_req, _res) => {
+  throw fail('VALIDATION', 'Finalize a missão publicando o relatório pós-missão. Atualize a página para usar o novo formulário.');
+});
+
+adminApi.get('/missions/:id/report', async (req, res) => {
+  res.json(await getMissionReport(req.user, z.string().uuid().parse(req.params.id), true));
+});
+adminApi.put('/missions/:id/report', async (req, res) => {
+  res.json(await saveMissionReport(req.user, z.string().uuid().parse(req.params.id), req.body));
+});
+adminApi.post('/missions/:id/report/publish', async (req, res) => {
+  res.json(await saveMissionReport(req.user, z.string().uuid().parse(req.params.id), req.body, true));
 });
 
 adminApi.get('/tree', async (_req, res) => {

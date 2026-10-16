@@ -5,9 +5,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ApiError } from './api/client';
 import { ToastProvider } from './components/Toast';
 import { App } from './App';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { installErrorReporting } from './lib/report-error';
 import './styles.css';
 import './mobile.css';
 import './honor-theme.css';
+
+installErrorReporting();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,7 +28,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <ToastProvider>
-          <App />
+          <ErrorBoundary>
+            <App />
+          </ErrorBoundary>
         </ToastProvider>
       </BrowserRouter>
     </QueryClientProvider>

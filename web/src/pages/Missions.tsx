@@ -26,7 +26,7 @@ export function Chips({ m, showResult }: { m: Mission; showResult?: boolean }) {
 }
 
 function MissionCard({ mission }: { mission: Mission }) {
-  return <Link to={`/missoes/${mission.id}`} className="ms-operation-card">
+  return <Link to={mission.hasReport ? `/missoes/${mission.id}/relatorio` : `/missoes/${mission.id}`} className="ms-operation-card">
     <DateBlock iso={mission.startsAt} />
     <div className="ms-body">
       <div className="ms-head"><h2>{mission.title}</h2>
@@ -38,7 +38,7 @@ function MissionCard({ mission }: { mission: Mission }) {
       {mission.briefing && <p className="ms-card-excerpt">{mission.briefing}</p>}
       <Chips m={mission} showResult={mission.status === 'closed'} />
     </div>
-    <span className="ms-card-link">Ver operação →</span>
+    <span className="ms-card-link">{mission.hasReport ? 'Ver relatório →' : 'Ver operação →'}</span>
   </Link>;
 }
 

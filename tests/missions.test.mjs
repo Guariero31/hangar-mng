@@ -35,9 +35,10 @@ test('weekly repeat, owned-only signup, close awards PM once', async () => {
 test('new mission shows in the bell once per series', async () => {
   const users = await import('../server/src/services/users.ts');
   const fresh = (await db.query(`insert into users (google_sub,email,nickname,created_at) values ('Old','old@example.invalid','Old', now() - interval '1 day') returning *`)).rows[0];
-  await m.createMission(adm, { title: 'Serie Sino', briefing: '', startsAt: '2031-01-01T20:00:00Z', defaultPm: null }, 3);
+  const series = await m.createMission(adm, { title: 'Serie Sino', briefing: '', startsAt: '2031-01-01T20:00:00Z', defaultPm: null }, 3);
   const news = await users.getNews(fresh);
   assert.equal(news.items.filter((i) => i.kind === 'mission' && i.reason.includes('Serie Sino')).length, 1);
+  assert.equal(news.items.find((i) => i.kind === 'mission' && i.reason.includes('Serie Sino')).missionId, series.ids[0]);
 });
 
 test('operation detail persists briefing metadata and personal signup across lifecycle', async () => {

@@ -110,17 +110,24 @@ export async function setGoal(user: User, aircraftId: string | null) {
 
 /** Novidades vindas do admin (PM lançados, reembolsos, aeronaves liberadas) desde a última vez que o piloto olhou */
 export async function getNews(user: User) {
-  const { rows } = await db.query<{ kind: string; amount: number; reason: string; createdAt: Date; unread: boolean }>(
+  const { rows } = await db.query<{ kind: string; amount: number; reason: string; createdAt: Date; unread: boolean; missionId: string | null }>(
     `select * from (
-       select 'points' as kind, l.amount, l.reason, l.created_at as "createdAt", l.created_at > $2 as unread
+       select 'points' as kind, l.amount, l.reason, l.created_at as "createdAt", l.created_at > $2 as unread, null::uuid as "missionId"
          from points_ledger l
         where l.user_id = $1 and l.source in ('manual', 'server', 'refund') and (l.created_by is null or l.created_by <> $1)
+          and (l.external_ref is null or l.external_ref not like 'mission-report:%')
        union all
-       select 'grant' as kind, 0 as amount, 'Aeronave liberada: ' || a.name as reason, ua.unlocked_at as "createdAt", ua.unlocked_at > $2 as unread
+       select 'grant' as kind, 0 as amount, 'Aeronave liberada: ' || a.name as reason, ua.unlocked_at as "createdAt", ua.unlocked_at > $2 as unread, null::uuid as "missionId"
          from user_aircraft ua join aircraft a on a.id = ua.aircraft_id
         where ua.user_id = $1 and ua.granted_by is not null and ua.granted_by <> $1
        union all
-       select 'mission' as kind, 0 as amount, 'Nova missão: ' || m.title as reason, m.created_at as "createdAt", m.created_at > $2 as unread
+       select 'report' as kind, s.pm_awarded as amount, 'Relatório publicado: ' || m.title as reason,
+         report.published_at as "createdAt", report.published_at > $2 as unread, m.id as "missionId"
+         from mission_reports report join missions m on m.id=report.mission_id
+         join mission_signups s on s.mission_id=m.id and s.user_id=$1
+        where report.state='published'
+       union all
+       select 'mission' as kind, 0 as amount, 'Nova missão: ' || m.title as reason, m.created_at as "createdAt", m.created_at > $2 as unread, m.id as "missionId"
          from missions m
         where m.status = 'scheduled' and m.created_at > (select created_at from users where id = $1)
           and m.created_at > now() - interval '30 days'

@@ -1,0 +1,39 @@
+.news .news-pop { width: 390px; border-radius: 14px; border: 1px solid var(--line-2); background: var(--surface); box-shadow: var(--shadow-pop); display: flex; flex-direction: column; max-height: calc(100dvh - 90px); }
+.news .news-pop::before { display: none; }
+.news-panel-head { display: flex; align-items: flex-start; gap: 16px; padding: 22px 22px 18px; border-bottom: 1px solid var(--line); background: linear-gradient(120deg, var(--hover-accent), transparent); flex: none; }
+.news-panel-head > div { flex: 1; min-width: 0; }
+.news-panel-head .label { color: var(--accent); font-size: 10px; }
+.news-panel-head h2 { margin: 5px 0 7px; font-size: 23px; text-transform: none; letter-spacing: -.4px; }
+.news-panel-head p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.news-close { flex: none; width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--muted); font: 22px var(--font-body); cursor: pointer; display: grid; place-items: center; }
+.news-close:hover, .news-close:focus-visible { color: var(--accent); border-color: var(--accent); }
+.news .news-list { padding: 8px; min-height: 0; max-height: 400px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+.news .news-list li { grid-template-columns: 44px minmax(0, 1fr) auto; align-items: start; gap: 12px; padding: 15px 12px; margin: 3px 0; border: 0; border-radius: 8px; }
+.news .news-list li.unread { background: var(--hover-accent); box-shadow: none; }
+.news .news-list li.has-mission-link { position: relative; padding-right: 28px; }
+.news-mission-link { position: absolute; inset: 0; border-radius: 8px; z-index: 1; }
+.news-mission-link > span { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 15px; }
+.news-mission-link:hover, .news-mission-link:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; background: color-mix(in srgb, var(--accent) 4%, transparent); }
+.news-mission-link:hover > span, .news-mission-link:focus-visible > span { color: var(--accent); }
+.news .news-item-icon { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 11px; background: var(--bg); color: var(--accent); }
+.news-item-icon > svg { width: 23px; height: 23px; }
+.news .news-item-icon .news-medal-art { width: 28px; height: 36px; }
+.news .news-item-icon.is-achievement { background: color-mix(in srgb, var(--accent) 6%, var(--bg)); }
+.news-pm-icon { font: 600 12px var(--font-mono); }
+.news-item-copy { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.news-item-category { color: var(--muted); font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; }
+.news-item-copy strong { color: var(--text); font-size: 14px; line-height: 1.45; font-weight: 600; overflow-wrap: anywhere; }
+.news-item-copy time { color: var(--muted); font: 10px var(--font-mono); line-height: 1.5; }
+.news-item-status { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; padding-top: 4px; }
+.news-unread-mark { display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.news .news-list .amt { font: 600 11px var(--font-mono); white-space: nowrap; }
+.news-panel-footer { flex: none; border-top: 1px solid var(--line); padding: 12px 22px; text-align: center; color: var(--muted); font-size: 11px; }
+.news .news-empty { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; padding: 32px 24px; }
+.news-empty-symbol { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: var(--ok); background: color-mix(in srgb, var(--ok) 10%, var(--surface)); font-size: 24px; }
+.news-empty strong { color: var(--text); }
+.news-empty p { margin: 0; line-height: 1.6; }
+@media (max-width: 600px) {
+  .news .news-pop { width: auto; max-height: calc(100dvh - 84px); }
+  .news-panel-head { padding: 18px; }
+  .news .news-list li { gap: 10px; padding: 13px 9px; }
+}

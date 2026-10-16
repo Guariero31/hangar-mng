@@ -11,12 +11,16 @@ import { ProfilePage } from './pages/Profile';
 import { Players } from './pages/admin/Players';
 import { RankingPage } from './pages/Ranking';
 import { Overview } from './pages/admin/Overview';
+import { ErrorsAdmin } from './pages/admin/ErrorsAdmin';
 import { Activity } from './pages/admin/Activity';
 import { Missions } from './pages/Missions';
 import { MissionDetail } from './pages/MissionDetail';
 import { MissionBriefing } from './pages/MissionBriefing';
 import { MissionsAdmin } from './pages/admin/MissionsAdmin';
 import { AircraftAdmin } from './pages/admin/AircraftAdmin';
+import { ScoringAdmin } from './pages/admin/ScoringAdmin';
+import { MissionReportEditor } from './pages/admin/MissionReportEditor';
+import { MissionReportPage } from './pages/MissionReport';
 
 export function App() {
   return (
@@ -33,6 +37,7 @@ export function App() {
         <Route path="missoes" element={<Missions />} />
         <Route path="missoes/:id" element={<MissionDetail />} />
         <Route path="missoes/:id/briefing" element={<MissionBriefing />} />
+        <Route path="missoes/:id/relatorio" element={<MissionReportPage />} />
         <Route path="ranking" element={<RankingPage />} />
         <Route path="admin" element={<RequireUser admin><Outlet /></RequireUser>}>
           <Route index element={<Players />} />
@@ -40,7 +45,10 @@ export function App() {
           <Route path="visao-geral" element={<Overview />} />
           <Route path="aprovacoes" element={<Approvals />} />
           <Route path="missoes" element={<MissionsAdmin />} />
+          <Route path="missoes/:id/relatorio" element={<MissionReportEditor />} />
+          <Route path="pontuacao" element={<ScoringAdmin />} />
           <Route path="atividade" element={<Activity />} />
+          <Route path="erros" element={<ErrorsAdmin />} />
         </Route>
       </Route>
 

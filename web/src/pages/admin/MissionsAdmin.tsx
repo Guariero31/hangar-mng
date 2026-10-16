@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MissionFileUpload } from '../../components/MissionFileUpload';
-import { useAdminMissions, useCloseMission, useSaveMission } from '../../api/hooks';
+import { Select } from '../../components/Select';
+import { useAdminMissions, useSaveMission } from '../../api/hooks';
 import { errorMessage } from '../../api/client';
 import { fmtPoints } from '../../lib/format';
 import type { Mission } from '../../api/types';
@@ -25,6 +26,7 @@ function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () 
   const [briefingImageUrl, setBriefingImageUrl] = useState(editing?.briefingImageUrl ?? '');
   const [imageAsset, setImageAsset] = useState(editing?.imageAsset ?? null);
   const [briefingAsset, setBriefingAsset] = useState(editing?.briefingAsset ?? null);
+  const [audioAsset, setAudioAsset] = useState(editing?.audioAsset ?? null);
   const [imageUploading, setImageUploading] = useState(false);
   const [briefingUploading, setBriefingUploading] = useState(false);
   const uploading = imageUploading || briefingUploading;
@@ -41,7 +43,7 @@ function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () 
     if (!date || !time) return setErr('Informe a data e a hora.');
     const input = {
       title, briefing, mapName, briefingImageUrl, startsAt: new Date(`${date}T${time}:00-03:00`).toISOString(),
-      imageAssetId: imageAsset?.id ?? null, briefingAssetId: briefingAsset?.id ?? null,
+      imageAssetId: imageAsset?.id ?? null, briefingAssetId: briefingAsset?.id ?? null, audioAssetId: audioAsset?.id ?? null,
       defaultPm: pm.trim() === '' ? null : Number(pm),
       ...(editing ? {} : { repeatWeeks: Number(repeat) || 0 }),
     };
@@ -68,10 +70,7 @@ function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () 
         <label className="field"><span className="label">PM sugerido</span><input className="input" type="number" min={0} max={1000000} step={1} placeholder="A definir" value={pm} onChange={(e) => setPm(e.target.value)} /><span className="hint">O valor final é confirmado ao encerrar.</span></label>
         {!editing && (
           <label className="field"><span className="label">Repetir semanalmente</span>
-            <select className="input" value={repeat} onChange={(e) => setRepeat(e.target.value)}>
-              <option value="0">Não repetir</option>
-              {[1, 2, 3, 4, 6, 8, 12].map((n) => <option key={n} value={n}>+{n} {n === 1 ? 'semana' : 'semanas'}</option>)}
-            </select>
+            <Select aria-label="Repetição da missão" value={repeat} onChange={setRepeat} options={[{ value: '0', label: 'Não repetir' }, ...[1, 2, 3, 4, 6, 8, 12].map((n) => ({ value: n, label: `+${n} ${n === 1 ? 'semana' : 'semanas'}` }))]} />
           </label>
         )}
       </div></fieldset>
@@ -83,6 +82,7 @@ function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () 
         <MissionFileUpload kind="image" value={imageAsset} onChange={setImageAsset} onBusy={setImageUploading} />
         {!imageAsset && <label className="field"><span className="label">Ou use um link de imagem <small>Opcional</small></span><input className="input" type="url" placeholder="https://…" maxLength={2000} value={briefingImageUrl} onChange={(event) => setBriefingImageUrl(event.target.value)} /></label>}
         <MissionFileUpload kind="briefing" value={briefingAsset} onChange={setBriefingAsset} onBusy={setBriefingUploading} />
+        <MissionFileUpload kind="audio" value={audioAsset} onChange={setAudioAsset} onBusy={setBriefingUploading} />
       </fieldset>
       </div><aside className="mission-editor-preview" aria-label="Prévia da missão">
         <span className="label">Resumo da operação</span><h3>{title.trim() || 'Nome da missão'}</h3>
@@ -99,43 +99,11 @@ function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () 
   );
 }
 
-function ClosePanel({ m, onDone }: { m: Mission; onDone: () => void }) {
-  const close = useCloseMission();
-  const [rows, setRows] = useState(() => Object.fromEntries(m.signups.map((s) => [s.userId, { on: true, pm: String(m.defaultPm ?? 0) }])));
-  const [err, setErr] = useState('');
-  function submit() {
-    const attendees = m.signups.filter((s) => rows[s.userId].on).map((s) => ({ userId: s.userId, pm: Math.max(0, Math.floor(Number(rows[s.userId].pm) || 0)) }));
-    const total = attendees.reduce((a, b) => a + b.pm, 0);
-    if (!confirm(`Finalizar "${m.title}" e distribuir PM? ${attendees.length} pilotos, ${fmtPoints(total)} PM no total. Isso não pode ser desfeito.`)) return;
-    close.mutate({ id: m.id, attendees }, { onSuccess: onDone, onError: (x) => setErr(errorMessage(x)) });
-  }
-  return (
-    <div>
-      <span className="label">Quem voou e quanto PM cada um recebe</span>
-      {!m.signups.length && <p className="muted">Ninguém se inscreveu.</p>}
-      {m.signups.map((s) => (
-        <div key={s.userId} className="ms-close-row">
-          <input type="checkbox" checked={rows[s.userId].on} onChange={(e) => setRows({ ...rows, [s.userId]: { ...rows[s.userId], on: e.target.checked } })} aria-label={`${s.nickname} voou`} />
-          <span>{s.nickname} <span className="muted">· {s.aircraftName}</span></span>
-          <input className="input" type="number" min={0} value={rows[s.userId].pm} disabled={!rows[s.userId].on}
-            onChange={(e) => setRows({ ...rows, [s.userId]: { ...rows[s.userId], pm: e.target.value } })} aria-label={`PM de ${s.nickname}`} />
-        </div>
-      ))}
-      {err && <p className="muted" role="alert">{err}</p>}
-      <div className="ms-actions" style={{ marginTop: 12 }}>
-        <button className="btn ok" disabled={close.isPending} onClick={submit}>Confirmar e distribuir PM</button>
-        <button className="btn ghost" onClick={onDone}>Voltar</button>
-      </div>
-    </div>
-  );
-}
-
 const STATUS = { scheduled: 'Agendada', closed: 'Encerrada', cancelled: 'Cancelada' } as const;
 
 export function MissionsAdmin() {
   const { data, isLoading, error } = useAdminMissions();
   const [form, setForm] = useState<{ editing: Mission | null } | null>(null);
-  const [closing, setClosing] = useState<string | null>(null);
 
   return (
     <>
@@ -143,7 +111,7 @@ export function MissionsAdmin() {
         <div>
           <span className="label">Administração</span>
           <h1>Missões</h1>
-          <p>Agende eventos, veja as inscrições e, ao final, marque quem voou e lance o PM.</p>
+          <p>Agende eventos, acompanhe as inscrições e publique o relatório pós-missão para distribuir os pontos.</p>
         </div>
         {!form && <button className="btn" onClick={() => setForm({ editing: null })}>Nova missão</button>}
       </div>
@@ -162,18 +130,14 @@ export function MissionsAdmin() {
               <span className={`ms-badge ${m.status === 'scheduled' ? 'info' : m.status === 'closed' ? 'ok' : 'off'}`}>{STATUS[m.status]}</span>
             </div>
             <span className="muted">{m.mapName || 'Mapa a definir'} · Horário de Brasília</span>
-            {closing === m.id ? <ClosePanel m={m} onDone={() => setClosing(null)} /> : (
-              <>
-                <Chips m={m} showResult={m.status === 'closed'} />
-                
-              </>
-            )}
+            <Chips m={m} showResult={m.status === 'closed'} />
             </div>
-            {m.status === 'scheduled' && closing !== m.id && (
+            {m.hasReport && <Link className="btn ghost" to={`/missoes/${m.id}/relatorio`}>Ver relatório</Link>}
+            {m.status === 'scheduled' && (
                     <div className="ms-actions">
                       <Link className="btn ghost" to={`/missoes/${m.id}`}>Ver operação</Link>
                       <button className="btn ghost" onClick={() => setForm({ editing: m })}>Editar</button>
-                      <button className="btn" onClick={() => setClosing(m.id)}>Finalizar missão</button>
+                      <Link className="btn" to={`/admin/missoes/${m.id}/relatorio`}>Finalizar missão</Link>
                     </div>
                   )}
           </article>

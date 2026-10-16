@@ -92,7 +92,7 @@ export function useMarkNewsSeen() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => api.post('/me/news/seen'),
-    onSuccess: () => qc.setQueryData<News>(['news'], (n) => (n ? { unread: 0, items: n.items } : n)),
+    onSuccess: () => qc.setQueryData<News>(['news'], (n) => (n ? { unread: 0, items: n.items.map((item) => ({ ...item, unread: false })) } : n)),
   });
 }
 
@@ -187,8 +187,8 @@ export function useMissions() {
   return useQuery({ queryKey: ['missions'], queryFn: () => api.get<{ upcoming: Mission[]; past: Mission[] }>('/missions') });
 }
 
-export function useMission(id: string) {
-  return useQuery({ queryKey: ['missions', id], queryFn: () => api.get<Mission>(`/missions/${id}`), enabled: !!id, refetchInterval: 30_000 });
+export function useMission(id: string, { poll = true }: { poll?: boolean } = {}) {
+  return useQuery({ queryKey: ['missions', id], queryFn: () => api.get<Mission>(`/missions/${id}`), enabled: !!id, refetchInterval: poll ? 30_000 : false });
 }
 
 function useMissionMutation<V>(fn: (v: V) => Promise<unknown>) {

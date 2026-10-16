@@ -5,12 +5,13 @@ import { db } from '../db.js';
 import { config } from '../config.js';
 import { fail } from '../errors.js';
 
-export type AssetKind = 'image' | 'briefing';
+export type AssetKind = 'image' | 'briefing' | 'audio';
 interface AssetFile { path: string; mime: string; content: Buffer }
 interface Asset { id: string; kind: AssetKind; name: string; entrypoint: string }
 const MAX_UPLOAD = 25 * 1024 * 1024;
 const MAX_EXPANDED = 80 * 1024 * 1024;
 const MAX_FILE = 20 * 1024 * 1024;
+const CHUNK_SIZE = 256 * 1024;
 const TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8', '.htm': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json',
@@ -30,6 +31,13 @@ function imageType(content: Buffer): { extension: string; mime: string } {
   if (content[0] === 255 && content[1] === 216 && content[2] === 255) return { extension: '.jpg', mime: 'image/jpeg' };
   if (content.toString('ascii', 0, 4) === 'RIFF' && content.toString('ascii', 8, 12) === 'WEBP') return { extension: '.webp', mime: 'image/webp' };
   throw fail('VALIDATION', 'Envie uma imagem PNG, JPG ou WebP válida.');
+}
+
+function audioType(content: Buffer): { extension: string; mime: string } {
+  if (content.toString('ascii', 0, 3) === 'ID3' || (content[0] === 0xff && (content[1] & 0xe0) === 0xe0)) return { extension: '.mp3', mime: 'audio/mpeg' };
+  if (content.toString('ascii', 0, 4) === 'OggS') return { extension: '.ogg', mime: 'audio/ogg' };
+  if (content.toString('ascii', 0, 4) === 'RIFF' && content.toString('ascii', 8, 12) === 'WAVE') return { extension: '.wav', mime: 'audio/wav' };
+  throw fail('VALIDATION', 'Envie um áudio MP3, OGG ou WAV válido.');
 }
 
 export async function unpackBriefing(content: Buffer): Promise<{ files: AssetFile[]; entrypoint: string }> {
@@ -82,8 +90,9 @@ export async function unpackBriefing(content: Buffer): Promise<{ files: AssetFil
 }
 
 export function describeAsset(asset: Asset) {
-  const token = jwt.sign({ assetId: asset.id, purpose: 'mission-file' }, config.jwtSecret, { expiresIn: '6h', audience: 'mission-files' });
-  return { id: asset.id, name: asset.name, url: `/api/mission-files/${token}/${asset.entrypoint.split('/').map(encodeURIComponent).join('/')}` };
+  const issuedAt = Math.floor(Date.now() / 1000);
+  const token = jwt.sign({ assetId: asset.id, purpose: 'mission-file', iat: issuedAt }, config.jwtSecret, { expiresIn: '6h', audience: 'mission-files' });
+  return { id: asset.id, name: asset.name, expiresAt: (issuedAt + 6 * 60 * 60) * 1000, url: `/api/mission-files/${token}/${asset.entrypoint.split('/').map(encodeURIComponent).join('/')}` };
 }
 
 export async function uploadMissionAsset(adminId: string, kind: AssetKind, name: string, content: Buffer) {
@@ -95,13 +104,22 @@ export async function uploadMissionAsset(adminId: string, kind: AssetKind, name:
     const image = imageType(content);
     entrypoint = `map${image.extension}`;
     files = [{ path: entrypoint, mime: image.mime, content }];
+  } else if (kind === 'audio') {
+    const audio = audioType(content);
+    entrypoint = `music${audio.extension}`;
+    files = [{ path: entrypoint, mime: audio.mime, content }];
+  } else if (content.toString('ascii', 0, 2) !== 'PK') {
+    // Um único arquivo HTML, sem ZIP.
+    if (!/<(html|body|script|!doctype)/i.test(content.toString('utf8', 0, 4096))) throw fail('VALIDATION', 'Envie um arquivo HTML ou um ZIP válido.');
+    entrypoint = 'index.html';
+    files = [{ path: entrypoint, mime: TYPES['.html'], content }];
   } else {
     ({ files, entrypoint } = await unpackBriefing(content));
   }
   const asset = await db.tx(async (query) => {
     const { rows } = await query.query<Asset>('insert into mission_assets(kind, name, entrypoint, created_by) values ($1,$2,$3,$4) returning *', [kind, name, entrypoint, adminId]);
     for (const file of files) {
-      const chunkSize = 256 * 1024;
+      const chunkSize = CHUNK_SIZE;
       const chunks = Math.ceil(file.content.length / chunkSize);
       await query.query('insert into mission_asset_files(asset_id,path,mime,chunks) values ($1,$2,$3,$4)', [rows[0].id, file.path, file.mime, chunks]);
       for (let index = 0; index < chunks; index++) await query.query('insert into mission_asset_chunks(asset_id,path,chunk_index,content) values ($1,$2,$3,$4)', [rows[0].id, file.path, index, file.content.subarray(index * chunkSize, (index + 1) * chunkSize)]);
@@ -111,8 +129,8 @@ export async function uploadMissionAsset(adminId: string, kind: AssetKind, name:
   return describeAsset(asset);
 }
 
-export async function validateMissionAssets(imageId: string | null | undefined, briefingId: string | null | undefined) {
-  for (const [id, kind] of [[imageId, 'image'], [briefingId, 'briefing']] as const) {
+export async function validateMissionAssets(imageId: string | null | undefined, briefingId: string | null | undefined, audioId?: string | null) {
+  for (const [id, kind] of [[imageId, 'image'], [briefingId, 'briefing'], [audioId, 'audio']] as const) {
     if (!id) continue;
     const { rows } = await db.query('select id from mission_assets where id=$1 and kind=$2', [id, kind]);
     if (!rows.length) throw fail('VALIDATION', 'Um dos arquivos da missão não está disponível. Envie novamente.');
@@ -125,7 +143,7 @@ export async function missionAssetMetadata(ids: string[]) {
   return new Map(rows.map((asset) => [asset.id, describeAsset(asset)]));
 }
 
-export async function readMissionFile(token: string, filename: string) {
+export async function getMissionFile(token: string, filename: string) {
   let assetId: string;
   try {
     const payload = jwt.verify(token, config.jwtSecret, { audience: 'mission-files', algorithms: ['HS256'] });
@@ -133,12 +151,31 @@ export async function readMissionFile(token: string, filename: string) {
     assetId = payload.assetId;
   } catch { throw fail('VALIDATION', 'O acesso ao arquivo expirou. Reabra a página da missão.'); }
   safeAssetPath(filename);
-  const { rows } = await db.query<{ mime: string; chunks: number }>('select mime,chunks from mission_asset_files where asset_id=$1 and path=$2', [assetId, filename]);
+  const { rows } = await db.query<{ mime: string; chunks: number; lastSize: number }>(
+    `select file.mime,file.chunks,coalesce(octet_length(last.content),0) as "lastSize"
+     from mission_asset_files file left join mission_asset_chunks last
+       on last.asset_id=file.asset_id and last.path=file.path and last.chunk_index=file.chunks-1
+     where file.asset_id=$1 and file.path=$2`, [assetId, filename]);
   if (!rows.length) throw fail('MISSION_NOT_FOUND');
-  const chunks: Buffer[] = [];
-  for (let index = 0; index < rows[0].chunks; index++) {
-    const chunk = await db.query<{ content: Buffer }>('select content from mission_asset_chunks where asset_id=$1 and path=$2 and chunk_index=$3', [assetId, filename, index]);
-    chunks.push(Buffer.from(chunk.rows[0].content));
-  }
-  return { mime: rows[0].mime, content: Buffer.concat(chunks) };
+  const size = rows[0].chunks ? (rows[0].chunks - 1) * CHUNK_SIZE + rows[0].lastSize : 0;
+  return {
+    mime: rows[0].mime, size,
+    async read(range = { start: 0, end: size - 1 }) {
+      if (!size) return Buffer.alloc(0);
+      const first = Math.floor(range.start / CHUNK_SIZE);
+      const last = Math.floor(range.end / CHUNK_SIZE);
+      const chunks: Buffer[] = [];
+      for (let index = first; index <= last; index++) {
+        const chunk = await db.query<{ content: Buffer }>('select content from mission_asset_chunks where asset_id=$1 and path=$2 and chunk_index=$3', [assetId, filename, index]);
+        const content = Buffer.from(chunk.rows[0].content);
+        chunks.push(content.subarray(Math.max(0, range.start - index * CHUNK_SIZE), Math.min(content.length, range.end - index * CHUNK_SIZE + 1)));
+      }
+      return Buffer.concat(chunks);
+    },
+  };
+}
+
+export async function readMissionFile(token: string, filename: string) {
+  const file = await getMissionFile(token, filename);
+  return { mime: file.mime, content: await file.read() };
 }

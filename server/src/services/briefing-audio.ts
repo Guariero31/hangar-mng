@@ -38,11 +38,16 @@ const AUDIO_RECOVERY = `<script>
 })();
 </script>`;
 
-/** Recover blocked autoplay through a trusted click inside the sandboxed document. */
+const HIDDEN_CONTROLS = `<style>
+#keys { display: none !important; }
+</style>`;
+
+/** Adapt uploaded briefings for audio activation and hide their control bar without changing stored files. */
 export function withBriefingAudioRecovery(content: Buffer): Buffer {
   const html = content.toString('utf8');
+  const enhancements = AUDIO_RECOVERY + HIDDEN_CONTROLS;
   const head = /<head(?:\s[^>]*)?>/i;
-  if (head.test(html)) return Buffer.from(html.replace(head, (tag) => tag + AUDIO_RECOVERY));
+  if (head.test(html)) return Buffer.from(html.replace(head, (tag) => tag + enhancements));
   const doctype = /^\s*<!doctype[^>]*>/i;
-  return Buffer.from(doctype.test(html) ? html.replace(doctype, (tag) => tag + AUDIO_RECOVERY) : AUDIO_RECOVERY + html);
+  return Buffer.from(doctype.test(html) ? html.replace(doctype, (tag) => tag + enhancements) : enhancements + html);
 }

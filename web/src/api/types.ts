@@ -18,7 +18,7 @@ export interface Me {
 export type Rarity = 'common' | 'rare' | 'legendary';
 export interface MedalLite { key: string; name: string; icon: string; rarity: Rarity }
 
-export interface NewsItem { kind: 'points' | 'grant' | 'achievement' | 'goal' | 'mission'; amount: number; reason: string; createdAt: string; unread: boolean; icon?: string; rarity?: Rarity }
+export interface NewsItem { kind: 'points' | 'grant' | 'achievement' | 'goal' | 'mission' | 'report'; amount: number; reason: string; createdAt: string; unread: boolean; icon?: string; rarity?: Rarity; missionId?: string | null }
 export interface News { unread: number; items: NewsItem[] }
 
 export interface AuthConfig {
@@ -84,14 +84,33 @@ export interface TechTreeState {
 
 export interface MissionSignup { missionId: string; userId: string; nickname: string; aircraftId: string; aircraftName: string; attended: boolean; pmAwarded: number }
 export interface Mission {
-  imageAsset: MissionAsset | null; briefingAsset: MissionAsset | null;
+  hasReport: boolean;
+  imageAsset: MissionAsset | null; briefingAsset: MissionAsset | null; audioAsset: MissionAsset | null;
   mapName: string; briefingImageUrl: string;
   id: string; title: string; briefing: string; startsAt: string; defaultPm: number | null;
   status: 'scheduled' | 'closed' | 'cancelled'; seriesId: string | null; closedAt: string | null;
   signups: MissionSignup[]; mine: MissionSignup | null;
 }
-export interface MissionAsset { id: string; name: string; url: string }
-export interface MissionInput { title: string; briefing: string; startsAt: string; defaultPm: number | null; repeatWeeks?: number; mapName?: string; briefingImageUrl?: string; imageAssetId?: string | null; briefingAssetId?: string | null }
+export interface MissionAsset { id: string; name: string; url: string; expiresAt: number }
+export interface ScoringRules {
+  airborneAircraft: number; groundAircraft: number; armoredVehicle: number; antiAircraft: number;
+  helicopter: number; ship: number; sam: number; helicopterTransport: number; cargoTransport: number;
+  survivalEnabled: boolean; survivalMultiplier: number;
+}
+export type ReportTarget = Exclude<keyof ScoringRules, 'survivalEnabled' | 'survivalMultiplier'>;
+export interface ReportPilot {
+  userId: string; nickname: string; aircraftId: string; aircraftName: string;
+  attended: boolean | null; survived: boolean | null; reviewed: boolean;
+  counts: Record<ReportTarget, number>; notes: string;
+  subtotal: number; multiplier: number; total: number;
+  breakdown: { key: string; label: string; quantity: number; unitPoints: number; points: number }[];
+}
+export interface MissionReport {
+  missionId: string; state: 'draft' | 'published'; version: number; rulesFingerprint: string; rules: ScoringRules;
+  pilots: ReportPilot[]; summary: string; source: string; savedAt: string | null;
+  publishedAt: string | null; publishedBy: string | null; total: number;
+}
+export interface MissionInput { title: string; briefing: string; startsAt: string; defaultPm: number | null; repeatWeeks?: number; mapName?: string; briefingImageUrl?: string; imageAssetId?: string | null; briefingAssetId?: string | null; audioAssetId?: string | null }
 
 export interface AdminTree {
   tiers: Tier[];

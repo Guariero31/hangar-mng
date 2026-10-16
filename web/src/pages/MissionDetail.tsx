@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router-dom';
 import { useCancelMission, useMe, useMission, useMissionSignup, useTechTree } from '../api/hooks';
 import { errorMessage } from '../api/client';
 import type { Mission } from '../api/types';
+import { preserveAssetUrl } from '../lib/asset-url';
+import { Select } from '../components/Select';
 import { fmtPoints } from '../lib/format';
 import { DateBlock, fmtWhen } from './Missions';
 import './missions.css';
@@ -37,10 +39,8 @@ function Participation({ mission }: { mission: Mission }) {
       {tree.data && !owned.length && <p>Você não tem aeronaves disponíveis. <Link to="/">Ver árvore de aeronaves</Link></p>}
       <form onSubmit={(event) => { event.preventDefault(); if (owned.some((aircraft) => aircraft.id === pick)) submit(pick); }}>
         <label className="field"><span className="label">Sua aeronave</span>
-          <select className="input" value={pick} onChange={(event) => { setPick(event.target.value); setMessage(''); setError(''); }} disabled={signup.isPending || !tree.data}>
-            <option value="">Escolha uma aeronave…</option>
-            {owned.map((aircraft) => <option key={aircraft.id} value={aircraft.id}>{aircraft.name}</option>)}
-          </select>
+          <Select aria-label="Sua aeronave" value={pick} onChange={(value) => { setPick(value); setMessage(''); setError(''); }} disabled={signup.isPending || !tree.data}
+            options={[{ value: '', label: 'Escolha uma aeronave…' }, ...owned.map((aircraft) => ({ value: aircraft.id, label: aircraft.name }))]} />
         </label>
         <button className="btn block" disabled={signup.isPending || !owned.some((aircraft) => aircraft.id === pick) || pick === mission.mine?.aircraftId}>
           {signup.isPending ? 'Salvando…' : mission.mine ? 'Trocar aeronave' : 'Confirmar inscrição'}
@@ -85,14 +85,30 @@ function MissionManagement({ mission }: { mission: Mission }) {
   </section>;
 }
 
-function BriefingImage({ url, title }: { url: string; title: string }) {
+function MissionHero({ mission }: { mission: Mission }) {
+  const asset = mission.imageAsset;
+  const url = asset?.url || mission.briefingImageUrl;
   const [failed, setFailed] = useState(false);
-  return <section className="card op-section"><h2>Mapa e reconhecimento</h2>
-    {failed ? <p className="muted">Não foi possível carregar a imagem do briefing.</p>
-      : <a href={url} target="_blank" rel="noopener noreferrer" aria-label="Abrir imagem do briefing em tamanho original">
-        <img className="op-map" src={url} alt={`Mapa de apoio à operação ${title}`} loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
-      </a>}
-  </section>;
+  const [source, setSource] = useState({ url, expiresAt: asset?.expiresAt ?? 0 });
+  useEffect(() => {
+    setSource((current) => preserveAssetUrl(current, { url, expiresAt: asset?.expiresAt ?? 0 }));
+  }, [url, asset?.expiresAt]);
+  useEffect(() => { setFailed(false); }, [source.url]);
+  const hasCover = !!source.url && !failed;
+  return <header className={`card op-hero ${hasCover ? 'has-cover' : ''}`}>
+    {hasCover && <>
+      <img className="op-hero-image" src={source.url} alt="" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
+      <a className="op-cover-link" href={source.url} target="_blank" rel="noopener noreferrer">Ver imagem completa <span aria-hidden="true">↗</span></a>
+    </>}
+    <DateBlock iso={mission.startsAt} />
+    <div className="op-hero-heading"><span className="label">Hangar MNG / Operações</span><h1>{mission.title}</h1>
+      <span className={`ms-badge ${mission.status === 'scheduled' ? 'info' : 'off'}`}>{STATUS[mission.status]}</span>
+    </div>
+    <dl className="op-facts"><div><dt>Início da operação</dt><dd>{fmtWhen(mission.startsAt)} · Brasília (UTC−3)</dd></div>
+      <div><dt>Mapa</dt><dd>{mission.mapName || 'A definir'}</dd></div>
+      <div><dt>Pilotos inscritos</dt><dd>{mission.signups.length}</dd></div>
+    </dl>
+  </header>;
 }
 
 export function MissionDetail() {
@@ -104,24 +120,16 @@ export function MissionDetail() {
     {isLoading && <p className="loading">Carregando operação…</p>}
     {error && <div className="card op-section" role="alert"><h1>Operação indisponível</h1><p>{errorMessage(error)}</p><button className="btn ghost" onClick={() => refetch()}>Tentar novamente</button></div>}
     {mission && <>
-      <header className="card op-hero"><DateBlock iso={mission.startsAt} />
-        <div><span className="label">Hangar MNG / Operações</span><h1>{mission.title}</h1>
-          <span className={`ms-badge ${mission.status === 'scheduled' ? 'info' : 'off'}`}>{STATUS[mission.status]}</span>
-        </div>
-        <dl className="op-facts"><div><dt>Início da operação</dt><dd>{fmtWhen(mission.startsAt)} · Brasília (UTC−3)</dd></div>
-          <div><dt>Mapa</dt><dd>{mission.mapName || 'A definir'}</dd></div>
-          <div><dt>Pilotos inscritos</dt><dd>{mission.signups.length}</dd></div>
-        </dl>
-      </header>
+      <MissionHero key={`${mission.id}:${mission.imageAsset?.id || mission.briefingImageUrl}`} mission={mission} />
       <div className="op-layout">
         <Participation key={mission.id} mission={mission} />
         <div className="op-content">
+          {mission.hasReport && <section className="card op-section op-interactive-callout"><span className="label">Operação concluída</span><h2>Relatório pós-missão disponível</h2><p className="muted">Consulte os resultados de cada piloto e o detalhamento dos pontos distribuídos.</p><Link className="btn" to={`/missoes/${mission.id}/relatorio`}>Ver relatório →</Link></section>}
           <section className="card op-section"><span className="label">Informações da missão</span><h2>Briefing da operação</h2>
             {mission.briefing.trim() ? <div className="op-briefing">{mission.briefing.split(/\n\s*\n/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
               : <p className="muted">O briefing será publicado pela administração. Volte antes do início da operação para conferir os detalhes.</p>}
           </section>
           {mission.briefingAsset && <section className="card op-section op-interactive-callout"><span className="label">Experiência interativa</span><h2>Briefing da missão</h2><p className="muted">Explore o cenário, os objetivos e os materiais da operação. Ative a música pelos controles do briefing.</p><Link className="btn" to={`/missoes/${mission.id}/briefing`}>Abrir briefing interativo →</Link></section>}
-          {(mission.imageAsset?.url || mission.briefingImageUrl) && <BriefingImage key={mission.imageAsset?.url || mission.briefingImageUrl} url={mission.imageAsset?.url || mission.briefingImageUrl} title={mission.title} />}
           <MissionManagement key={mission.id} mission={mission} />
           <section className="card op-section"><div className="op-section-head"><h2>{mission.status === 'closed' ? 'Participação e resultados' : 'Pilotos inscritos'}</h2><span className="ms-badge">{mission.signups.length} pilotos</span></div>
             {!mission.signups.length ? <p className="muted">Nenhum piloto inscrito. Seja o primeiro a participar.</p>

@@ -2,11 +2,12 @@ import { runOperation } from '../../lib/mutations';
 import { useState } from 'react';
 import { errorMessage } from '../../api/client';
 import {
-  useAddPoints, useAdminTree, useDeletePlayer, useGrantAircraft, useMe, usePlayer, useRenamePlayer, useRevokeAircraft, useUpdatePlayer,
+  useAdminTree, useDeletePlayer, useGrantAircraft, useMe, usePlayer, useRenamePlayer, useRevokeAircraft, useUpdatePlayer,
 } from '../../api/hooks';
 import './admin.css';
 import { MedalGrid } from '../../components/MedalStrip';
 import { useToast } from '../../components/Toast';
+import { Select } from '../../components/Select';
 import { fmtDate, fmtPoints, fmtSigned, SOURCE_LABEL } from '../../lib/format';
 
 /** Painel lateral com os dados e as ações de um jogador */
@@ -14,7 +15,6 @@ export function PlayerPanel({ id, onDeleted }: { id: string; onDeleted?: () => v
   const { data: me } = useMe();
   const { data, isLoading, error } = usePlayer(id);
   const { data: tree } = useAdminTree();
-  const addPoints = useAddPoints();
   const grant = useGrantAircraft();
   const revoke = useRevokeAircraft();
   const update = useUpdatePlayer();
@@ -25,8 +25,6 @@ export function PlayerPanel({ id, onDeleted }: { id: string; onDeleted?: () => v
   const [newNick, setNewNick] = useState('');
   const toast = useToast();
 
-  const [amount, setAmount] = useState('');
-  const [reason, setReason] = useState('');
   const [refund, setRefund] = useState(false);
   const [grantId, setGrantId] = useState('');
 
@@ -44,15 +42,6 @@ export function PlayerPanel({ id, onDeleted }: { id: string; onDeleted?: () => v
 
   const run = (p: Promise<unknown>, ok: string) =>
     runOperation(p, () => toast(ok), error => toast(errorMessage(error), 'err'));
-
-  function submitPoints(e: React.FormEvent) {
-    e.preventDefault();
-    const n = parseInt(amount, 10);
-    if (!n) return toast('Informe uma quantidade diferente de zero.', 'err');
-    if (!reason.trim()) return toast('Informe o motivo.', 'err');
-    run(addPoints.mutateAsync({ id, amount: n, reason }), `${fmtSigned(n)} PM para ${label}`)
-      .then(success => { if (success) { setAmount(''); setReason(''); } });
-  }
 
   return (
     <>
@@ -86,18 +75,6 @@ export function PlayerPanel({ id, onDeleted }: { id: string; onDeleted?: () => v
         </div>
       </div>
 
-      <form className="section" id="points-form" onSubmit={submitPoints}>
-        <span className="label">Lançar Pontos de Missão</span>
-        <div className="inline-form">
-          <input className="input" name="amount" type="number" step={1} placeholder="+500" aria-label="PM"
-            value={amount} onChange={(e) => setAmount(e.target.value)} />
-          <input className="input" name="reason" placeholder="Motivo (ex.: Missão Red Flag 12/10)" aria-label="Motivo"
-            maxLength={200} value={reason} onChange={(e) => setReason(e.target.value)} />
-          <button className="btn" disabled={addPoints.isPending}>Lançar</button>
-        </div>
-        <span className="hint">Use número negativo para remover PM.</span>
-      </form>
-
       <div className="section">
         <span className="label">Aeronaves compradas ({aircraft.length})</span>
         <span className="hint" style={{ minHeight: 0 }}>As aeronaves de tiers gratuitos já estão na frota de todos.</span>
@@ -123,9 +100,7 @@ export function PlayerPanel({ id, onDeleted }: { id: string; onDeleted?: () => v
         )}
         {notOwned.length > 0 && (
           <div className="row-inline">
-            <select className="input" aria-label="Aeronave" value={grantId || notOwned[0].id} onChange={(e) => setGrantId(e.target.value)}>
-              {notOwned.map((a) => <option key={a.id} value={a.id}>Tier {tierLabel(a.tier)} · {a.name}</option>)}
-            </select>
+            <Select aria-label="Aeronave" value={grantId || notOwned[0].id} onChange={setGrantId} options={notOwned.map((a) => ({ value: a.id, label: `Tier ${tierLabel(a.tier)} · ${a.name}` }))} />
             <button className="btn ghost sm" disabled={grant.isPending}
               onClick={() => {
                 const aircraftId = grantId && !owned.has(grantId) ? grantId : notOwned[0].id;

@@ -2,6 +2,7 @@
 // nada é enviado e o motivo vai para o log: o cadastro e a aprovação continuam funcionando.
 import nodemailer from 'nodemailer';
 import { config } from '../config.js';
+import { logServerError } from './errorlog.js';
 
 const mailEnabled = !!(config.smtp.host && config.smtp.user && config.smtp.pass);
 
@@ -41,6 +42,7 @@ async function send(to: string, subject: string, html: string, text: string) {
     await transport.sendMail({ from: config.smtp.from, to, subject, html, text });
   } catch (e) {
     console.error(`[e-mail] falha ao enviar "${subject}" para ${to}:`, e instanceof Error ? e.message : e);
+    void logServerError(e, { source: 'mail', route: subject });
   }
 }
 

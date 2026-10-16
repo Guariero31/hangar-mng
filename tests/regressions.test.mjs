@@ -186,4 +186,17 @@ test('HTTP routes enforce session, approval, admin permissions and pagination va
   assert.equal(page.status, 200);
   assert.equal(page.body.players.length, 5);
   assert.ok(page.body.total > 100);
+  for (const action of ['create_mission', 'update_mission', 'cancel_mission', 'close_mission']) {
+    await db.query('insert into admin_audit_log(admin_id,action,details) values ($1,$2,$3)', [actor.id, action, { title: 'Operação de teste' }]);
+  }
+  const missionActivity = await request('/admin/activity?group=missions', actor.id);
+  assert.equal(missionActivity.status, 200);
+  assert.equal(missionActivity.body.total, 4);
+  assert.deepEqual(missionActivity.body.items.map((item) => item.action).sort(), ['cancel_mission', 'close_mission', 'create_mission', 'update_mission']);
+  const missionPage = await request('/admin/activity?group=missions&limit=1&offset=1', actor.id);
+  assert.equal(missionPage.status, 200);
+  assert.equal(missionPage.body.total, 4);
+  assert.equal(missionPage.body.items.length, 1);
+  assert.equal((await request('/admin/activity?group=invalid', actor.id)).status, 400);
+  assert.equal((await request('/admin/activity?group=missions', pilot.id)).status, 403);
 });

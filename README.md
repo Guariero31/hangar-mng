@@ -114,6 +114,14 @@ O ZIP deve conter um único HTML de entrada ou um `index.html` na raiz, mantendo
 
 Os pilotos abrem o anexo em **Ver operação → Abrir briefing interativo → Iniciar briefing**, com opção de tela cheia. O briefing escrito permanece disponível como alternativa. O visualizador usa sandbox sem acesso à sessão, URLs temporárias de leitura e recursos limitados ao pacote, Three.js no jsDelivr e fontes Google. A música depende de interação e dos controles do próprio briefing. Arquivos usam o banco de dados em blocos, incluindo o banco embutido, e acompanham os backups PostgreSQL. Remover um anexo da missão desvincula o arquivo; não apaga cópias referenciadas por outras missões.
 
+## Relatório pós-missão
+
+Em **Admin → Missões → Finalizar missão**, o administrador confirma a participação e a aeronave de cada piloto, informa as quantidades de alvos e objetivos, declara a sobrevivência e confere os resultados. É possível adicionar um piloto sem inscrição e salvar rascunhos privados. Os pilotos não podem preencher ou alterar resultados.
+
+Os valores vêm de **Admin → Pontuação** e ficam preservados no primeiro salvamento do relatório. O cálculo soma os pontos por alvo/objetivo e aplica somente o bônus de sobrevivência configurado, arredondando para o inteiro mais próximo. Os multiplicadores de tier não são combinados com esse bônus. Limites: 10.000 ocorrências por categoria e até 1.000.000 PM por piloto.
+
+**Publicar relatório e finalizar missão** grava o relatório, encerra a operação e credita os pontos em uma única transação. Repetir a publicação não credita novamente. Todos os inscritos devem ter a participação conferida; os ausentes recebem zero. O relatório publicado fica somente para consulta em **Missões → Ver relatório** e no sino dos participantes, com cálculo detalhado, administrador responsável e data de publicação. A API antiga de encerramento manual deixa de aceitar novos fechamentos; missões encerradas anteriormente preservam seus resultados.
+
 ## Próxima fase: automação com o servidor DCS
 
 O banco já tem `dcs_links` (vínculo com o UCID), `link_codes` e `points_ledger.external_ref` (evita lançar o mesmo evento duas vezes).

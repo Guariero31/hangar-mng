@@ -1,0 +1,37 @@
+.aircraft-tabs { display: flex; gap: 28px; border-bottom: 1px solid var(--line); margin: 24px 0; }
+.aircraft-tabs > button { padding: 14px 0; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--muted); font: 600 15px var(--font-body); cursor: pointer; }
+.aircraft-tabs > button[aria-selected=true] { color: var(--text); border-bottom-color: var(--accent); }
+.aircraft-tabs > button > span { margin-left: 8px; padding: 3px 7px; background: var(--hover); border-radius: 5px; font: 12px var(--font-mono); color: var(--muted); }
+.aircraft-filters { display: grid; grid-template-columns: minmax(180px, 1.6fr) minmax(130px, .8fr) minmax(160px, 1fr) minmax(130px, .8fr); gap: 16px; }
+.aircraft-list-summary { display: flex; align-items: center; justify-content: space-between; min-height: 52px; gap: 16px; color: var(--muted); font-size: 13px; }
+.aircraft-list-name { display: flex; align-items: center; gap: 16px; }
+.aircraft-list-name > span { display: flex; flex: none; }
+.aircraft-list-name small { display: block; margin-top: 5px; color: var(--muted); font: 11px var(--font-mono); }
+.aircraft-table tbody tr { cursor: default; }
+.aircraft-table .row-icon { width: 30px; height: 34px; }
+.aircraft-progression-intro { margin-bottom: 24px; }
+.aircraft-progression-intro h2 { text-transform: none; }
+.aircraft-scoring-note { font-size: 14px; line-height: 1.8; padding: 20px; background: var(--hover-accent); border-radius: 8px; color: var(--muted); }
+.aircraft-scoring-note a { color: var(--accent); }
+.aircraft-editor { max-width: 900px; margin: 0 auto; }
+.aircraft-back { border: 0; background: none; color: var(--muted); font: 14px var(--font-body); padding: 0; margin-bottom: 26px; cursor: pointer; }
+.aircraft-editor h1 { text-transform: none; overflow-wrap: anywhere; }
+.aircraft-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.aircraft-editor .form-grid { gap: 22px; }
+.aircraft-section-title { margin: 10px 0 0; font-size: 22px; text-transform: none; }
+.aircraft-dependencies > small { color: var(--muted); line-height: 1.6; font-size: 13px; }
+.aircraft-selected { display: flex; flex-wrap: wrap; gap: 8px; }
+.aircraft-editor .form-actions { position: sticky; bottom: 12px; background: var(--surface); border-top: 1px solid var(--line); border-radius: 0 0 10px 10px; z-index: 2; }
+@media (max-width: 800px) {
+  .aircraft-filters { grid-template-columns: 1fr 1fr; }
+  .aircraft-filters > .field:first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 520px) {
+  .aircraft-filters { grid-template-columns: 1fr; }
+  .aircraft-editor .form-grid, .aircraft-editor .check-grid { grid-template-columns: 1fr; }
+  .aircraft-editor .form-grid .span-2 { grid-column: auto; }
+  .aircraft-table th, .aircraft-table td { padding: 12px 10px; }
+  .aircraft-table th:nth-child(3), .aircraft-table td:nth-child(3) { display: none; }
+  .aircraft-list-name { gap: 8px; }
+  .aircraft-table .row-icon { width: 23px; }
+}

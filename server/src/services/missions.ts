@@ -14,7 +14,8 @@ async function audit(q: Queryable, adminId: string, action: string, details: obj
 
 const MISSION_COLS = `m.id, m.title, m.briefing, m.starts_at as "startsAt", m.default_pm as "defaultPm",
   m.status, m.series_id as "seriesId", m.closed_at as "closedAt", m.map_name as "mapName", m.briefing_image_url as "briefingImageUrl",
-  m.image_asset_id as "imageAssetId", m.briefing_asset_id as "briefingAssetId"`;
+  m.image_asset_id as "imageAssetId", m.briefing_asset_id as "briefingAssetId", m.audio_asset_id as "audioAssetId",
+  exists(select 1 from mission_reports report where report.mission_id=m.id and report.state='published') as "hasReport"`;
 
 async function signupsOf(q: Queryable, ids: string[]) {
   if (!ids.length) return [];
@@ -26,12 +27,12 @@ async function signupsOf(q: Queryable, ids: string[]) {
   return rows;
 }
 
-async function withSignups<T extends { id: string; imageAssetId?: string | null; briefingAssetId?: string | null }>(rows: T[], me?: string) {
+async function withSignups<T extends { id: string; imageAssetId?: string | null; briefingAssetId?: string | null; audioAssetId?: string | null }>(rows: T[], me?: string) {
   const all = await signupsOf(db, rows.map((r) => r.id));
-  const assets = await missionAssetMetadata(rows.flatMap((row) => [row.imageAssetId, row.briefingAssetId].filter((id): id is string => !!id)));
+  const assets = await missionAssetMetadata(rows.flatMap((row) => [row.imageAssetId, row.briefingAssetId, row.audioAssetId].filter((id): id is string => !!id)));
   return rows.map((m) => {
     const signups = all.filter((s) => s.missionId === m.id);
-    return { ...m, imageAsset: assets.get(m.imageAssetId ?? '') ?? null, briefingAsset: assets.get(m.briefingAssetId ?? '') ?? null, signups, mine: me ? signups.find((s) => s.userId === me) ?? null : null };
+    return { ...m, imageAsset: assets.get(m.imageAssetId ?? '') ?? null, briefingAsset: assets.get(m.briefingAssetId ?? '') ?? null, audioAsset: assets.get(m.audioAssetId ?? '') ?? null, signups, mine: me ? signups.find((s) => s.userId === me) ?? null : null };
   });
 }
 
@@ -85,20 +86,20 @@ export async function cancelSignup(user: User, missionId: string) {
   });
 }
 
-export interface MissionInput { title: string; briefing: string; startsAt: string; defaultPm: number | null; mapName?: string; briefingImageUrl?: string; imageAssetId?: string | null; briefingAssetId?: string | null }
+export interface MissionInput { title: string; briefing: string; startsAt: string; defaultPm: number | null; mapName?: string; briefingImageUrl?: string; imageAssetId?: string | null; briefingAssetId?: string | null; audioAssetId?: string | null }
 
 /** Cria a missão; com repeatWeeks > 0 cria também cópias semanais (mesma série). */
 export async function createMission(admin: User, input: MissionInput, repeatWeeks: number) {
-  await validateMissionAssets(input.imageAssetId, input.briefingAssetId);
+  await validateMissionAssets(input.imageAssetId, input.briefingAssetId, input.audioAssetId);
   const result = await db.tx(async (q) => {
     const seriesId = repeatWeeks > 0 ? (await q.query<{ id: string }>('select gen_random_uuid() as id')).rows[0].id : null;
     const ids: string[] = [];
     for (let i = 0; i <= repeatWeeks; i++) {
       const at = new Date(new Date(input.startsAt).getTime() + i * 7 * 86400_000).toISOString();
       const { rows } = await q.query<{ id: string }>(
-        `insert into missions (title, briefing, starts_at, default_pm, series_id, created_by, map_name, briefing_image_url, image_asset_id, briefing_asset_id)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning id`,
-        [input.title.trim(), input.briefing.trim(), at, input.defaultPm, seriesId, admin.id, input.mapName?.trim() ?? '', input.briefingImageUrl?.trim() ?? '', input.imageAssetId ?? null, input.briefingAssetId ?? null]);
+        `insert into missions (title, briefing, starts_at, default_pm, series_id, created_by, map_name, briefing_image_url, image_asset_id, briefing_asset_id, audio_asset_id)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning id`,
+        [input.title.trim(), input.briefing.trim(), at, input.defaultPm, seriesId, admin.id, input.mapName?.trim() ?? '', input.briefingImageUrl?.trim() ?? '', input.imageAssetId ?? null, input.briefingAssetId ?? null, input.audioAssetId ?? null]);
       ids.push(rows[0].id);
     }
     await audit(q, admin.id, 'create_mission', { title: input.title.trim(), startsAt: input.startsAt, copies: ids.length });
@@ -118,12 +119,12 @@ async function notifyPilots(input: MissionInput, weeks: number) {
 }
 
 export async function updateMission(admin: User, id: string, input: MissionInput) {
-  await validateMissionAssets(input.imageAssetId, input.briefingAssetId);
+  await validateMissionAssets(input.imageAssetId, input.briefingAssetId, input.audioAssetId);
   await db.tx(async (q) => {
     const m = await lockMission(q, id);
     if (m.status !== 'scheduled') throw fail('MISSION_NOT_OPEN');
-    await q.query('update missions set title = $2, briefing = $3, starts_at = $4, default_pm = $5, map_name = $6, briefing_image_url = $7, image_asset_id=$8, briefing_asset_id=$9 where id = $1',
-      [id, input.title.trim(), input.briefing.trim(), input.startsAt, input.defaultPm, input.mapName?.trim() ?? '', input.briefingImageUrl?.trim() ?? '', input.imageAssetId ?? null, input.briefingAssetId ?? null]);
+    await q.query('update missions set title = $2, briefing = $3, starts_at = $4, default_pm = $5, map_name = $6, briefing_image_url = $7, image_asset_id=$8, briefing_asset_id=$9, audio_asset_id=$10 where id = $1',
+      [id, input.title.trim(), input.briefing.trim(), input.startsAt, input.defaultPm, input.mapName?.trim() ?? '', input.briefingImageUrl?.trim() ?? '', input.imageAssetId ?? null, input.briefingAssetId ?? null, input.audioAssetId ?? null]);
     await audit(q, admin.id, 'update_mission', { id, title: input.title.trim() });
   });
 }
@@ -137,7 +138,7 @@ export async function cancelMission(admin: User, id: string) {
   });
 }
 
-/** Encerra: marca presença e lança o PM de cada piloto que voou (tudo em uma transação). */
+/** @deprecated Use saveMissionReport to publish results and award calculated points. */
 export async function closeMission(admin: User, id: string, attendees: { userId: string; pm: number }[]) {
   return db.tx(async (q) => {
     const m = await lockMission(q, id);

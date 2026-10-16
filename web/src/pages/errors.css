@@ -1,0 +1,13 @@
+.er-list { display: grid; }
+.er-item { border-top: 1px solid var(--line); padding: 18px 0; display: grid; gap: 8px; }
+.er-item.done { opacity: .55; }
+.er-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.er-msg { font-weight: 600; word-break: break-word; min-width: 0; flex: 1; }
+.er-src { font: 600 10px var(--font-display, inherit); letter-spacing: .18em; text-transform: uppercase; padding: 3px 8px; border: 1px solid currentColor; border-radius: 4px; }
+.er-src.server { color: var(--danger, #f85149); }
+.er-src.client { color: var(--accent); }
+.er-src.mail { color: var(--muted); }
+.er-count { font: 400 15px var(--font-mono); color: var(--muted); }
+.er-meta { display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.er-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.er-stack { margin: 4px 0 0; padding: 12px 14px; border: 1px solid var(--line-2); border-radius: 8px; font: 12px/1.5 var(--font-mono); white-space: pre-wrap; word-break: break-word; max-height: 320px; overflow: auto; color: var(--muted); }

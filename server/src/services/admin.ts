@@ -360,8 +360,8 @@ export async function saveSettings(admin: User, input: { baseMissionPoints: numb
 const ACTION_GROUPS: Record<string, string[]> = {
   players: ['add_points', 'grant_aircraft', 'revoke_aircraft', 'set_status', 'set_role', 'rename_player', 'approve_user', 'reject_user', 'delete_user'],
   tree: ['create_aircraft', 'update_aircraft', 'create_tier', 'update_tier'],
-  missions: ['create_mission', 'update_mission', 'cancel_mission', 'close_mission'],
-  settings: ['update_settings'],
+  missions: ['create_mission', 'update_mission', 'cancel_mission', 'close_mission', 'save_mission_report', 'publish_mission_report'],
+  settings: ['update_settings', 'update_scoring_rules'],
 };
 
 export async function getActivity(group: string | null, limit: number, offset: number) {

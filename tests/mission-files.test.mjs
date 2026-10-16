@@ -112,4 +112,36 @@ test('larger media is stored and read intact across database chunks', async () =
   const invalid = await fetch(audioUrl, { headers: { Range: `bytes=${media.length}-` } });
   assert.equal(invalid.status, 416);
   assert.equal(invalid.headers.get('content-range'), `bytes */${media.length}`);
+
+  const originalQuery = db.query;
+  const readChunks = [];
+  db.query = async (sql, parameters) => {
+    if (sql.startsWith('select content from mission_asset_chunks')) readChunks.push(parameters[2]);
+    return originalQuery(sql, parameters);
+  };
+  try {
+    const crossing = await fetch(audioUrl, { headers: { Range: 'bytes=262140-262150' } });
+    assert.deepEqual(Buffer.from(await crossing.arrayBuffer()), media.subarray(262140, 262151));
+    assert.deepEqual(readChunks, [0, 1]);
+    readChunks.length = 0;
+    const ending = await fetch(audioUrl, { headers: { Range: 'bytes=-10' } });
+    assert.deepEqual(Buffer.from(await ending.arrayBuffer()), media.subarray(-10));
+    assert.deepEqual(readChunks, [2]);
+    readChunks.length = 0;
+    assert.equal((await fetch(audioUrl, { headers: { Range: `bytes=${media.length}-` } })).status, 416);
+    assert.deepEqual(readChunks, []);
+  } finally { db.query = originalQuery; }
+});
+
+test('envio separado: HTML solto e música (MP3) ficam anexados à missão', async () => {
+  const html = await files.uploadMissionAsset(admin.id, 'briefing', 'briefing.html', Buffer.from('<!doctype html><html><body>Briefing</body></html>'));
+  assert.match(html.url, /index\.html$/);
+  const mp3 = await files.uploadMissionAsset(admin.id, 'audio', 'musica.mp3', Buffer.concat([Buffer.from('ID3'), Buffer.alloc(64)]));
+  assert.match(mp3.url, /music\.mp3$/);
+  await assert.rejects(files.uploadMissionAsset(admin.id, 'audio', 'x.mp3', Buffer.from('não é áudio')));
+  await assert.rejects(files.uploadMissionAsset(admin.id, 'briefing', 'x.html', Buffer.from('texto qualquer sem html')));
+  await missions.createMission(admin, { title: 'Com música', briefing: '', startsAt: new Date(Date.now() + 864e5).toISOString(), defaultPm: null, briefingAssetId: html.id, audioAssetId: mp3.id }, 0);
+  const found = (await missions.adminListMissions(50, 0)).items.find((m) => m.title === 'Com música');
+  assert.ok(found?.audioAsset?.url.endsWith('music.mp3'));
+  assert.ok(found?.briefingAsset?.url.endsWith('index.html'));
 });
