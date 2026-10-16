@@ -358,3 +358,7 @@ table.players tr.inactive td { opacity: .5; }
 
 .news-goal { flex: none; width: 22px; text-align: center; color: var(--accent); font-size: 18px; }
 .tab-badge { margin-left: 6px; background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 700; border-radius: 9px; padding: 1px 6px; }
+
+/* Brasão: no fundo claro usa a versão com contorno preto (as partes brancas somem sem ele) */
+:root[data-theme="light"] .brand-logo { content: url('/mng-logo-128-light.png'); }
+:root[data-theme="light"] .auth-logo img { content: url('/mng-logo-light.png'); }
