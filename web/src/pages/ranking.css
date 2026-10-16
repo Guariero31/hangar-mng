@@ -1,12 +1,12 @@
 .rk-podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
-.rk-pod { --pc: #8a8570; background: var(--panel); border: 1px solid var(--line); border-top: 3px solid var(--pc); padding: 16px 14px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
-.rk-pod.p1 { --pc: #ffc24a; background: linear-gradient(#ffc24a14, var(--panel)); }
-.rk-pod.p2 { --pc: #c9d1dc; }
-.rk-pod.p3 { --pc: #c0793d; }
-.rk-pod.me { box-shadow: 0 0 0 1px var(--accent); }
+.rk-pod { --pc: #7a7461; background: none; border: 0; border-top: 2px solid var(--pc); padding: 16px 14px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.rk-pod.p1 { --pc: #b36b00; }
+.rk-pod.p2 { --pc: #5b6675; }
+.rk-pod.p3 { --pc: #8a5a2b; }
+.rk-pod.me { background: rgba(179, 107, 0, .07); }
 .rk-pos { font: 700 26px var(--font-display, inherit); color: var(--pc); }
 .rk-avatar { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2px solid var(--pc); }
-.rk-initial { display: grid; place-items: center; background: #000; font: 700 22px var(--font-display, inherit); color: var(--pc); }
+.rk-initial { display: grid; place-items: center; background: var(--text); font: 700 22px var(--font-display, inherit); color: var(--pc); }
 .rk-earned { font: 700 20px var(--font-display, inherit); }
 .rk-earned small { font-size: 11px; color: var(--muted); }
 .rk-table td { vertical-align: middle; }

@@ -7,7 +7,7 @@
   body { padding-bottom: calc(var(--nav-h) + var(--safe-b)); }
 
   /* barra do topo: marca + sino + PM + sair numa linha só */
-  .topbar { height: 54px; padding: 0 12px; gap: 8px; backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(10, 10, 8, .97); }
+  .topbar { height: 54px; padding: 0 12px; gap: 8px; backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(244, 241, 232, .97); }
   .brand { font-size: 15px; letter-spacing: .1em; gap: 8px; white-space: nowrap; }
   .brand-logo { width: 30px; height: 30px; }
   .pilot { gap: 8px; }
@@ -18,7 +18,7 @@
   /* menu principal fixo embaixo, ao alcance do polegar */
   .nav { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0; position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
     height: calc(var(--nav-h) + var(--safe-b)); padding-bottom: var(--safe-b);
-    background: rgba(10, 10, 8, .96); backdrop-filter: blur(10px); border-top: 1px solid var(--line-2); }
+    background: rgba(244, 241, 232, .97); backdrop-filter: blur(10px); border-top: 1px solid var(--line-2); }
   .nav a { display: flex; align-items: center; justify-content: center; border-radius: 0; padding: 0 4px; font: 600 12px var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); position: relative; }
   .nav a.active { background: rgba(255, 168, 15, .1); color: var(--accent-2); box-shadow: inset 0 2px 0 var(--accent); }
   .nav-long { display: none; }

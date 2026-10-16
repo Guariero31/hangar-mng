@@ -1,5 +1,4 @@
 // Perfil privado do piloto: resumo, progresso, próximos objetivos, frota, PM por semana e linha do tempo.
-import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAchievements, useMe, useProfile, useSetGoal, useTechTree } from '../api/hooks';
 import { planPath } from '../lib/path';
@@ -23,11 +22,6 @@ const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
 function ProfileView({ p }: { p: Profile }) {
   const { user, rank, totals, estimate } = p;
   const fleetPct = pct(totals.fleet, totals.aircraftTotal);
-  // tema claro só enquanto o perfil está aberto (as outras telas seguem no tema escuro)
-  useEffect(() => {
-    document.body.classList.add('light-page');
-    return () => document.body.classList.remove('light-page');
-  }, []);
 
   return (
     <div className="pf">

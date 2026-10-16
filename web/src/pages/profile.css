@@ -1,37 +1,6 @@
 /* Perfil do piloto — Light Mode minimalista, sem caixas.
    O tema claro vale só enquanto o perfil está aberto (body.light-page, ligado em Profile.tsx). */
 
-body.light-page {
-  color-scheme: light;
-  --bg: #f4f1e8;
-  --bg-2: #ece8dc;
-  --panel: transparent;
-  --panel-2: transparent;
-  --line: #dcd7c8;
-  --line-2: #cbc5b2;
-  --text: #0a0a08;
-  --muted: #5f5a49;
-  --dim: #7a7461;
-  --accent: #b36b00;       /* âmbar do lúpulo, escurecido para contraste no fundo claro */
-  --accent-2: #8f5500;
-  --accent-ink: #fff;
-  --pm: #a85f00;
-  --ok: #1e7a31;
-  --danger: #c4283a;
-  --info: #7a47cf;
-  --shadow: none;
-  background: var(--bg);
-}
-body.light-page .topbar { background: rgba(244, 241, 232, .92); }
-body.light-page .brand-logo { filter: none; }
-body.light-page .nav a:hover { background: rgba(0, 0, 0, .04); }
-body.light-page .nav a.active { background: transparent; }
-@media (max-width: 680px) { body.light-page .nav { background: rgba(244, 241, 232, .97); border-top: 1px solid var(--line); } }
-body.light-page .btn { color: var(--accent-2); background: transparent; }
-body.light-page .btn:hover:not(:disabled) { background: rgba(179, 107, 0, .08); }
-body.light-page .btn.ghost { color: var(--text); }
-body.light-page .badge { border-radius: 0; }
-
 .pf { display: grid; gap: 0; --rule: 1px solid var(--line); }
 .pf .label { font: 600 11px/1 var(--font-display); letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
 
