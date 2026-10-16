@@ -57,7 +57,7 @@ export interface Aircraft {
   active: boolean;
   /** Regra 2: aeronaves obrigatórias (linha magenta) */
   bound: string[];
-  /** linhas de família (só visuais) */
+  /** aeronaves mãe: a Regra 1 exige ter ao menos uma delas */
   parents: string[];
 }
 
@@ -70,6 +70,8 @@ export interface TreeAircraft extends Aircraft {
   affordable: boolean;
   lockReason: 'previous_tier' | 'bound' | null;
   missingBound: string[];
+  /** mães ativas, uma delas é exigida (vazio = qualquer aeronave do tier anterior) */
+  needAnyOf: string[];
 }
 
 export interface TechTreeState {

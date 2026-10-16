@@ -1,5 +1,5 @@
 // Caminho de compras até uma aeronave: a sequência mais barata que satisfaz
-// a Regra 1 (ter uma aeronave do tier anterior) e a Regra 2 (Bound) de cada passo.
+// a Regra 1 (ter uma das aeronaves mãe da linha; sem mãe, qualquer do tier anterior) e a Regra 2 (Bound) de cada passo.
 import type { Tier, TreeAircraft } from '../api/types';
 
 export interface PathPlan {
@@ -35,14 +35,18 @@ export function planPath(aircraft: TreeAircraft[], tiers: Tier[], targetId: stri
     }
 
     const prev = a.tier - 1;
-    if (tierNums.has(prev) && !aircraft.some((x) => x.tier === prev && got.has(x.id))) {
-      let best: TreeAircraft[] | null = null;
-      for (const c of aircraft.filter((x) => x.tier === prev)) {
-        const sub = plan(c.id, got, depth + 1);
-        if (sub && (!best || total(sub) < total(best) || (total(sub) === total(best) && sub.length < best.length))) best = sub;
+    if (tierNums.has(prev)) {
+      const mothers = a.parents.map((id) => byId.get(id)).filter((x): x is TreeAircraft => !!x);
+      const pool = mothers.length ? mothers : aircraft.filter((x) => x.tier === prev);
+      if (!pool.some((x) => got.has(x.id))) {
+        let best: TreeAircraft[] | null = null;
+        for (const c of pool) {
+          const sub = plan(c.id, got, depth + 1);
+          if (sub && (!best || total(sub) < total(best) || (total(sub) === total(best) && sub.length < best.length))) best = sub;
+        }
+        if (!best) return null;
+        take(best);
       }
-      if (!best) return null;
-      take(best);
     }
 
     take([a]);

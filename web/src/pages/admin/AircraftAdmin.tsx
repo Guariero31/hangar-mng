@@ -160,7 +160,7 @@ export function AircraftAdmin() {
                       </div>
                     </div>
                     <div className="field span-2">
-                      <span className="label">Família — linhas visuais na árvore</span>
+                      <span className="label">Família — mães: é preciso ter ao menos uma (linhas tracejadas)</span>
                       <div className="check-grid">
                         {others.map((a) => (
                           <label key={a.id}>

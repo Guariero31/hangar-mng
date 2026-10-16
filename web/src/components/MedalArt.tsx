@@ -5,7 +5,7 @@ import { useId } from 'react';
 type Rarity = 'common' | 'rare' | 'legendary';
 
 const METAL: Record<Rarity, { hi: string; mid: string; lo: string; deep: string; ribbon: string; ribbon2: string; tint: string }> = {
-  common:    { hi: '#ffd9ae', mid: '#c98544', lo: '#6e3a14', deep: '#241206', ribbon: '#3f6a2c', ribbon2: '#233b1a', tint: '#ffb070' },
+  common:    { hi: '#f3d3a8', mid: '#b7773e', lo: '#5a2f12', deep: '#1f1008', ribbon: '#3f6a2c', ribbon2: '#233b1a', tint: '#ffd2a0' },
   rare:      { hi: '#ffffff', mid: '#b4bdca', lo: '#566071', deep: '#12161d', ribbon: '#2368b8', ribbon2: '#133e70', tint: '#cfe0ff' },
   legendary: { hi: '#fff6bd', mid: '#f2b01e', lo: '#8f5200', deep: '#241600', ribbon: '#b8281f', ribbon2: '#751410', tint: '#ffe27a' },
 };
@@ -15,11 +15,18 @@ function Emblem({ icon, c }: { icon: string; c: string }) {
   const s = { fill: 'none', stroke: c, strokeWidth: 2.4, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
   const f = { fill: c, stroke: 'none' } as const;
   switch (icon) {
-    case 'wing': // asa com penas
+    case 'wing': { // asas de piloto: escudo central e cinco penas de cada lado
+      const feathers = [0, 1, 2, 3, 4].map((i) => {
+        const y = -9 + i * 4.3, len = 19 - i * 2.4;
+        return `M3 ${y}L${3 + len} ${y - 3.4 + i * 0.5}L${3 + len - 1.6} ${y + 1.1 + i * 0.2}L3 ${y + 3.6}z`;
+      });
       return <g>
-        <path {...f} d="M-19 12C-14 4-6-6 4-12c4-2 9-3 15-2-2 3-4 5-7 6 4 0 7 0 9-1-2 4-5 7-9 8 3 1 5 1 7 0-2 4-6 6-11 7 2 1 4 1 6 1-4 4-10 5-16 4-4-1-8-1-12 1z" />
-        <path {...s} stroke="#000" strokeWidth={1.1} opacity=".55" d="M-12 8C-5 1 2-4 11-8M-6 11C1 6 8 2 15-1M0 13c5-3 9-6 14-9" />
+        <g>{feathers.map((d, i) => <path key={i} {...f} d={d} stroke="#000" strokeOpacity=".45" strokeWidth=".5" />)}</g>
+        <g transform="scale(-1 1)">{feathers.map((d, i) => <path key={i} {...f} d={d} stroke="#000" strokeOpacity=".45" strokeWidth=".5" />)}</g>
+        <path {...f} d="M-4.6 -11h9.2v8.5c0 4.2-4.6 7.5-4.6 7.5s-4.6-3.300-4.600-7.500z" stroke="#000" strokeOpacity=".5" strokeWidth=".6" />
+        <path d="M0 -8.6l1.5 3.100 3.400.5-2.500 2.400.6 3.400L0 -.9l-3 1.500.6-3.400-2.500-2.400 3.400-.5z" fill="#000" opacity=".5" />
       </g>;
+    }
     case 'hangar':
       return <g>
         <path {...f} d="M-19 16V-2L0-17 19-2V16h-7V4H-12v12z" />
@@ -53,7 +60,7 @@ function Emblem({ icon, c }: { icon: string; c: string }) {
 
 const rad = (d: number) => (d * Math.PI) / 180;
 
-export function MedalArt({ icon, rarity, className }: { icon: string; rarity: Rarity; className?: string }) {
+function SvgMedal({ icon, rarity, className }: { icon: string; rarity: Rarity; className?: string }) {
   const id = useId().replace(/:/g, '');
   const m = METAL[rarity];
   const U = (n: string) => `url(#${n}${id})`;
@@ -74,7 +81,7 @@ export function MedalArt({ icon, rarity, className }: { icon: string; rarity: Ra
   }));
   // contas (bronze) ou orbes (ouro) na borda
   const beads = rarity === 'common'
-    ? Array.from({ length: 40 }, (_, i) => <circle key={i} cx={Math.cos(rad(i * 9)) * 37.2} cy={Math.sin(rad(i * 9)) * 37.2} r="1.6" fill={U('m')} stroke={m.lo} strokeWidth=".4" />)
+    ? null
     : rarity === 'legendary'
       ? Array.from({ length: 14 }, (_, i) => <circle key={i} cx={Math.cos(rad(i * (360 / 14) + 4)) * 40} cy={Math.sin(rad(i * (360 / 14) + 4)) * 40} r="1.8" fill={U('o')} stroke={m.lo} strokeWidth=".4" />)
       : null;
@@ -156,6 +163,7 @@ export function MedalArt({ icon, rarity, className }: { icon: string; rarity: Ra
         <g filter={U('e')}>
           <circle r={R + 3.4} fill={U('m')} stroke={m.lo} strokeWidth=".8" />
         </g>
+        {rarity === 'common' && <circle r={R + 2.7} fill="none" stroke="#000" strokeWidth="1.6" strokeDasharray=".55 .95" opacity=".55" />}
         <circle r={R + 1.4} fill={U('r')} />
         <circle r={R + 1.4} fill="none" stroke={m.hi} strokeWidth=".6" opacity=".7" />
         {/* campo do disco */}
@@ -177,4 +185,17 @@ export function MedalArt({ icon, rarity, className }: { icon: string; rarity: Ra
       <g filter={U('e')}><ellipse cx="50" cy="46" rx="7.5" ry="4.8" fill="none" stroke={U('m')} strokeWidth="2.8" /></g>
     </svg>
   );
+}
+
+// Medalhas ilustradas (PNG transparente em /medalhas); ícones sem imagem caem no desenho em SVG.
+const IMG: Record<string, string> = {
+  wing: 'first_flight', hangar: 'full_hangar5', coin: 'saver', target: 'goal_done', tier: 'tier2_complete', heli: 'heli_ace',
+  fighter: 'hunter', link: 'perfect_pair', fleet: 'fleet15', star: 'elite_t4', crown: 'full_tier', shield: 'veteran',
+};
+
+export function MedalArt({ icon, rarity, className }: { icon: string; rarity: Rarity; className?: string }) {
+  const f = IMG[icon];
+  if (!f) return <SvgMedal icon={icon} rarity={rarity} className={className} />;
+  return <img className={className} src={`/medalhas/${f}.png`} alt="" loading="lazy" decoding="async" draggable={false}
+    style={{ display: 'block', objectFit: 'contain', ...(className ? {} : { width: '100%', height: '100%' }) }} />;
 }

@@ -299,7 +299,7 @@ table.players tr.inactive td { opacity: .5; }
 /* medalhas pequenas */
 .medal-strip { display: inline-flex; align-items: flex-end; gap: 3px; vertical-align: middle; }
 .medal-strip > span { display: inline-block; filter: drop-shadow(0 1px 2px #000a); }
-.medal-strip svg, .medal-grid svg { display: block; width: 100%; height: 100%; }
+.medal-strip svg, .medal-grid svg, .medal-strip img, .medal-grid img { display: block; width: 100%; height: 100%; }
 .callsign-wrap { display: inline-flex; align-items: center; gap: 8px; }
 .medal-grid { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
 .medal-grid li { aspect-ratio: 1 / 1.32; opacity: .35; filter: grayscale(.8); }

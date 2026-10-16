@@ -258,7 +258,7 @@ function TechTreeView({ state }: { state: TechTreeState }) {
               <span className="info-pop" role="tooltip">
                 <b>Como funciona</b>
                 <span>Compre com Pontos de Missão e ganhe mais PM voando aeronaves de tiers antigos.</span>
-                <span><em>Regra 1:</em> aeronaves a partir do tier II exigem ao menos uma aeronave comprada do tier anterior.</span>
+                <span><em>Regra 1:</em> aeronaves a partir do tier II exigem ao menos uma das aeronaves ligadas a elas pela linha tracejada (o tier anterior).</span>
                 <span><em className="b">Regra 2:</em> aeronaves Bound exigem também a compra da aeronave ligada pela linha magenta.</span>
                 <span>Passe o mouse (ou toque) em uma aeronave para ver as especificações e desbloquear.</span>
                 <span>Navegue com a roda do mouse (Shift + roda para os lados) ou arrastando o fundo. Ctrl + roda dá zoom e “Ajustar” volta a encaixar na tela.</span>
@@ -435,7 +435,7 @@ function TipContent(p: {
 
   let msg: string;
   if (a.owned) msg = 'Já está na sua frota.';
-  else if (a.lockReason === 'previous_tier') msg = `Compre antes uma aeronave do tier ${p.prevLabel}.`;
+  else if (a.lockReason === 'previous_tier') msg = a.needAnyOf.length ? `Compre antes ${a.needAnyOf.map(p.nameOf).join(' ou ')}.` : `Compre antes uma aeronave do tier ${p.prevLabel}.`;
   else if (a.lockReason === 'bound') msg = `Bound: compre antes ${a.missingBound.map(p.nameOf).join(' e ')}.`;
   else if (balance >= c) msg = 'Saldo suficiente.';
   else msg = `Faltam ${fmtPoints(c - balance)} PM, cerca de ${missions(c - balance, gain)} missões com o maior bônus da sua frota (${fmtMult(p.bestMult)}).`;
@@ -456,7 +456,7 @@ function TipContent(p: {
       <dl className="kv">
         <dt>Custo</dt><dd>{c ? `${fmtPoints(c)} PM` : 'Gratuito'}</dd>
         <dt>Voando nela</dt><dd>{fmtMult(p.multiplier)} nos PM</dd>
-        <dt>Regra 1</dt><dd>{p.prevLabel ? `Qualquer aeronave do tier ${p.prevLabel}` : 'Nenhum'}</dd>
+        <dt>Regra 1</dt><dd>{!p.prevLabel ? 'Nenhum' : a.needAnyOf.length ? a.needAnyOf.map(p.nameOf).join(' ou ') : `Qualquer aeronave do tier ${p.prevLabel}`}</dd>
         {a.bound.length > 0 && <><dt>Bound</dt><dd style={{ color: 'var(--bound)' }}>{a.bound.map(p.nameOf).join(' e ')}</dd></>}
         <dt>Armamento</dt><dd style={a.restriction ? { color: 'var(--pm)' } : undefined}>{a.restriction || 'Sem restrição'}</dd>
         {!a.owned && a.available && c > 0 && (

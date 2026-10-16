@@ -142,3 +142,4 @@
 .medal-when { font: 11px var(--font-mono); letter-spacing: .06em; color: var(--mc); }
 .medal-bar { height: 4px; background: #000; margin-top: 4px; }
 .medal-bar i { display: block; height: 100%; background: var(--mc); }
+.medal-art { width: 64px; height: 90px; flex: none; filter: drop-shadow(0 2px 4px #000a); }

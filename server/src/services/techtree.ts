@@ -1,8 +1,8 @@
 // Regras da tech tree:
 //  - Custo e bônus de PM são definidos por tier. Tiers com custo 0 ficam na frota de todos.
-//  - Regra 1: para comprar uma aeronave do tier N é preciso ter ao menos uma aeronave do tier N-1.
+//  - Regra 1: para comprar uma aeronave do tier N é preciso ter ao menos uma das aeronaves "mãe" (linha de família)
+//    dela, que ficam no tier N-1. Aeronave sem mãe ativa cadastrada cai na regra antiga: qualquer aeronave do tier N-1.
 //  - Regra 2 (Bound): é preciso ter também todas as aeronaves ligadas a ela por "bound".
-//  - As linhas de família são só visuais.
 import { db, type Queryable } from '../db.js';
 import { fail } from '../errors.js';
 import { getBalance } from './users.js';
@@ -65,7 +65,12 @@ export function evaluate(tree: Tree, owned: Set<string>, balance: number) {
     const cost = tierOf.get(a.tier)?.cost ?? 0;
     const isOwned = owned.has(a.id);
     const hasPrevTier = tierOf.has(a.tier - 1);
-    const prevTierOk = !hasPrevTier || tree.aircraft.some((x) => x.tier === a.tier - 1 && owned.has(x.id));
+    const activeIds = new Set(tree.aircraft.map((x) => x.id));
+    const parents = a.parents.filter((id) => activeIds.has(id));
+    const prevTierOk = !hasPrevTier
+      || (parents.length > 0
+        ? parents.some((id) => owned.has(id))
+        : tree.aircraft.some((x) => x.tier === a.tier - 1 && owned.has(x.id)));
     const missingBound = a.bound.filter((b) => !owned.has(b));
     const available = !isOwned && prevTierOk && missingBound.length === 0;
     const lockReason: LockReason = isOwned || available ? null : !prevTierOk ? 'previous_tier' : 'bound';
@@ -77,6 +82,7 @@ export function evaluate(tree: Tree, owned: Set<string>, balance: number) {
       affordable: available && balance >= cost,
       lockReason,
       missingBound,
+      needAnyOf: hasPrevTier ? parents : [],
     };
   });
 }
@@ -107,7 +113,10 @@ export async function unlockAircraft(userId: string, aircraftId: string): Promis
     if (target.owned) throw fail('ALREADY_UNLOCKED');
     if (target.lockReason === 'previous_tier') {
       const prev = tree.tiers.find((t) => t.tier === target.tier - 1);
-      throw fail('PREV_TIER_MISSING', `Compre antes uma aeronave do tier ${prev?.label ?? target.tier - 1}.`);
+      const names = target.needAnyOf.map((id) => tree.aircraft.find((a) => a.id === id)?.name ?? id);
+      throw fail('PREV_TIER_MISSING', names.length
+        ? `Compre antes ${names.join(' ou ')}.`
+        : `Compre antes uma aeronave do tier ${prev?.label ?? target.tier - 1}.`);
     }
     if (target.lockReason === 'bound') {
       const names = target.missingBound.map((id) => tree.aircraft.find((a) => a.id === id)?.name ?? id);
