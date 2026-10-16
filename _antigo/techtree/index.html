@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Árvore de aeronaves · {site}</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <!--
+    TECH TREE PROVISÓRIA
+    Esta página só existe para o sistema funcionar de ponta a ponta enquanto
+    a sua Tech Tree não é plugada. Para usar a sua:
+      1. Copie a sua tela para esta pasta (ou troque PAGES.home em js/auth.js).
+      2. No script dela, use:
+           import { requireProfile } from '../js/auth.js';
+           import { getTechTreeState, unlockAircraft } from '../js/api.js';
+      3. Chame requireProfile() no início e desenhe a árvore com getTechTreeState().
+  -->
+  <header id="topbar" class="topbar"></header>
+
+  <main class="page">
+    <div class="page-head">
+      <div>
+        <span class="label">Hangar</span>
+        <h1>Árvore de aeronaves</h1>
+        <p>Use seus pontos para liberar novas aeronaves. Cada uma exige as anteriores da linha.</p>
+      </div>
+    </div>
+
+    <div id="tree" class="loading">CARREGANDO…</div>
+
+    <section class="history">
+      <h2>Histórico de pontos</h2>
+      <ul id="history" class="ledger"></ul>
+    </section>
+  </main>
+
+  <script type="module">
+    import { requireProfile } from '../js/auth.js';
+    import { getTechTreeState, unlockAircraft, getMyHistory } from '../js/api.js';
+    import { renderTopbar, refreshBalance, toast, esc, fmtPoints, fmtDate, $ } from '../js/ui.js';
+
+    const profile = await requireProfile();
+    if (profile) {
+      renderTopbar(profile, 'home');
+      await Promise.all([drawTree(), drawHistory()]);
+    }
+
+    async function drawTree() {
+      const tree = $('#tree');
+      let state;
+      try { state = await getTechTreeState(); }
+      catch (e) { tree.className = 'empty'; tree.textContent = e.message; return; }
+
+      if (!state.aircraft.length) {
+        tree.className = 'empty';
+        tree.textContent = 'Nenhuma aeronave cadastrada ainda.';
+        return;
+      }
+      const names = Object.fromEntries(state.aircraft.map((a) => [a.id, a.name]));
+      const tiers = [...new Set(state.aircraft.map((a) => a.tier))];
+
+      tree.className = 'tiers';
+      tree.innerHTML = tiers.map((t) => `
+        <div class="tier-col">
+          <span class="label">Tier ${t}</span>
+          ${state.aircraft.filter((a) => a.tier === t).map((a) => {
+            const cls = a.unlocked ? 'unlocked' : a.available ? 'available' : 'locked';
+            const badge = a.unlocked ? '<span class="badge ok">Liberado</span>'
+              : a.available ? '<span class="badge accent">Disponível</span>'
+              : '<span class="badge">Bloqueado</span>';
+            return `
+              <article class="ac-card ${cls}">
+                <div class="row"><h3>${esc(a.name)}</h3>${badge}</div>
+                ${a.description ? `<div class="muted" style="font-size:14px">${esc(a.description)}</div>` : ''}
+                ${a.requires.length ? `<div class="req">Requer: ${a.requires.map((r) => esc(names[r] || r)).join(', ')}</div>` : ''}
+                <div class="row">
+                  <span class="cost">${a.cost ? fmtPoints(a.cost) + ' pts' : 'Grátis'}</span>
+                  ${a.unlocked ? '' : `<button class="btn sm" data-unlock="${esc(a.id)}" ${a.affordable ? '' : 'disabled'}>Liberar</button>`}
+                </div>
+              </article>`;
+          }).join('')}
+        </div>`).join('');
+    }
+
+    async function drawHistory() {
+      const list = $('#history');
+      try {
+        const rows = await getMyHistory();
+        list.innerHTML = rows.length ? rows.map((r) => `
+          <li>
+            <span class="when">${fmtDate(r.created_at)}</span>
+            <span>${esc(r.reason)}</span>
+            <span class="amt ${r.amount > 0 ? 'pos' : 'neg'}">${r.amount > 0 ? '+' : ''}${fmtPoints(r.amount)}</span>
+          </li>`).join('') : '<li class="muted" style="display:block">Nenhum lançamento ainda.</li>';
+      } catch (e) { list.innerHTML = `<li class="muted" style="display:block">${esc(e.message)}</li>`; }
+    }
+
+    $('#tree').addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-unlock]');
+      if (!btn) return;
+      btn.disabled = true;
+      try {
+        await unlockAircraft(btn.dataset.unlock);
+        toast('Aeronave liberada!');
+        await Promise.all([drawTree(), drawHistory(), refreshBalance()]);
+      } catch (err) {
+        toast(err.message, 'err');
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

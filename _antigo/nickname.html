@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Escolha seu nickname · {site}</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="center-screen">
+    <form id="form" class="card auth-card hidden" novalidate>
+      <div class="eyebrow"><span class="brand-mark"></span><span class="label">Primeiro acesso</span></div>
+      <h1>Qual é o seu nickname?</h1>
+      <p class="lead">É o nome que vai aparecer no ranking e no painel. Use o mesmo do servidor DCS. Ele não pode ser trocado depois.</p>
+
+      <div class="field">
+        <label class="label" for="nick">Nickname</label>
+        <input id="nick" class="input big" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Viper_01" required>
+        <div id="hint" class="hint">De 3 a 16 caracteres: letras, números ou _</div>
+      </div>
+
+      <button id="submit" class="btn block" style="margin-top:14px" disabled>Confirmar nickname</button>
+
+      <div class="foot">Logado como <span id="email" class="mono"></span> · <a href="#" id="logout">trocar conta</a></div>
+    </form>
+    <div id="loading" class="loading">CARREGANDO…</div>
+  </main>
+
+  <script type="module">
+    import { supabase } from './js/supabase.js';
+    import { getProfile, go, signOut } from './js/auth.js';
+    import { rpc } from './js/api.js';
+    import { $ } from './js/ui.js';
+
+    const RULE = /^[A-Za-z0-9_]{3,16}$/;
+    const input = $('#nick'), hint = $('#hint'), submit = $('#submit');
+
+    let profile = null;
+    try { profile = await getProfile(); } catch (e) { console.error(e); }
+    if (!profile) go('login');
+    else if (profile.nickname) go('home');
+    else {
+      const { data } = await supabase.auth.getSession();
+      $('#email').textContent = data.session.user.email;
+      $('#loading').classList.add('hidden');
+      $('#form').classList.remove('hidden');
+      input.focus();
+    }
+
+    $('#logout').addEventListener('click', (e) => { e.preventDefault(); signOut(); });
+
+    const setHint = (text, kind = '') => { hint.textContent = text; hint.className = 'hint ' + kind; };
+
+    let timer, seq = 0;
+    input.addEventListener('input', () => {
+      clearTimeout(timer);
+      submit.disabled = true;
+      const value = input.value.trim();
+      if (!value) return setHint('De 3 a 16 caracteres: letras, números ou _');
+      if (!RULE.test(value)) return setHint('Use de 3 a 16 caracteres: letras, números ou _', 'err');
+      setHint('Verificando…');
+      const mine = ++seq;
+      timer = setTimeout(async () => {
+        try {
+          const free = await rpc('nickname_available', { p_nickname: value });
+          if (mine !== seq) return;
+          if (free) { setHint('Disponível', 'ok'); submit.disabled = false; }
+          else setHint('Esse nickname já está em uso', 'err');
+        } catch (e) { if (mine === seq) setHint(e.message, 'err'); }
+      }, 350);
+    });
+
+    $('#form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      submit.disabled = true;
+      submit.textContent = 'Salvando…';
+      try {
+        await rpc('set_nickname', { p_nickname: input.value.trim() });
+        go('home');
+      } catch (err) {
+        setHint(err.message, 'err');
+        submit.textContent = 'Confirmar nickname';
+      }
+    });
+  </script>
+</body>
+</html>
