@@ -61,7 +61,7 @@ export function AircraftAdmin() {
       {tree && (
         <div className="admin-grid">
           <section className="card">
-            <div className="table-wrap">
+            <div className="table-wrap table-scroll">
               <table className="players">
                 <thead>
                   <tr><th>Tier</th><th></th><th>Nome</th><th>Papel</th><th className="num">Linha</th><th>Bound</th><th>Status</th></tr>
