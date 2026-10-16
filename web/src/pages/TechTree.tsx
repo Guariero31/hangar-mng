@@ -218,6 +218,7 @@ function TechTreeView({ state }: { state: TechTreeState }) {
   function buy(a: TreeAircraft) {
     unlock.mutate(a.id, {
       onSuccess: (r) => {
+        r.achievements?.forEach((m, i) => setTimeout(() => toast(`Conquista: ${m.name}`, 'ok', { duration: 5000, medal: m }), 600 + i * 5200));
         toast(`${a.name} adicionada à frota · ${fmtPoints(a.cost)} PM`, 'ok', {
         duration: Math.max(3000, (r.undoSeconds - 2) * 1000),
         action: {
@@ -227,9 +228,7 @@ function TechTreeView({ state }: { state: TechTreeState }) {
             onError: (e) => toast(errorMessage(e), 'err'),
           }),
         },
-      });
-        r.achievements?.forEach(medal => toast(`Conquista: ${medal.name}`, 'ok', { duration: 5000, medal }));
-      },
+      }); },
       onError: (e) => toast(errorMessage(e), 'err'),
     });
   }
@@ -256,7 +255,7 @@ function TechTreeView({ state }: { state: TechTreeState }) {
     <div className="tt tt-screen">
       <div className="tt-top">
         <header className="tt-head">
-          <div className="kicker">Hangar // {aircraft.length} aeronaves · {tiers.length} tiers</div>
+          <div className="kicker">Hangar</div>
           <h1>Tech Tree <b>DCS</b>
             <span className="info" tabIndex={0} aria-label="Como funciona a árvore">
               <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" strokeWidth="1.4" /><path d="M8 7v4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /><circle cx="8" cy="4.6" r="1" fill="currentColor" /></svg>
