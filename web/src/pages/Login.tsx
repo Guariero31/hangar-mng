@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import { useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '../api/client';
@@ -99,7 +99,7 @@ export function Login() {
           </form>
         )}
 
-        <p className="auth-foot">No primeiro acesso você escolhe o nickname usado no servidor.</p>
+        <p className="auth-foot">No primeiro acesso você escolhe o nickname usado no servidor. <Link to="/privacidade">Política de privacidade</Link></p>
       </section>
     </main>
   );

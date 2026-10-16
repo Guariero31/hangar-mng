@@ -2,6 +2,7 @@ import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { RequireUser } from './components/RequireUser';
 import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
+import { Privacy } from './pages/Privacy';
 import { Pending } from './pages/Pending';
 import { Approvals } from './pages/admin/Approvals';
 import { Nickname } from './pages/Nickname';
@@ -17,6 +18,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/privacidade" element={<Privacy />} />
       <Route path="/pendente" element={<Pending />} />
       <Route path="/nickname" element={<RequireUser needNickname={false}><Nickname /></RequireUser>} />
 

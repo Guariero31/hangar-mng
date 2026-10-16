@@ -105,3 +105,10 @@
   .auth-glass { padding: 30px 22px 26px; border-radius: 20px; }
   .auth-logo img { width: 136px; height: 136px; }
 }
+
+.privacy { max-width: 640px; text-align: left; max-height: 86vh; overflow-y: auto; }
+.privacy h2 { font-size: 15px; margin: 18px 0 6px; color: var(--accent, #ffa80f); }
+.privacy p, .privacy li { font-size: 13.5px; line-height: 1.55; color: #d8d2c4; }
+.privacy ul { padding-left: 18px; margin: 4px 0; }
+.privacy a, .auth-foot a { color: var(--accent, #ffa80f); }
+.privacy .auth-title, .privacy .auth-sub { text-align: center; }
