@@ -103,6 +103,7 @@ export interface PlayerRow {
   nickname: string | null;
   email: string;
   name: string | null;
+  avatarUrl: string | null;
   role: Role;
   status: Status;
   createdAt: string;
@@ -153,17 +154,12 @@ export interface Achievements { earned: number; total: number; items: Achievemen
 
 export interface ActivityItem {
   id: string; action: string; createdAt: string;
-  adminId: string | null; adminNickname: string | null; adminEmail: string | null;
+  adminId: string; adminNickname: string | null; adminEmail: string;
   targetId: string | null; targetNickname: string | null; targetEmail: string | null;
-  details: {
-    amount?: number; reason?: string; batch?: number; aircraftName?: string; aircraft?: string;
-    refund?: boolean; refunded?: number; status?: string; from?: string | null; to?: string;
-    email?: string; nickname?: string; role?: string; name?: string; id?: string; active?: boolean;
-    label?: string; tier?: number; cost?: number; multiplier?: number; baseMissionPoints?: number;
-  };
+  details: Record<string, any>;
 }
 export interface ApprovalItem { id: string; email: string; name: string | null; avatarUrl: string | null; status: 'pending' | 'rejected'; createdAt: string; decidedAt: string | null }
-export interface Approvals { total: number; pending: number; items: ApprovalItem[] }
+export interface Approvals { pending: number; items: ApprovalItem[] }
 export interface Activity { total: number; items: ActivityItem[] }
 
 export interface OverviewAircraft { id: string; name: string; role: AircraftRole; icon: string | null; tier: number; tierLabel: string; cost: number; owners?: number }
@@ -182,4 +178,4 @@ export interface RankingItem {
   id: string; nickname: string; avatarUrl: string | null; createdAt: string;
   pos: number; earned: number; fleet: number; medals: MedalLite[]; medalCount: number;
 }
-export interface Ranking { total: number; meId: string; aircraftTotal: number; items: RankingItem[] }
+export interface Ranking { meId: string; aircraftTotal: number; items: RankingItem[] }

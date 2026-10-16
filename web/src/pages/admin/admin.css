@@ -80,6 +80,7 @@ table.players th .arr { display: inline-block; width: 12px; font-size: 9px; marg
 table.players td.neg { color: var(--danger); }
 .who-cell { display: flex; align-items: center; gap: 12px; }
 .pl-av { width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center; background: var(--text); border: 0; color: var(--bg); font: 700 14px var(--font-mono, monospace); }
+.pl-av { object-fit: cover; }
 .pl-id { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
 .pl-id small { font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
 table.players td { padding: 9px 14px; }

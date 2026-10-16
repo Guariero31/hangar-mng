@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApprovals, usePlayers } from '../../api/hooks';
 import { errorMessage } from '../../api/client';
@@ -6,15 +6,25 @@ import type { PlayerRow } from '../../api/types';
 import { fmtAgo, fmtDate, fmtPoints } from '../../lib/format';
 import { AdminTabs } from './AdminTabs';
 import './admin.css';
-import { Pagination } from '../../components/Pagination';
 import { BatchBar } from './BatchBar';
 import { PlayerPanel } from './PlayerPanel';
 
 type SortKey = 'earned' | 'balance' | 'aircraftCount' | 'nickname' | 'lastLoginAt' | 'createdAt';
-const FILTERS = [
-  { key: 'all', label: 'Todos' }, { key: 'active', label: 'Ativos' },
-  { key: 'banned', label: 'Suspensos' }, { key: 'nonick', label: 'Sem nickname' },
-  { key: 'admin', label: 'Admins' },
+const cmp: Record<SortKey, (a: PlayerRow, b: PlayerRow) => number> = {
+  earned: (a, b) => a.earned - b.earned,
+  balance: (a, b) => a.balance - b.balance,
+  aircraftCount: (a, b) => a.aircraftCount - b.aircraftCount,
+  nickname: (a, b) => (a.nickname ?? '~').localeCompare(b.nickname ?? '~', 'pt-BR'),
+  lastLoginAt: (a, b) => (a.lastLoginAt ?? '').localeCompare(b.lastLoginAt ?? ''),
+  createdAt: (a, b) => a.createdAt.localeCompare(b.createdAt),
+};
+
+const FILTERS: { key: string; label: string; test: (p: PlayerRow) => boolean }[] = [
+  { key: 'all', label: 'Todos', test: () => true },
+  { key: 'active', label: 'Ativos', test: (p) => p.status === 'active' && !!p.nickname },
+  { key: 'banned', label: 'Suspensos', test: (p) => p.status === 'banned' },
+  { key: 'nonick', label: 'Sem nickname', test: (p) => p.status === 'active' && !p.nickname },
+  { key: 'admin', label: 'Admins', test: (p) => p.role === 'admin' },
 ];
 
 function StatusBadge({ s }: { s: PlayerRow['status'] }) {
@@ -38,13 +48,20 @@ export function Players() {
     return () => clearTimeout(t);
   }, [input]);
 
-  const [offset, setOffset] = useState(0);
-  const { data, isLoading, isFetching, error } = usePlayers(search, offset, filter, sort.key, sort.dir === 1 ? 'asc' : 'desc');
+  const { data, isLoading, error } = usePlayers(search);
   const { data: approvals } = useApprovals();
-  const rows = data?.players ?? [];
-  const all = rows;
-  const stats = data?.summary ?? { active: 0, banned: 0, circ: 0, online: 0 };
-  useEffect(() => { setOffset(0); }, [search, filter, sort]);
+  const all = data?.players ?? [];
+  const test = FILTERS.find((f) => f.key === filter)!.test;
+  const rows = useMemo(
+    () => all.filter(test).sort((a, b) => cmp[sort.key](a, b) * sort.dir || a.id.localeCompare(b.id)),
+    [all, test, sort],
+  );
+  const stats = useMemo(() => ({
+    active: all.filter((p) => p.status === 'active' && p.nickname).length,
+    banned: all.filter((p) => p.status === 'banned').length,
+    circ: all.filter((p) => p.status === 'active').reduce((n, p) => n + Math.max(0, p.balance), 0),
+    online: all.filter((p) => p.lastLoginAt && Date.now() - new Date(p.lastLoginAt).getTime() < 7 * 86400000).length,
+  }), [all]);
   const anyDcs = all.some((p) => p.dcsLinked);
   const sortBy = (key: SortKey) => setSort((s) => (s.key === key ? { key, dir: (-s.dir) as 1 | -1 } : { key, dir: key === 'nickname' ? 1 : -1 }));
   const Th = ({ k, children, num, hide }: { k: SortKey; children: React.ReactNode; num?: boolean; hide?: string }) => (
@@ -83,7 +100,7 @@ export function Players() {
           <h1>Jogadores</h1>
           <p>Acompanhe o esquadrão, lance PM e gerencie contas.</p>
         </div>
-        <button className="btn ghost" onClick={exportCsv} disabled={!rows.length || isFetching}>Exportar página CSV</button>
+        <button className="btn ghost" onClick={exportCsv} disabled={!rows.length}>Exportar CSV</button>
       </div>
       <AdminTabs />
 
@@ -110,7 +127,7 @@ export function Players() {
             <table className="players">
               <thead>
                 <tr>
-                  <th className="chk"><input type="checkbox" checked={allPicked} onChange={toggleAll} disabled={!visibleEligible.length || isFetching} aria-label="Selecionar todos os visíveis" title="Selecionar todos os visíveis para lançar PM em lote" /></th>
+                  <th className="chk"><input type="checkbox" checked={allPicked} onChange={toggleAll} disabled={!visibleEligible.length} aria-label="Selecionar todos os visíveis" title="Selecionar todos os visíveis para lançar PM em lote" /></th>
                   <th className="hide-md">#</th><Th k="nickname">Piloto</Th>
                   <Th k="earned" num>PM ganhos</Th><Th k="balance" num>Saldo</Th><Th k="aircraftCount" num hide="hide-md">Frota</Th>
                   {anyDcs && <th>DCS</th>}<th>Status</th><Th k="lastLoginAt" hide="hide-sm">Último acesso</Th>
@@ -123,13 +140,15 @@ export function Players() {
                 {rows.map((p, i) => (
                   <tr key={p.id} data-id={p.id} className={`${p.id === selectedId ? 'selected' : ''} ${p.status !== 'active' ? 'inactive' : ''}`} onClick={() => select(p.id)}>
                     <td className="chk" onClick={(e) => e.stopPropagation()}>
-                      <input type="checkbox" checked={picked.has(p.id)} onChange={() => toggle(p.id)} disabled={!eligible(p) || isFetching}
+                      <input type="checkbox" checked={picked.has(p.id)} onChange={() => toggle(p.id)} disabled={!eligible(p)}
                         aria-label={`Selecionar ${p.nickname ?? p.email}`} title={eligible(p) ? undefined : 'Suspenso ou sem nickname: não recebe PM'} />
                     </td>
-                    <td className="rank hide-md">{offset + i + 1}</td>
+                    <td className="rank hide-md">{i + 1}</td>
                     <td>
                       <div className="who-cell">
-                      <span className="pl-av" aria-hidden>{(p.nickname ?? p.email)[0].toUpperCase()}</span>
+                      {p.avatarUrl
+                        ? <img className="pl-av" src={p.avatarUrl} alt="" referrerPolicy="no-referrer" loading="lazy" />
+                        : <span className="pl-av" aria-hidden>{(p.nickname ?? p.email)[0].toUpperCase()}</span>}
                       <span className="pl-id">
                         <strong className="mono">{p.nickname ?? <span className="muted">(sem nickname)</span>}
                           {p.role === 'admin' && <> <span className="badge info">admin</span></>}</strong>
@@ -148,7 +167,6 @@ export function Players() {
               </tbody>
             </table>
           </div>
-          <Pagination offset={offset} total={data?.total ?? 0} busy={isFetching} onChange={setOffset} />
         </section>
 
         <aside className="card detail">
