@@ -6,10 +6,12 @@ interface MailTemplate {
   appUrl: string;
   button?: { label: string; url: string };
   details?: { label: string; value: string }[];
+  /** Endereço da imagem do cabeçalho. Use "cid:..." para a imagem anexada ao e-mail. */
+  logoSrc?: string;
 }
 
 /** Paragraphs are trusted markup; dynamic values must be escaped by the caller. */
-export function renderMailTemplate({ title, paragraphs, appUrl, button, details }: MailTemplate): string {
+export function renderMailTemplate({ title, paragraphs, appUrl, button, details, logoSrc }: MailTemplate): string {
   const baseUrl = appUrl.replace(/\/$/, '');
   const body = paragraphs.map(paragraph => `<p style="margin:0 0 18px;font-size:15px;line-height:1.75;color:#45483e">${paragraph}</p>`).join('');
   const detailRows = details?.map(detail => `<tr><td style="padding:10px 16px;border-bottom:1px solid #e3dfd1"><p style="margin:0 0 5px;color:#77796b;font-size:11px;letter-spacing:1px;text-transform:uppercase">${escapeHtml(detail.label)}</p><p style="margin:0;color:#25291f;font-size:15px;line-height:1.5;font-weight:600">${escapeHtml(detail.value)}</p></td></tr>`).join('');
@@ -20,7 +22,7 @@ export function renderMailTemplate({ title, paragraphs, appUrl, button, details 
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#eeede6"><tr><td align="center" style="padding:32px 12px">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px">
 <tr><td bgcolor="#13160f" style="padding:24px 28px;border-radius:12px 12px 0 0;border-bottom:3px solid #ffc34b">
-<table role="presentation" cellspacing="0" cellpadding="0"><tr><td style="padding-right:16px"><img src="${escapeHtml(baseUrl)}/mng-logo-128.png" width="48" height="48" alt="MNG" style="display:block;border:0"></td><td><p style="margin:0;color:#f4f1e4;font-size:18px;font-weight:700;letter-spacing:2px">HANGAR MNG</p><p style="margin:6px 0 0;color:#b3b39d;font-size:10px;letter-spacing:2px">ESQUADRÃO MNG · DCS WORLD</p></td></tr></table></td></tr>
+<table role="presentation" cellspacing="0" cellpadding="0"><tr><td style="padding-right:16px"><img src="${escapeHtml(logoSrc ?? `${baseUrl}/mng-logo-128.png`)}" width="48" height="48" alt="MNG" style="display:block;border:0"></td><td><p style="margin:0;color:#f4f1e4;font-size:18px;font-weight:700;letter-spacing:2px">HANGAR MNG</p><p style="margin:6px 0 0;color:#b3b39d;font-size:10px;letter-spacing:2px">ESQUADRÃO MNG · DCS WORLD</p></td></tr></table></td></tr>
 <tr><td bgcolor="#fffef9" style="padding:32px 28px;border-radius:0 0 12px 12px">
 <p style="margin:0 0 12px;color:#8a641b;font-size:10px;letter-spacing:2px;font-weight:700">COMUNICAÇÃO DO ESQUADRÃO</p>
 <h1 style="margin:0 0 26px;color:#25291f;font-size:28px;font-weight:700;line-height:1.25">${escapeHtml(title)}</h1>

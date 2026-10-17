@@ -1,6 +1,8 @@
 import { renderMailTemplate } from './mail-template.js';
 // E-mails do sistema (boas-vindas, aprovação e reprovação). Se o SMTP não estiver configurado,
 // nada é enviado e o motivo vai para o log: o cadastro e a aprovação continuam funcionando.
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import nodemailer from 'nodemailer';
 import { config } from '../config.js';
 import { logServerError } from './errorlog.js';
@@ -18,8 +20,15 @@ const transport = mailEnabled
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
 
+// O logo vai dentro do próprio e-mail (imagem anexada, referenciada por cid:). Imagens remotas
+// costumam ser bloqueadas por Outlook e Gmail até o leitor autorizar; a anexada aparece sempre.
+// O caminho é o mesmo no desenvolvimento (src) e na produção (dist): web/public fica na imagem.
+const LOGO_FILE = fileURLToPath(new URL('../../../web/public/mng-logo-128.png', import.meta.url));
+const LOGO_CID = 'mng-logo@hangar';
+const hasLogo = fs.existsSync(LOGO_FILE);
+
 function layout(title: string, paragraphs: string[], button?: { label: string; url: string }, details?: { label: string; value: string }[]) {
-  return renderMailTemplate({ title, paragraphs, button, details, appUrl: config.appUrl });
+  return renderMailTemplate({ title, paragraphs, button, details, appUrl: config.appUrl, logoSrc: hasLogo ? `cid:${LOGO_CID}` : undefined });
 }
 
 async function send(to: string, subject: string, html: string, text: string) {
@@ -28,7 +37,10 @@ async function send(to: string, subject: string, html: string, text: string) {
     return;
   }
   try {
-    await transport.sendMail({ from: config.smtp.from, to, subject, html, text });
+    await transport.sendMail({
+      from: config.smtp.from, to, subject, html, text,
+      attachments: hasLogo && html.includes(`cid:${LOGO_CID}`) ? [{ filename: 'mng-logo.png', path: LOGO_FILE, cid: LOGO_CID, contentDisposition: 'inline' }] : [],
+    });
   } catch (e) {
     console.error(`[e-mail] falha ao enviar "${subject}" para ${to}:`, e instanceof Error ? e.message : e);
     void logServerError(e, { source: 'mail', route: subject });
