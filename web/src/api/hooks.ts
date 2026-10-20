@@ -172,8 +172,6 @@ export const useSaveTier = () =>
   useAdminMutation((v: { isNew: boolean; data: Tier }) =>
     v.isNew ? api.post('/admin/tiers', v.data) : api.put(`/admin/tiers/${v.data.tier}`, v.data));
 
-export const useSaveSettings = () =>
-  useAdminMutation((v: { baseMissionPoints: number }) => api.put('/admin/settings', v));
 
 export function useApprovals(enabled = true, offset = 0) {
   return useQuery({ queryKey: ['admin', 'approvals', offset], queryFn: () => api.get<Approvals>(`/admin/approvals?limit=50&offset=${offset}`), refetchInterval: 60_000, enabled });

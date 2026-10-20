@@ -407,8 +407,3 @@ adminApi.put('/tiers/:tier', async (req, res) => {
   res.json({ ok: true });
 });
 
-adminApi.put('/settings', async (req, res) => {
-  const body = z.object({ baseMissionPoints: z.number().int().min(0).max(1_000_000) }).parse(req.body);
-  await admin.saveSettings(req.user, body);
-  res.json({ ok: true });
-});

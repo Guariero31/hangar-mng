@@ -72,13 +72,11 @@ export async function getProfile(user: User) {
     .filter((a) => a.owned)
     .map((a) => ({ id: a.id, name: a.name, role: a.role, icon: a.icon, tier: a.tier, tierLabel: tierLabel.get(a.tier), unlockedAt: unlockedAt.get(a.id) ?? null }));
 
-  const bestMultiplier = fleet.reduce((m, a) => Math.max(m, tree.tiers.find((t) => t.tier === a.tier)?.multiplier ?? 1), 1);
-
   return {
     user: { medals: (await topMedals([user.id])).get(user.id) ?? [], nickname: user.nickname, email: user.email, avatarUrl: user.avatar_url, role: user.role, createdAt: user.created_at },
     rank: rank.rows[0],
     totals: { balance, ...totals.rows[0], fleet: fleet.length, aircraftTotal: state.length },
-    estimate: { baseMissionPoints: tree.baseMissionPoints, bestMultiplier, perMission: Math.round(tree.baseMissionPoints * bestMultiplier) },
+    estimate: { baseMissionPoints: tree.baseMissionPoints, perMission: tree.baseMissionPoints },
     byTier,
     byRole,
     nextGoals,

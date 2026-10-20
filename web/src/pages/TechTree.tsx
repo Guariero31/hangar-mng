@@ -9,7 +9,8 @@ import { planPath, type PathPlan } from '../lib/path';
 import { errorMessage } from '../api/client';
 import type { TechTreeState, TreeAircraft } from '../api/types';
 import { useToast } from '../components/Toast';
-import { AircraftIcon, fmtMult, iconOf, ROLE_LABEL } from '../lib/aircraft';
+import { AircraftIcon, iconOf, ROLE_LABEL } from '../lib/aircraft';
+import { AverageInfo } from '../components/AverageInfo';
 import { fmtPoints } from '../lib/format';
 import './techtree.css';
 
@@ -29,7 +30,7 @@ export function TechTree() {
 }
 
 function TechTreeView({ state }: { state: TechTreeState }) {
-  const { tiers, bands, aircraft, balance, baseMissionPoints } = state;
+  const { tiers, bands, aircraft, balance, baseMissionPoints, baseMissionSample } = state;
   const unlock = useUnlock();
   const undo = useUndoUnlock();
   const setGoal = useSetGoal();
@@ -43,9 +44,8 @@ function TechTreeView({ state }: { state: TechTreeState }) {
   const tierOf = useCallback((a: TreeAircraft) => tiers[tierIdx.get(a.tier) ?? 0], [tiers, tierIdx]);
   const fleet = aircraft.filter((a) => a.owned);
 
-  // estimativa de ganho voando a aeronave da frota com o maior bônus
-  const bestMult = fleet.reduce((m, a) => Math.max(m, tierOf(a).multiplier), 1);
-  const gain = baseMissionPoints * bestMult;
+  // estimativa de ganho por missão: a média real de PM dos pilotos (ou o valor de referência), sem multiplicadores
+  const gain = baseMissionPoints;
 
   // ------------------------------------------------------------ layout
   const L = useMemo(() => {
@@ -297,8 +297,7 @@ function TechTreeView({ state }: { state: TechTreeState }) {
 
         <section className="stats" aria-label="Painel">
         <div className="stat"><span className="lbl">Pontos de missão</span><span className="num pm" id="pm">{fmtPoints(balance)}</span></div>
-        <div className="stat"><span className="lbl">PM base por missão</span><span className="num">{fmtPoints(baseMissionPoints)}</span></div>
-        <div className="stat"><span className="lbl">Ganho por missão</span><span className="num">{fmtPoints(gain)}<small>PM</small></span></div>
+        <div className="stat"><span className="lbl">PM médio por missão<AverageInfo /></span><span className="num">{baseMissionSample > 0 ? fmtPoints(baseMissionPoints) : '—'}</span></div>
         <div className="stat"><span className="lbl">Frota</span><span className="num">{fleet.length}<small>/ {aircraft.length}</small></span></div>
         </section>
       </div>
@@ -439,11 +438,8 @@ function TechTreeView({ state }: { state: TechTreeState }) {
             onToggleGoal={() => toggleGoal(tip)}
             tierLabel={tierOf(tip).label}
             prevLabel={tip.tier === firstTier ? null : tiers[(tierIdx.get(tip.tier) ?? 1) - 1]?.label ?? null}
-            multiplier={tierOf(tip).multiplier}
             balance={balance}
             gain={gain}
-            base={baseMissionPoints}
-            bestMult={bestMult}
             nameOf={(id) => byId[id]?.name ?? id}
             busy={unlock.isPending}
             onBuy={() => buy(tip)}
@@ -464,11 +460,8 @@ function TipContent(p: {
   onToggleGoal: () => void;
   tierLabel: string;
   prevLabel: string | null;
-  multiplier: number;
   balance: number;
   gain: number;
-  base: number;
-  bestMult: number;
   nameOf: (id: string) => string;
   busy: boolean;
   onBuy: () => void;
@@ -483,7 +476,8 @@ function TipContent(p: {
   else if (a.lockReason === 'previous_tier') msg = a.needAnyOf.length ? `Compre antes ${a.needAnyOf.map(p.nameOf).join(' ou ')}.` : `Compre antes uma aeronave do tier ${p.prevLabel}.`;
   else if (a.lockReason === 'bound') msg = `Bound: compre antes ${a.missingBound.map(p.nameOf).join(' e ')}.`;
   else if (balance >= c) msg = 'Saldo suficiente.';
-  else msg = `Faltam ${fmtPoints(c - balance)} PM, cerca de ${missions(c - balance, gain)} missões com o maior bônus da sua frota (${fmtMult(p.bestMult)}).`;
+  else if (gain > 0) msg = `Faltam ${fmtPoints(c - balance)} PM, cerca de ${missions(c - balance, gain)} missões, no ritmo de ${fmtPoints(gain)} PM por missão.`;
+  else msg = `Faltam ${fmtPoints(c - balance)} PM. A estimativa de missões aparece depois da primeira missão encerrada.`;
 
   const [statusLabel, statusColor] = a.owned ? ['Na frota', 'var(--own)'] : a.available ? ['Liberada', 'var(--sel)'] : ['Bloqueada', 'var(--faint)'];
 
@@ -500,14 +494,12 @@ function TipContent(p: {
       {a.description && <span className="hint">{a.description}</span>}
       <dl className="kv">
         <dt>Custo</dt><dd>{c ? `${fmtPoints(c)} PM` : 'Gratuito'}</dd>
-        <dt>Voando nela</dt><dd>{fmtMult(p.multiplier)} nos PM</dd>
         <dt>Regra 1</dt><dd>{!p.prevLabel ? 'Nenhum' : a.needAnyOf.length ? a.needAnyOf.map(p.nameOf).join(' ou ') : `Qualquer aeronave do tier ${p.prevLabel}`}</dd>
         {a.bound.length > 0 && <><dt>Bound</dt><dd style={{ color: 'var(--bound)' }}>{a.bound.map(p.nameOf).join(' e ')}</dd></>}
         <dt>Armamento</dt><dd style={a.restriction ? { color: 'var(--pm)' } : undefined}>{a.restriction || 'Sem restrição'}</dd>
-        {!a.owned && a.available && c > 0 && (
+        {!a.owned && a.available && c > 0 && gain > 0 && (
           <>
-            <dt>Missões com bônus</dt><dd>{missions(c, gain)}</dd>
-            <dt>Missões sem bônus</dt><dd>{missions(c, p.base)}</dd>
+            <dt>Missões necessárias</dt><dd>{missions(c, gain)}</dd>
           </>
         )}
       </dl>

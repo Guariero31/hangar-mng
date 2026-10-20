@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { errorMessage } from '../../api/client';
-import { useAdminTree, useSaveAircraft, useSaveSettings, useSaveTier } from '../../api/hooks';
+import { useAdminTree, useSaveAircraft, useSaveTier } from '../../api/hooks';
 import type { Aircraft, AircraftRole, Tier } from '../../api/types';
 import { useToast } from '../../components/Toast';
 import { Select } from '../../components/Select';
 import { AircraftIcon, fmtMult, iconOf, ICONS, ROLE_LABEL } from '../../lib/aircraft';
 import { fmtPoints } from '../../lib/format';
+import { AverageInfo } from '../../components/AverageInfo';
 import { AdminTabs } from './AdminTabs';
 import { Link } from 'react-router-dom';
 import './aircraft-admin.css';
@@ -138,7 +139,7 @@ export function AircraftAdmin() {
       </div>
       <section id="progression-panel" role="tabpanel" aria-labelledby="progression-tab" hidden={tab !== 'progression'}>
         <div className="aircraft-progression-intro"><h2>Progressão por tier</h2><p className="muted">Configure custos de aquisição e os valores exibidos na árvore.</p></div>
-        <TiersCard tiers={tree.tiers} base={tree.baseMissionPoints} />
+        <TiersCard tiers={tree.tiers} average={tree.baseMissionSample > 0 ? { value: tree.baseMissionPoints, sample: tree.baseMissionSample } : null} />
         <p className="aircraft-scoring-note">Os pontos por abate, objetivos e bônus de sobrevivência são definidos em <Link to="/admin/pontuacao">Pontuação</Link>. O relatório pós-missão utiliza essas regras; o PM base e o multiplicador de tier são usados na estimativa exibida na árvore.</p>
       </section>
       <section id="aircraft-panel" role="tabpanel" aria-labelledby="aircraft-tab" hidden={tab !== 'aircraft'}>
@@ -168,15 +169,12 @@ function DependencyPicker({ label, description, aircraft, selected, tierLabel, o
   </div>;
 }
 
-/** Tabela editável de tiers + PM base por missão */
-function TiersCard({ tiers, base }: { tiers: Tier[]; base: number }) {
+/** Tabela editável de tiers. O PM médio por missão é calculado sozinho e só é exibido aqui. */
+function TiersCard({ tiers, average }: { tiers: Tier[]; average: { value: number; sample: number } | null }) {
   const saveTier = useSaveTier();
-  const saveSettings = useSaveSettings();
   const toast = useToast();
   const [rows, setRows] = useState(tiers);
-  const [baseValue, setBaseValue] = useState(String(base));
   useEffect(() => setRows(tiers), [tiers]);
-  useEffect(() => setBaseValue(String(base)), [base]);
 
   const update = (i: number, patch: Partial<Tier>) => setRows((r) => r.map((t, j) => (j === i ? { ...t, ...patch } : t)));
   const isNew = (t: Tier) => !tiers.some((x) => x.tier === t.tier);
@@ -202,24 +200,18 @@ function TiersCard({ tiers, base }: { tiers: Tier[]; base: number }) {
   return (
     <section className="card" style={{ marginBottom: 20 }}>
       <div className="toolbar" style={{ justifyContent: 'space-between' }}>
-        <span className="label">Tiers — custos e estimativa na árvore</span>
-        <form className="row-inline" onSubmit={(e) => {
-          e.preventDefault();
-          saveSettings.mutate({ baseMissionPoints: Number(baseValue) }, {
-            onSuccess: () => toast('PM base por missão salvo.'),
-            onError: (err) => toast(errorMessage(err), 'err'),
-          });
-        }}>
-          <span className="label">PM base da estimativa</span>
-          <input className="input" type="number" min={0} step={50} style={{ width: 110 }} value={baseValue}
-            onChange={(e) => setBaseValue(e.target.value)} aria-label="PM base por missão" />
-          <button className="btn ghost sm" disabled={String(base) === baseValue || saveSettings.isPending}>Salvar</button>
-        </form>
+        <span className="label">Tiers — custos na árvore</span>
+        <span className="label">PM médio por missão<AverageInfo /></span>
       </div>
+      <p className="hint" style={{ margin: '0 0 12px' }}>
+        {average
+          ? `Em uso na árvore: ${fmtPoints(average.value)} PM por missão, a média real dos pilotos em ${average.sample} participações em missões encerradas. Esse valor é calculado sozinho e não pode ser editado.`
+          : 'Ainda não há missão encerrada, então não há média. A árvore não estima o número de missões até a primeira missão ser encerrada. O valor é calculado sozinho e não pode ser editado.'}
+      </p>
       <div className="table-wrap">
         <table className="players tiers-table">
           <thead>
-            <tr><th>Tier</th><th>Rótulo</th><th>Custo (PM)</th><th>Multiplicador na árvore</th><th></th></tr>
+            <tr><th>Tier</th><th>Rótulo</th><th>Custo (PM)</th><th>Multiplicador de PM</th><th></th></tr>
           </thead>
           <tbody>
             {rows.map((t, i) => (

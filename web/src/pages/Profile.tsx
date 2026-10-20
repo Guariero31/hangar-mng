@@ -4,7 +4,7 @@ import { useAchievements, useMe, useProfile, useSetGoal, useTechTree } from '../
 import { planPath } from '../lib/path';
 import { errorMessage } from '../api/client';
 import type { Achievement, Profile } from '../api/types';
-import { AircraftIcon, fmtMult, iconOf, ROLE_LABEL } from '../lib/aircraft';
+import { AircraftIcon, iconOf, ROLE_LABEL } from '../lib/aircraft';
 import { fmtDate, fmtPoints, fmtSigned, SOURCE_LABEL } from '../lib/format';
 import { MedalPreview } from '../components/MedalPreview';
 import './profile.css';
@@ -57,7 +57,7 @@ function ProfileView({ p }: { p: Profile }) {
         <Stat label="PM ganhos" value={fmtPoints(totals.earned)} />
         <Stat label="PM gastos" value={fmtPoints(totals.spent)} />
         <Stat label="Frota" value={`${totals.fleet}`} suffix={`/ ${totals.aircraftTotal}`} />
-        <Stat label="Ganho por missão" value={fmtPoints(estimate.perMission)} suffix={`PM · ${fmtMult(estimate.bestMultiplier)}`} />
+        <Stat label="PM médio por missão" value={estimate.perMission > 0 ? fmtPoints(estimate.perMission) : '—'} suffix={estimate.perMission > 0 ? 'PM' : undefined} />
       </section>
 
       <div className="pf-grid">
@@ -108,7 +108,7 @@ function ProfileView({ p }: { p: Profile }) {
                 </div>
                 {g.missing === 0
                   ? <span className="badge ok">pode comprar</span>
-                  : <span className="pf-missing">faltam <b>{fmtPoints(g.missing)}</b> PM<small>~{Math.ceil(g.missing / Math.max(estimate.perMission, 1))} missões</small></span>}
+                  : <span className="pf-missing">faltam <b>{fmtPoints(g.missing)}</b> PM{estimate.perMission > 0 && <small>~{Math.ceil(g.missing / estimate.perMission)} missões</small>}</span>}
               </li>
             ))}
           </ul>
@@ -242,7 +242,7 @@ function GoalCard({ balance, perMission }: { balance: number; perMission: number
               <div className="pf-bar big"><i style={{ width: `${progress}%` }} /></div>
               <span className="muted pf-goal-sub">
                 {plan?.steps.length} {plan?.steps.length === 1 ? 'compra' : 'compras'}
-                {missing > 0 ? ` · faltam ${fmtPoints(missing)} PM · ~${Math.ceil(missing / Math.max(perMission, 1))} missões` : ' · você já tem PM para tudo!'}
+                {missing > 0 ? ` · faltam ${fmtPoints(missing)} PM${perMission > 0 ? ` · ~${Math.ceil(missing / perMission)} missões` : ''}` : ' · você já tem PM para tudo!'}
               </span>
             </>
           )}

@@ -88,7 +88,6 @@ export async function seed() {
         for (const [id, reqs] of Object.entries(BOUND)) {
           for (const r of reqs) await q.query('insert into aircraft_bound (aircraft_id, requires_id) values ($1, $2)', [id, r]);
         }
-        await q.query(`insert into settings (key, value) values ('base_mission_points', '500') on conflict do nothing`);
       }
       console.log(`  tech tree criada: ${AIRCRAFT.length} aeronaves em ${TIERS.length} tiers`);
     }

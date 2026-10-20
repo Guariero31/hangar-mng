@@ -25,10 +25,16 @@ export interface Aircraft {
   bound: string[];
   parents: string[];
 }
-export interface Tree { tiers: Tier[]; bands: Band[]; aircraft: Aircraft[]; baseMissionPoints: number }
+export interface Tree {
+  tiers: Tier[]; bands: Band[]; aircraft: Aircraft[];
+  /** PM médio por missão: média real de todos os pilotos. É 0 enquanto nenhuma missão tiver sido encerrada. */
+  baseMissionPoints: number;
+  /** Quantas participações (piloto em missão encerrada) entraram na média. 0 = ainda sem dados. */
+  baseMissionSample: number;
+}
 
 export async function getTree(opts: { onlyActive?: boolean } = {}, q: Queryable = db): Promise<Tree> {
-  const [tiers, bands, aircraft, settings] = await Promise.all([
+  const [tiers, bands, aircraft, average] = await Promise.all([
     q.query<Tier>('select tier, label, cost, multiplier::float8 as multiplier from tiers order by tier'),
     q.query<Band>('select id, name, row_start as "rowStart", row_end as "rowEnd" from tree_bands order by row_start'),
     q.query<Aircraft>(
@@ -38,13 +44,19 @@ export async function getTree(opts: { onlyActive?: boolean } = {}, q: Queryable 
          from aircraft a
         ${opts.onlyActive ? 'where a.active' : ''}
         order by a.tier, a.row, a.name`),
-    q.query<{ value: number }>(`select value from settings where key = 'base_mission_points'`),
+    // Média de PM por participação: todo piloto que voou numa missão encerrada (relatório ou encerramento manual).
+    q.query<{ average: number | null; sample: number }>(
+      `select round(avg(s.pm_awarded))::int as average, count(*)::int as sample
+         from mission_signups s join missions m on m.id = s.mission_id
+        where m.status = 'closed' and s.attended`),
   ]);
+  const sample = average.rows[0]?.sample ?? 0;
   return {
     tiers: tiers.rows,
     bands: bands.rows,
     aircraft: aircraft.rows,
-    baseMissionPoints: Number(settings.rows[0]?.value ?? 500),
+    baseMissionPoints: sample > 0 ? (average.rows[0]?.average ?? 0) : 0,
+    baseMissionSample: sample,
   };
 }
 
@@ -95,6 +107,7 @@ export async function getTechTreeState(userId: string) {
     tiers: tree.tiers,
     bands: tree.bands,
     baseMissionPoints: tree.baseMissionPoints,
+    baseMissionSample: tree.baseMissionSample,
     aircraft: evaluate(tree, owned, balance),
   };
 }

@@ -346,15 +346,6 @@ export async function saveTier(admin: User, tier: number, input: { label: string
   });
 }
 
-export async function saveSettings(admin: User, input: { baseMissionPoints: number }) {
-  await db.tx(async (q) => {
-    await q.query(
-      `insert into settings (key, value) values ('base_mission_points', $1)
-       on conflict (key) do update set value = excluded.value`, [JSON.stringify(input.baseMissionPoints)]);
-    await audit(q, admin.id, 'update_settings', null, input);
-  });
-}
-
 // ---------------------------------------------------------------- atividade (auditoria)
 
 const ACTION_GROUPS: Record<string, string[]> = {

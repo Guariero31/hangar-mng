@@ -21,7 +21,7 @@ export const reportInputSchema = z.object({ version: z.number().int().min(0), ru
   source: z.string().trim().max(2000), pilots: z.array(pilotSchema).max(500) }).strict();
 type PilotInput = z.infer<typeof pilotSchema>;
 type ReportInput = z.infer<typeof reportInputSchema>;
-type PilotResult = PilotInput & { nickname: string; aircraftName: string; subtotal: number; multiplier: number; total: number;
+type PilotResult = PilotInput & { nickname: string; aircraftName: string; subtotal: number; aircraftMultiplier: number; aircraftBonus: number; multiplier: number; survivalBonus: number; total: number;
   breakdown: { key: string; label: string; quantity: number; unitPoints: number; points: number }[] };
 interface ReportRow { mission_id: string; state: 'draft' | 'published'; version: number; rules: ScoringRules; pilots: PilotResult[];
   summary: string; source: string; saved_at: Date; published_at: Date | null; published_name: string | null }
@@ -34,13 +34,18 @@ function present(row: ReportRow) {
     summary: row.summary, source: row.source, savedAt: row.saved_at, publishedAt: row.published_at,
     publishedBy: row.published_name, total: row.pilots.reduce((sum, pilot) => sum + pilot.total, 0) };
 }
-export function calculatePilot(pilot: PilotInput, rules: ScoringRules) {
+// Os dois bônus incidem sempre sobre o subtotal de abates e objetivos e são somados:
+// total = subtotal × (1 + (aeronave − 1) + (sobrevivência − 1)). Arredonda uma única vez, no fim.
+export function calculatePilot(pilot: PilotInput, rules: ScoringRules, aircraftMultiplier = 1) {
   const breakdown = REPORT_TARGETS.map(([key, label]) => ({ key, label, quantity: pilot.counts[key], unitPoints: rules[key], points: pilot.counts[key] * rules[key] }));
   const subtotal = pilot.attended ? breakdown.reduce((sum, item) => sum + item.points, 0) : 0;
   const multiplier = pilot.attended && pilot.survived && rules.survivalEnabled ? rules.survivalMultiplier : 1;
-  const total = Math.round(subtotal * multiplier);
+  const aircraftFactor = pilot.attended ? aircraftMultiplier : 1;
+  const aircraftBonus = Math.round(subtotal * (aircraftFactor - 1));
+  const total = Math.round(subtotal * (1 + (aircraftFactor - 1) + (multiplier - 1)));
+  const survivalBonus = total - subtotal - aircraftBonus; // fecha a soma exata das linhas exibidas
   if (total > 1_000_000) throw fail('VALIDATION', 'A pontuação por piloto deve ser de até 1.000.000 PM.');
-  return { breakdown, subtotal, multiplier, total };
+  return { breakdown, subtotal, aircraftMultiplier: aircraftFactor, aircraftBonus, multiplier, survivalBonus, total };
 }
 
 export async function getMissionReport(user: User, id: string, editing = false) {
@@ -56,7 +61,7 @@ export async function getMissionReport(user: User, id: string, editing = false) 
   const { rows } = await db.query<{ userId: string; nickname: string; aircraftId: string; aircraftName: string }>(
     `select s.user_id as "userId",u.nickname,s.aircraft_id as "aircraftId",a.name as "aircraftName"
      from mission_signups s join users u on u.id=s.user_id join aircraft a on a.id=s.aircraft_id where s.mission_id=$1 order by s.created_at`, [id]);
-  const pilots = rows.map((pilot) => ({ ...pilot, attended: null, survived: null, counts: emptyCounts(), notes: '', reviewed: false, subtotal: 0, multiplier: 1, total: 0, breakdown: [] }));
+  const pilots = rows.map((pilot) => ({ ...pilot, attended: null, survived: null, counts: emptyCounts(), notes: '', reviewed: false, subtotal: 0, aircraftMultiplier: 1, aircraftBonus: 0, multiplier: 1, survivalBonus: 0, total: 0, breakdown: [] }));
   return { missionId: id, state: 'draft' as const, version: 0, rulesFingerprint: fingerprint(rules), rules, pilots, summary: '', source: '', savedAt: null, publishedAt: null, publishedBy: null, total: 0 };
 }
 
@@ -65,14 +70,14 @@ async function results(query: Queryable, input: ReportInput, rules: ScoringRules
   const signed = (await query.query<{ user_id: string }>('select user_id from mission_signups where mission_id=$1', [missionId])).rows;
   if (signed.some((pilot) => !input.pilots.some((item) => item.userId === pilot.user_id))) throw fail('VALIDATION', 'Inclua todos os inscritos e marque os ausentes como não participantes.');
   const users = await query.query<{ id: string; nickname: string }>('select id,nickname from users where id=any($1)', [input.pilots.map((pilot) => pilot.userId)]);
-  const aircraft = await query.query<{ id: string; name: string }>('select id,name from aircraft where id=any($1)', [input.pilots.map((pilot) => pilot.aircraftId)]);
+  const aircraft = await query.query<{ id: string; name: string; multiplier: string }>('select a.id,a.name,t.multiplier from aircraft a join tiers t on t.tier=a.tier where a.id=any($1)', [input.pilots.map((pilot) => pilot.aircraftId)]);
   return input.pilots.map((pilot) => {
     const user = users.rows.find((item) => item.id === pilot.userId);
     const plane = aircraft.rows.find((item) => item.id === pilot.aircraftId);
     if (!user?.nickname || !plane) throw fail('VALIDATION', 'Piloto ou aeronave indisponível. Reabra o relatório para atualizar os dados.');
     if (publish && (!pilot.reviewed || pilot.attended === null || (pilot.attended && pilot.survived === null))) throw fail('VALIDATION', `Confira a participação, sobrevivência e os resultados de ${user.nickname}.`);
     if (!pilot.attended && REPORT_TARGETS.some(([key]) => pilot.counts[key] > 0)) throw fail('VALIDATION', `Um piloto ausente não pode ter resultados: ${user.nickname}.`);
-    return { ...pilot, nickname: user.nickname, aircraftName: plane.name, ...calculatePilot(pilot, rules) };
+    return { ...pilot, nickname: user.nickname, aircraftName: plane.name, ...calculatePilot(pilot, rules, Number(plane.multiplier)) };
   });
 }
 

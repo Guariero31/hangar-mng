@@ -78,7 +78,9 @@ export interface TechTreeState {
   balance: number;
   tiers: Tier[];
   bands: Band[];
+  /** PM médio por missão (média real dos pilotos); 0 enquanto não há missão encerrada. */
   baseMissionPoints: number;
+  baseMissionSample: number;
   aircraft: TreeAircraft[];
 }
 
@@ -102,7 +104,7 @@ export interface ReportPilot {
   userId: string; nickname: string; aircraftId: string; aircraftName: string;
   attended: boolean | null; survived: boolean | null; reviewed: boolean;
   counts: Record<ReportTarget, number>; notes: string;
-  subtotal: number; multiplier: number; total: number;
+  subtotal: number; aircraftMultiplier?: number; aircraftBonus?: number; multiplier: number; survivalBonus?: number; total: number;
   breakdown: { key: string; label: string; quantity: number; unitPoints: number; points: number }[];
 }
 export interface MissionReport {
@@ -116,6 +118,7 @@ export interface AdminTree {
   tiers: Tier[];
   bands: Band[];
   baseMissionPoints: number;
+  baseMissionSample: number;
   aircraft: Aircraft[];
 }
 
@@ -167,7 +170,7 @@ export interface Profile {
   user: { nickname: string; email: string; avatarUrl: string | null; role: Role; createdAt: string; medals: MedalLite[] };
   rank: { position: number | null; total: number };
   totals: { balance: number; earned: number; spent: number; refunded: number; fleet: number; aircraftTotal: number };
-  estimate: { baseMissionPoints: number; bestMultiplier: number; perMission: number };
+  estimate: { baseMissionPoints: number; perMission: number };
   byTier: { tier: number; label: string; cost: number; multiplier: number; owned: number; total: number }[];
   byRole: { role: AircraftRole; owned: number; total: number }[];
   nextGoals: { id: string; name: string; role: AircraftRole; icon: string | null; tierLabel: string; cost: number; missing: number }[];
