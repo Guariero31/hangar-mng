@@ -60,6 +60,16 @@ export async function getTree(opts: { onlyActive?: boolean } = {}, q: Queryable 
   };
 }
 
+/** Média individual de PM por missão do piloto (só missões encerradas em que participou). Sem participação: média 0 e amostra 0. */
+export async function getPlayerAverage(userId: string, q: Queryable = db): Promise<{ average: number; sample: number }> {
+  const { rows } = await q.query<{ average: number | null; sample: number }>(
+    `select round(avg(s.pm_awarded))::int as average, count(*)::int as sample
+       from mission_signups s join missions m on m.id = s.mission_id
+      where s.user_id = $1 and m.status = 'closed' and s.attended`, [userId]);
+  const sample = rows[0]?.sample ?? 0;
+  return { average: sample > 0 ? (rows[0]?.average ?? 0) : 0, sample };
+}
+
 /** Aeronaves que o jogador tem: compradas/liberadas + todas as de tiers gratuitos */
 export async function getOwnedIds(userId: string, q: Queryable = db): Promise<Set<string>> {
   const { rows } = await q.query<{ id: string }>(
@@ -101,13 +111,13 @@ export function evaluate(tree: Tree, owned: Set<string>, balance: number) {
 }
 
 export async function getTechTreeState(userId: string) {
-  const [tree, owned, balance] = await Promise.all([getTree({ onlyActive: true }), getOwnedIds(userId), getBalance(userId)]);
+  const [tree, owned, balance, mine] = await Promise.all([getTree({ onlyActive: true }), getOwnedIds(userId), getBalance(userId), getPlayerAverage(userId)]);
   return {
     balance,
     tiers: tree.tiers,
     bands: tree.bands,
-    baseMissionPoints: tree.baseMissionPoints,
-    baseMissionSample: tree.baseMissionSample,
+    baseMissionPoints: mine.average,
+    baseMissionSample: mine.sample,
     aircraft: evaluate(tree, owned, balance),
   };
 }

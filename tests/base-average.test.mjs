@@ -63,3 +63,16 @@ test('o administrador não tem mais como definir o valor', async () => {
   const admin = await import('../server/src/services/admin.ts');
   assert.equal('saveSettings' in admin, false);
 });
+
+test('a média do piloto é individual e aparece na árvore e no perfil', async () => {
+  const { getTechTreeState } = await import('../server/src/services/techtree.ts');
+  const { getProfile } = await import('../server/src/services/profile.ts');
+  const p0 = await getTechTreeState(pilots[0].id);   // só fez 1000
+  const p1 = await getTechTreeState(pilots[1].id);   // só fez 500
+  const p5 = await getTechTreeState(pilots[5].id);   // inscrito, não participou
+  assert.deepEqual([p0.baseMissionPoints, p0.baseMissionSample], [1000, 1]);
+  assert.deepEqual([p1.baseMissionPoints, p1.baseMissionSample], [500, 1]);
+  assert.deepEqual([p5.baseMissionPoints, p5.baseMissionSample], [0, 0]);
+  assert.equal((await getProfile(pilots[3])).estimate.perMission, 0);   // participou e fez 0
+  assert.equal((await getProfile(pilots[4])).estimate.perMission, 800);
+});

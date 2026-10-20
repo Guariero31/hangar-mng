@@ -57,7 +57,7 @@ function ProfileView({ p }: { p: Profile }) {
         <Stat label="PM ganhos" value={fmtPoints(totals.earned)} />
         <Stat label="PM gastos" value={fmtPoints(totals.spent)} />
         <Stat label="Frota" value={`${totals.fleet}`} suffix={`/ ${totals.aircraftTotal}`} />
-        <Stat label="PM médio por missão" value={estimate.perMission > 0 ? fmtPoints(estimate.perMission) : '—'} suffix={estimate.perMission > 0 ? 'PM' : undefined} />
+        <Stat label="Seu PM médio por missão" value={estimate.perMission > 0 ? fmtPoints(estimate.perMission) : '—'} suffix={estimate.perMission > 0 ? 'PM' : undefined} />
       </section>
 
       <div className="pf-grid">

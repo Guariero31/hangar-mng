@@ -44,7 +44,7 @@ function TechTreeView({ state }: { state: TechTreeState }) {
   const tierOf = useCallback((a: TreeAircraft) => tiers[tierIdx.get(a.tier) ?? 0], [tiers, tierIdx]);
   const fleet = aircraft.filter((a) => a.owned);
 
-  // estimativa de ganho por missão: a média real de PM dos pilotos (ou o valor de referência), sem multiplicadores
+  // estimativa de ganho por missão: a média individual de PM do próprio jogador
   const gain = baseMissionPoints;
 
   // ------------------------------------------------------------ layout
@@ -297,7 +297,7 @@ function TechTreeView({ state }: { state: TechTreeState }) {
 
         <section className="stats" aria-label="Painel">
         <div className="stat"><span className="lbl">Pontos de missão</span><span className="num pm" id="pm">{fmtPoints(balance)}</span></div>
-        <div className="stat"><span className="lbl">PM médio por missão<AverageInfo /></span><span className="num">{baseMissionSample > 0 ? fmtPoints(baseMissionPoints) : '—'}</span></div>
+        <div className="stat"><span className="lbl">Seu PM médio por missão<AverageInfo personal /></span><span className="num">{baseMissionSample > 0 ? fmtPoints(baseMissionPoints) : '—'}</span></div>
         <div className="stat"><span className="lbl">Frota</span><span className="num">{fleet.length}<small>/ {aircraft.length}</small></span></div>
         </section>
       </div>

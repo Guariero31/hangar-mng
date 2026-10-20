@@ -3,12 +3,12 @@
 import { db } from '../db.js';
 import { getBalance, type User } from './users.js';
 import { topMedals } from './achievements.js';
-import { evaluate, getOwnedIds, getTree } from './techtree.js';
+import { evaluate, getOwnedIds, getPlayerAverage, getTree } from './techtree.js';
 
 const EARNED = `amount > 0 and source in ('manual', 'server')`;
 
 export async function getProfile(user: User) {
-  const [tree, owned, balance, totals, rank, timeline, weekly, ownedRows] = await Promise.all([
+  const [tree, owned, balance, totals, rank, timeline, weekly, ownedRows, mine] = await Promise.all([
     getTree({ onlyActive: true }),
     getOwnedIds(user.id),
     getBalance(user.id),
@@ -45,6 +45,7 @@ export async function getProfile(user: User) {
           and date_trunc('week', l.created_at) = w.week
         group by w.week order by w.week`, [user.id]),
     db.query<{ aircraft_id: string; unlocked_at: Date }>('select aircraft_id, unlocked_at from user_aircraft where user_id = $1', [user.id]),
+    getPlayerAverage(user.id),
   ]);
 
   const state = evaluate(tree, owned, balance);
@@ -76,7 +77,7 @@ export async function getProfile(user: User) {
     user: { medals: (await topMedals([user.id])).get(user.id) ?? [], nickname: user.nickname, email: user.email, avatarUrl: user.avatar_url, role: user.role, createdAt: user.created_at },
     rank: rank.rows[0],
     totals: { balance, ...totals.rows[0], fleet: fleet.length, aircraftTotal: state.length },
-    estimate: { baseMissionPoints: tree.baseMissionPoints, perMission: tree.baseMissionPoints },
+    estimate: { baseMissionPoints: mine.average, perMission: mine.average },
     byTier,
     byRole,
     nextGoals,
