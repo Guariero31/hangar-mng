@@ -118,6 +118,8 @@ export async function getTechTreeState(userId: string) {
     bands: tree.bands,
     baseMissionPoints: mine.average,
     baseMissionSample: mine.sample,
+    squadAverage: tree.baseMissionPoints,
+    squadSample: tree.baseMissionSample,
     aircraft: evaluate(tree, owned, balance),
   };
 }

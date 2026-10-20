@@ -81,6 +81,9 @@ export interface TechTreeState {
   /** PM médio por missão (média real dos pilotos); 0 enquanto não há missão encerrada. */
   baseMissionPoints: number;
   baseMissionSample: number;
+  /** Média de PM por missão de todos os pilotos do esquadrão (0 sem missão encerrada). */
+  squadAverage: number;
+  squadSample: number;
   aircraft: TreeAircraft[];
 }
 

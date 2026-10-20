@@ -76,3 +76,10 @@ test('a média do piloto é individual e aparece na árvore e no perfil', async 
   assert.equal((await getProfile(pilots[3])).estimate.perMission, 0);   // participou e fez 0
   assert.equal((await getProfile(pilots[4])).estimate.perMission, 800);
 });
+
+test('a árvore também traz a média geral do esquadrão', async () => {
+  const { getTechTreeState } = await import('../server/src/services/techtree.ts');
+  const state = await getTechTreeState(pilots[0].id);
+  assert.equal(state.squadAverage, 580);
+  assert.equal(state.squadSample, 5);
+});

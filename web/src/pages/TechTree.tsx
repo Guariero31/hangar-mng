@@ -30,7 +30,7 @@ export function TechTree() {
 }
 
 function TechTreeView({ state }: { state: TechTreeState }) {
-  const { tiers, bands, aircraft, balance, baseMissionPoints, baseMissionSample } = state;
+  const { tiers, bands, aircraft, balance, baseMissionPoints, baseMissionSample, squadAverage, squadSample } = state;
   const unlock = useUnlock();
   const undo = useUndoUnlock();
   const setGoal = useSetGoal();
@@ -298,6 +298,7 @@ function TechTreeView({ state }: { state: TechTreeState }) {
         <section className="stats" aria-label="Painel">
         <div className="stat"><span className="lbl">Pontos de missão</span><span className="num pm" id="pm">{fmtPoints(balance)}</span></div>
         <div className="stat"><span className="lbl">Seu PM médio por missão<AverageInfo personal /></span><span className="num">{baseMissionSample > 0 ? fmtPoints(baseMissionPoints) : '—'}</span></div>
+        <div className="stat"><span className="lbl">PM médio do esquadrão<AverageInfo /></span><span className="num">{squadSample > 0 ? fmtPoints(squadAverage) : '—'}</span></div>
         <div className="stat"><span className="lbl">Frota</span><span className="num">{fleet.length}<small>/ {aircraft.length}</small></span></div>
         </section>
       </div>
