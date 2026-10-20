@@ -51,12 +51,12 @@ export function InfoTip({ label, title, children }: { label: string; title?: str
         onMouseLeave={() => { if (!pinned) setOpen(false); }}
         onFocus={() => setOpen(true)}
         onBlur={() => { if (!pinned) setOpen(false); }}
-      >i</button>
+      ><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" strokeWidth="1.4" /><path d="M8 7v4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /><circle cx="8" cy="4.6" r="1" fill="currentColor" /></svg></button>
       {open && createPortal(
         <div ref={pop} id={id} role="tooltip" className="info-tip-pop" style={{ top: pos.top, left: pos.left, width: pos.width }}>
           {title && <strong>{title}</strong>}
           {children}
-        </div>, document.body)}
+        </div>, button.current?.closest('.tt') ?? document.body)}
     </>
   );
 }
