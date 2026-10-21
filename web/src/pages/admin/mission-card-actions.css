@@ -1,0 +1,26 @@
+.mission-admin-list .mission-admin-item { grid-template-columns: 58px minmax(0, 1fr) auto; padding: 16px 18px; gap: 18px; }
+.mission-admin-item > .ms-date { border: 0; border-right: 1px solid var(--line); border-radius: 0; padding: 4px 16px 4px 0; min-height: 0; }
+.mission-admin-item .ms-day { font-size: 27px; }
+.mission-admin-item .ms-mon { font-size: 10px; }
+.mission-admin-item .ms-time { font-size: 11px; }
+.mission-admin-item .ms-body { gap: 7px; }
+.mission-admin-item .ms-head { gap: 10px; }
+.mission-admin-item .ms-body > .muted, .mission-admin-item .ms-count { font-size: 12px; }
+.mission-admin-item > .mission-card-actions { grid-column: 3; grid-row: 1; gap: 8px; padding: 0; }
+.mission-card-view { display: inline-flex; gap: 7px; align-items: center; padding: 10px 8px; color: var(--muted); font-size: 12px; font-weight: 500; text-decoration: none; white-space: nowrap; }
+.mission-card-view:hover { color: var(--text); }
+.mission-card-actions .mission-card-edit, .mission-card-actions .mission-card-more { padding: 8px; min-width: 36px; height: 36px; }
+.mission-card-edit svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+.mission-card-actions .mission-card-more { font-size: 22px; color: var(--muted); }
+.mission-card-options { position: relative; }
+.mission-admin-item:has(.mission-card-dropdown) { z-index: 3; position: relative; }
+.mission-card-dropdown { position: absolute; right: 0; top: calc(100% + 8px); width: 190px; padding: 6px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 8px; box-shadow: var(--shadow); z-index: 5; }
+.mission-card-dropdown > a, .mission-card-dropdown > button { display: block; width: 100%; padding: 12px; border: 0; border-radius: 5px; background: transparent; color: var(--text); font: 13px var(--font-body); text-align: left; text-decoration: none; cursor: pointer; }
+.mission-card-dropdown > a:hover, .mission-card-dropdown > button:hover { background: var(--hover); }
+.mission-card-dropdown > .mission-card-delete { color: var(--danger); }
+.mission-card-dropdown > button:disabled { opacity: .5; cursor: not-allowed; }
+@media (max-width: 600px) {
+  .mission-admin-list .mission-admin-item { grid-template-columns: 52px minmax(0, 1fr); gap: 14px; padding: 16px; }
+  .mission-admin-item > .ms-date { flex-direction: column; gap: 3px; align-self: center; }
+  .mission-admin-item > .mission-card-actions { grid-column: 1 / -1; grid-row: auto; justify-content: flex-end; padding-top: 10px; border-top: 1px solid var(--line); }
+}

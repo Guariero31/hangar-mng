@@ -1,5 +1,5 @@
 import { useToast } from '../../components/Toast';
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MissionFileUpload } from '../../components/MissionFileUpload';
 import { useQuery } from '@tanstack/react-query';
@@ -11,6 +11,7 @@ import type { Mission } from '../../api/types';
 import { Chips, DateBlock, fmtWhen } from '../Missions';
 import { AdminTabs } from './AdminTabs';
 import './admin.css';
+import './mission-card-actions.css';
 import '../missions.css';
 
 const toLocalInput = (iso: string) => {
@@ -149,18 +150,36 @@ export function MissionsAdmin() {
             <span className="muted">{m.mapName || 'Mapa a definir'} · Horário de Brasília</span>
             <Chips m={m} showResult={m.status === 'closed'} />
             </div>
-            {m.hasReport && <Link className="btn ghost" to={`/missoes/${m.id}/relatorio`}>Ver relatório</Link>}
-            {m.status === 'scheduled' && (
-                    <div className="ms-actions">
-                      <Link className="btn ghost" to={`/missoes/${m.id}`}>Ver operação</Link>
-                      <button className="btn ghost" onClick={() => setForm({ editing: m })}>Editar</button>
-                      <Link className="btn" to={`/admin/missoes/${m.id}/relatorio`}>Finalizar missão</Link>
-                    </div>
-                  )}
-            {!m.hasReport && <button className="btn ghost danger" disabled={remove.isPending} onClick={() => apagar(m)}>Apagar</button>}
+            <div className="ms-actions mission-card-actions">
+              <Link className="mission-card-view" to={m.hasReport ? `/missoes/${m.id}/relatorio` : `/missoes/${m.id}`}>{m.hasReport ? 'Ver relatório' : 'Ver operação'} <span aria-hidden="true">↗</span></Link>
+              {m.status === 'scheduled' && <button type="button" className="btn ghost sm mission-card-edit" aria-label={`Editar missão ${m.title}`} title="Editar missão" onClick={() => setForm({ editing: m })}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6ZM14 5l5 5" /></svg></button>}
+              {(m.status === 'scheduled' || !m.hasReport) && <MissionOptions mission={m} deleting={remove.isPending} onDelete={() => apagar(m)} />}
+            </div>
           </article>
         ))}
       </section>
     </>
   );
+}
+
+function MissionOptions({ mission, deleting, onDelete }: { mission: Mission; deleting: boolean; onDelete: () => void }) {
+  const [open, setOpen] = useState(false);
+  const container = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const id = useId();
+  useEffect(() => {
+    if (!open) return;
+    const outside = (event: PointerEvent) => { if (event.target instanceof Node && !container.current?.contains(event.target)) setOpen(false); };
+    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') { setOpen(false); trigger.current?.focus(); } };
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('keydown', escape);
+    return () => { document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', escape); };
+  }, [open]);
+  return <div className="mission-card-options" ref={container} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}>
+    <button ref={trigger} type="button" className="btn ghost sm mission-card-more" aria-label={`Mais opções da missão ${mission.title}`} aria-expanded={open} aria-controls={open ? id : undefined} onClick={() => setOpen(!open)}>⋯</button>
+    {open && <div id={id} className="mission-card-dropdown">
+      {mission.status === 'scheduled' && <Link to={`/admin/missoes/${mission.id}/relatorio`} onClick={() => setOpen(false)}>Finalizar missão</Link>}
+      {!mission.hasReport && <button type="button" className="mission-card-delete" disabled={deleting} onClick={() => { setOpen(false); onDelete(); }}>Apagar missão</button>}
+    </div>}
+  </div>;
 }
