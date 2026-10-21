@@ -59,7 +59,7 @@ function ScoringForm({ initial }: { initial: ScoringRules }) {
           <span><strong>{index + 1} {index === 0 ? 'tier abaixo' : 'tiers abaixo'}</strong><small>Ex.: aeronave Tier {Math.max(1, 3 - (index + 1))} em missão de Tier 3.</small></span>
           <span className="scoring-value"><input className="input" type="number" min={1} max={3} step={0.01} required value={bonus} aria-label={`Bônus com ${index + 1} tier abaixo`} onChange={(event) => update('tierBonuses', rules.tierBonuses.map((item, i) => i === index ? Number(event.target.value) : item))} /><span>×</span></span>
         </label>)}</div>
-        <button type="button" className="btn ghost" onClick={() => update('tierBonuses', [...DEFAULT_TIER_BONUSES])}>Restaurar padrão do sistema</button>
+        <div className="scoring-card-footer"><button type="button" className="scoring-restore" onClick={() => update('tierBonuses', [...DEFAULT_TIER_BONUSES])}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2 8M3 4v6h6" /></svg>Restaurar valores padrão</button></div>
       </section>
     </fieldset><aside className="scoring-sidebar">
       <section className="card scoring-simulation"><span className="label">Prévia do cálculo</span><h2>Simule um resultado</h2><p>Usa os valores do formulário. Não lança pontos para nenhum piloto.</p>
