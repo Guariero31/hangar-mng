@@ -4,6 +4,7 @@ import { useMission } from '../api/hooks';
 import { errorMessage } from '../api/client';
 import { fmtWhen } from './Missions';
 import './missions.css';
+import './briefing-toolbar.css';
 
 // Volume da música: ambiente, bem baixo (8% do máximo).
 const MUSIC_VOLUME = 0.08;
@@ -45,11 +46,13 @@ export function MissionBriefing() {
     catch { setFullscreenError('Tela cheia indisponível neste navegador. Você pode usar o visualizador abaixo.'); }
   }
   return <div className="mission-briefing-page">
-    <header className="mission-briefing-toolbar">
-      <Link to={`/missoes/${id}`}>← Voltar à operação</Link>
-      <h1>{mission?.title || 'Carregando briefing…'}</h1>
-      {started && mission?.audioAsset && <button type="button" className="btn ghost" aria-pressed={!muted} onClick={() => { const next = !muted; setMuted(next); if (!next) void music.current?.play().catch(() => undefined); }}>{muted ? '🔇 Música desligada' : '🔊 Música'}</button>}
-      {started && <button type="button" className="btn ghost" onClick={fullscreen}>Tela cheia</button>}
+    <header className="mission-briefing-toolbar briefing-menu">
+      <div className="briefing-menu-back"><Link to={`/missoes/${id}`} aria-label="Voltar à operação"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 5-7 7 7 7M5 12h14" /></svg><span>Voltar</span></Link><span className="briefing-menu-divider" aria-hidden="true" /></div>
+      <div className="briefing-menu-title"><span>Briefing interativo</span></div>
+      <div className="briefing-menu-actions">
+        {started && mission?.audioAsset && <button type="button" className="briefing-menu-button briefing-menu-music" aria-label={muted ? 'Ativar música' : 'Desativar música'} aria-pressed={!muted} onClick={() => { const next = !muted; setMuted(next); if (!next) void music.current?.play().catch(() => undefined); }}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z" />{muted ? <path d="m16 9 5 6m0-6-5 6" /> : <><path d="M15 8a6 6 0 0 1 0 8" /><path d="M18 5a10 10 0 0 1 0 14" /></>}</svg><span>{muted ? 'Música desligada' : 'Música'}</span></button>}
+        {started && <button type="button" className="briefing-menu-button" aria-label="Abrir em tela cheia" onClick={fullscreen}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5" /></svg><span>Tela cheia</span></button>}
+      </div>
     </header>
     {isLoading && <p className="loading">Preparando briefing…</p>}
     {error && <div role="alert"><p>{errorMessage(error)}</p><button className="btn ghost" onClick={() => refetch()}>Tentar novamente</button></div>}
