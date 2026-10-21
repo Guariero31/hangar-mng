@@ -89,6 +89,24 @@ export async function cancelSignup(user: User, missionId: string) {
   });
 }
 
+export async function removeSignup(admin: User, missionId: string, userId: string) {
+  if (admin.role !== 'admin') throw fail('FORBIDDEN');
+  return db.tx(async (q) => {
+    const mission = await lockMission(q, missionId);
+    if (mission.status !== 'scheduled') throw fail('MISSION_NOT_OPEN');
+    const { rows } = await q.query<{ nickname: string | null }>(
+      `delete from mission_signups s using users u where s.mission_id=$1 and s.user_id=$2 and u.id=s.user_id returning u.nickname`, [missionId, userId]);
+    if (!rows.length) return { removed: false };
+    const { rows: drafts } = await q.query<{ pilots: { userId: string }[] }>(
+      "select pilots from mission_reports where mission_id=$1 and state='draft'", [missionId]);
+    if (drafts.length) await q.query(
+      "update mission_reports set pilots=$2, version=version+1, saved_by=$3, saved_at=now() where mission_id=$1 and state='draft'",
+      [missionId, JSON.stringify(drafts[0].pilots.filter(pilot => pilot.userId !== userId)), admin.id]);
+    await audit(q, admin.id, 'remove_mission_signup', { id: missionId, title: mission.title, nickname: rows[0].nickname, userId });
+    return { removed: true };
+  });
+}
+
 export interface MissionInput { title: string; briefing: string; startsAt: string; defaultPm: number | null; mapName?: string; briefingImageUrl?: string; imageAssetId?: string | null; briefingAssetId?: string | null; audioAssetId?: string | null; tier?: number | null; ribbonIds?: string[] }
 
 async function assertTier(q: Queryable, tier: number | null | undefined) {

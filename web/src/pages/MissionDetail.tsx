@@ -1,7 +1,7 @@
 import { useToast } from '../components/Toast';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useCancelMission, useMe, useMission, useMissionSignup, useTechTree } from '../api/hooks';
+import { useCancelMission, useRemoveMissionSignup, useMe, useMission, useMissionSignup, useTechTree } from '../api/hooks';
 import { errorMessage } from '../api/client';
 import type { Mission } from '../api/types';
 import { preserveAssetUrl } from '../lib/asset-url';
@@ -140,17 +140,35 @@ export function MissionDetail() {
           </section>}
           {mission.briefingAsset && <section className="card op-section op-interactive-callout"><span className="label">Experiência interativa</span><h2>Briefing da missão</h2><p className="muted">Explore o cenário, os objetivos e os materiais da operação. Ative a música pelos controles do briefing.</p><Link className="btn" to={`/missoes/${mission.id}/briefing`}>Abrir briefing interativo →</Link></section>}
           <MissionManagement key={mission.id} mission={mission} />
-          <section className="card op-section"><div className="op-section-head"><h2>{mission.status === 'closed' ? 'Participação e resultados' : 'Pilotos inscritos'}</h2><span className="ms-badge">{mission.signups.length} pilotos</span></div>
-            {!mission.signups.length ? <p className="muted">Nenhum piloto inscrito. Seja o primeiro a participar.</p>
-              : <ul className="op-roster">{mission.signups.map((pilot) => <li key={pilot.userId}>
-                <span className="op-pilot-initial" aria-hidden="true">{(pilot.nickname || '?').slice(0, 1)}</span>
-                <div><strong>{pilot.nickname || 'Piloto'}</strong><span className="muted">{pilot.aircraftName}</span></div>
-                {pilot.userId === mission.mine?.userId && <span className="ms-badge ok">Você</span>}
-                {mission.status === 'closed' && <span className="op-result">{pilot.attended ? `${fmtPoints(pilot.pmAwarded)} PM · presente` : 'Não confirmado'}</span>}
-              </li>)}</ul>}
-          </section>
+          <MissionRoster key={mission.id} mission={mission} />
         </div>
       </div>
     </>}
   </div>;
+}
+
+function MissionRoster({ mission }: { mission: Mission }) {
+  const me = useMe();
+  const remove = useRemoveMissionSignup();
+  const toast = useToast();
+  const [selected, setSelected] = useState<Mission['signups'][number] | null>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const canRemove = me.data?.role === 'admin' && mission.status === 'scheduled';
+  useEffect(() => {
+    if (selected && !dialog.current?.open) dialog.current?.showModal();
+    if (!selected && dialog.current?.open) dialog.current.close();
+  }, [selected]);
+  return <section className="card op-section"><div className="op-section-head"><h2>{mission.status === 'closed' ? 'Participação e resultados' : 'Pilotos inscritos'}</h2><span className="ms-badge">{mission.signups.length} pilotos</span></div>
+    {!mission.signups.length ? <p className="muted">Nenhum piloto inscrito.</p> : <ul className="op-roster">{mission.signups.map(pilot => <li key={pilot.userId}>
+      <span className="op-pilot-initial" aria-hidden="true">{(pilot.nickname || '?').slice(0, 1)}</span><div><strong>{pilot.nickname || 'Piloto'}</strong><span className="muted">{pilot.aircraftName}</span></div>
+      {pilot.userId === mission.mine?.userId && <span className="ms-badge ok">Você</span>}
+      {mission.status === 'closed' && <span className="op-result">{pilot.attended ? `${fmtPoints(pilot.pmAwarded)} PM · presente` : 'Não confirmado'}</span>}
+      {canRemove && <button type="button" className="btn ghost danger sm" aria-label={`Remover ${pilot.nickname} do evento`} disabled={remove.isPending} onClick={() => { remove.reset(); setSelected(pilot); }}>Remover</button>}
+    </li>)}</ul>}
+    <dialog ref={dialog} className="roster-remove-dialog" aria-labelledby="roster-remove-title" onCancel={(event) => { if (remove.isPending) event.preventDefault(); else setSelected(null); }} onClose={() => setSelected(null)}>
+      <h2 id="roster-remove-title">Remover inscrição?</h2><p>Remover <strong>{selected?.nickname}</strong> de <strong>{mission.title}</strong>?</p><p className="muted">Isso remove apenas a inscrição neste evento. O piloto poderá se inscrever novamente enquanto a missão estiver aberta.</p>
+      {remove.error && <p role="alert" className="op-error">{errorMessage(remove.error)}</p>}
+      <div className="ms-actions"><button type="button" className="btn ghost" disabled={remove.isPending} onClick={() => setSelected(null)}>Cancelar</button><button type="button" className="btn danger" disabled={remove.isPending || !selected} onClick={() => { if (selected) remove.mutate({ missionId: mission.id, userId: selected.userId }, { onSuccess: () => { setSelected(null); toast('Inscrição removida do evento.'); } }); }}>{remove.isPending ? 'Removendo…' : 'Remover inscrição'}</button></div>
+    </dialog>
+  </section>;
 }

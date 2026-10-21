@@ -378,6 +378,10 @@ adminApi.put('/missions/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
+adminApi.delete('/missions/:id/signups/:userId', async (req, res) => {
+  res.json(await missions.removeSignup(req.user, z.string().uuid().parse(req.params.id), z.string().uuid().parse(req.params.userId)));
+});
+
 adminApi.post('/missions/:id/cancel', async (req, res) => {
   await missions.cancelMission(req.user, z.string().uuid().parse(req.params.id));
   res.json({ ok: true });

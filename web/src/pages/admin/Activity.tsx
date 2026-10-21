@@ -34,6 +34,7 @@ const KIND: Record<string, { label: string; tone: string }> = {
   update_scoring_rules: { label: 'Pontuação', tone: 'info' },
   create_mission: { label: 'Nova missão', tone: 'info' },
   update_mission: { label: 'Missão editada', tone: 'info' },
+  remove_mission_signup: { label: 'Inscrição removida', tone: 'danger' },
   cancel_mission: { label: 'Missão cancelada', tone: 'danger' },
   delete_mission: { label: 'Missão apagada', tone: 'danger' },
   create_ribbon: { label: 'Nova condecoração', tone: 'info' },
@@ -66,6 +67,7 @@ function describe(it: ActivityItem): string {
     case 'update_scoring_rules': return 'Atualizou os pontos por alvo, objetivos e bônus de sobrevivência';
     case 'create_mission': return `Criou a missão ${d.title}${(d.copies ?? 1) > 1 ? ` (${d.copies} semanas)` : ''}`;
     case 'update_mission': return `Editou a missão ${d.title}`;
+    case 'remove_mission_signup': return `Removeu ${d.nickname ?? 'um piloto'} da missão ${d.title}`;
     case 'cancel_mission': return `Cancelou a missão ${d.title}`;
     case 'create_ribbon': return `Cadastrou a condecoração ${d.name}`;
     case 'update_ribbon': return `Editou a condecoração ${d.name}${d.image ? ' (imagem)' : ''}`;

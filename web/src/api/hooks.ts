@@ -211,6 +211,19 @@ export const useSaveMission = () =>
 
 export const useCancelMission = () => useMissionMutation((id: string) => api.post(`/admin/missions/${id}/cancel`, {}));
 
+export function useRemoveMissionSignup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ missionId, userId }: { missionId: string; userId: string }) => api.del(`/admin/missions/${missionId}/signups/${userId}`),
+    onSuccess: () => Promise.all([
+      qc.invalidateQueries({ queryKey: ['missions'] }),
+      qc.invalidateQueries({ queryKey: ['admin', 'missions'] }),
+      qc.invalidateQueries({ queryKey: ['admin', 'mission-report'] }),
+      qc.invalidateQueries({ queryKey: ['admin', 'activity'] }),
+    ]),
+  });
+}
+
 export const useDeleteMission = () => useMissionMutation((id: string) => api.del(`/admin/missions/${id}`));
 
 export const useCloseMission = () =>

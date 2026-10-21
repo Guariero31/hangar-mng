@@ -17,6 +17,41 @@ before(async () => {
 });
 after(async () => { await db.close(); });
 
+test('administrator removes an event signup, updates draft and audits once without affecting other pilots', async () => {
+  const { ids: [missionId] } = await m.createMission(adm, { title: 'Remover inscrição', briefing: '', startsAt: '2035-01-01T20:00:00Z', defaultPm: null }, 0);
+  const free = (await db.query(`select a.id from aircraft a join tiers t on t.tier=a.tier where t.cost=0 and a.active limit 1`)).rows[0].id;
+  await m.signUp(p1, missionId, free); await m.signUp(p2, missionId, free);
+  await db.query(`insert into mission_reports (mission_id,state,rules,pilots) values ($1,'draft','{}',$2)`, [missionId, JSON.stringify([{ userId: p1.id }, { userId: p2.id, notes: 'preservar' }])]);
+  await assert.rejects(m.removeSignup(p2, missionId, p1.id), error => error.code === 'FORBIDDEN');
+  assert.equal((await m.getMission(p1, missionId)).signups.length, 2);
+  const results = await Promise.all([m.removeSignup(adm, missionId, p1.id), m.removeSignup(adm, missionId, p1.id)]);
+  assert.equal(results.filter(result => result.removed).length, 1);
+  const detail = await m.getMission(p1, missionId);
+  assert.equal(detail.mine, null);
+  assert.deepEqual(detail.signups.map(pilot => pilot.userId), [p2.id]);
+  const draft = (await db.query('select pilots, version from mission_reports where mission_id=$1', [missionId])).rows[0];
+  assert.equal(draft.version, 2);
+  assert.deepEqual(draft.pilots, [{ userId: p2.id, notes: 'preservar' }]);
+  const audits = (await db.query("select details from admin_audit_log where action='remove_mission_signup' and details->>'id'=$1", [missionId])).rows;
+  assert.equal(audits.length, 1);
+  assert.equal(audits[0].details.nickname, p1.nickname);
+  await m.signUp(p1, missionId, free);
+  assert.equal((await m.getMission(p1, missionId)).signups.length, 2);
+  await m.cancelMission(adm, missionId);
+  await assert.rejects(m.removeSignup(adm, missionId, p1.id), error => error.code === 'MISSION_NOT_OPEN');
+  assert.equal((await m.getMission(p1, missionId)).signups.length, 2);
+});
+
+test('removing a signup cannot erase a closed mission result or its points', async () => {
+  const { ids: [missionId] } = await m.createMission(adm, { title: 'Preservar resultado', briefing: '', startsAt: '2035-01-01T20:00:00Z', defaultPm: null }, 0);
+  const resultPilot = (await db.query("insert into users (google_sub,email,nickname) values ('RemovalResult','removal-result@example.invalid','RemovalResult') returning *")).rows[0];
+  const free = (await db.query(`select a.id from aircraft a join tiers t on t.tier=a.tier where t.cost=0 and a.active limit 1`)).rows[0].id;
+  await m.signUp(resultPilot, missionId, free);
+  await m.closeMission(adm, missionId, [{ userId: resultPilot.id, pm: 25 }]);
+  await assert.rejects(m.removeSignup(adm, missionId, resultPilot.id), error => error.code === 'MISSION_NOT_OPEN');
+  assert.equal((await m.getMission(resultPilot, missionId)).mine.pmAwarded, 25);
+});
+
 test('weekly repeat, owned-only signup, close awards PM once', async () => {
   const { ids } = await m.createMission(adm, { title: 'Op Teste', briefing: '', startsAt: '2030-01-01T20:00:00Z', defaultPm: null }, 2);
   assert.equal(ids.length, 3);
