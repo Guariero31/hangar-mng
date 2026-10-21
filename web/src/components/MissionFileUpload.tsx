@@ -19,10 +19,10 @@ export function MissionFileUpload({ kind, value, onChange, onBusy }: {
     finally { setBusy(false); onBusy(false); if (input.current) input.current.value = ''; }
   }
   return <div className="mission-upload">
-    <label className="field"><span className="label">{kind === 'image' ? 'Enviar imagem do mapa' : kind === 'audio' ? 'Música do briefing' : 'Briefing interativo (HTML ou ZIP)'}</span>
-      <input ref={input} className="input" type="file" accept={kind === 'image' ? '.png,.jpg,.jpeg,.webp' : kind === 'audio' ? '.mp3,.ogg,.wav' : '.html,.htm,.zip'} disabled={busy}
+    <label className="field"><span className="label">{kind === 'image' ? 'Enviar imagem do mapa' : kind === 'audio' ? 'Música do briefing' : 'Briefing interativo (HTML)'}</span>
+      <input ref={input} className="input" type="file" accept={kind === 'image' ? '.png,.jpg,.jpeg,.webp' : kind === 'audio' ? '.mp3,.ogg,.wav' : '.html,.htm'} disabled={busy}
         onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(file); }} />
-      <span className="hint">{kind === 'image' ? 'PNG, JPG ou WebP · até 10 MB.' : kind === 'audio' ? 'MP3, OGG ou WAV · até 25 MB. Toca só na tela do briefing.' : 'Um arquivo HTML, ou um ZIP com imagens e outros arquivos (index.html na raiz se houver vários HTMLs) · até 25 MB.'}</span>
+      <span className="hint">{kind === 'image' ? 'PNG, JPG ou WebP · até 10 MB.' : kind === 'audio' ? 'MP3, OGG ou WAV · até 25 MB. Toca só na tela do briefing.' : 'Apenas um arquivo HTML · até 25 MB.'}</span>
     </label>
     {busy && <p role="status">Enviando e validando arquivo…</p>}
     {value && <div className="mission-upload-current"><span>✓ {value.name}</span><button type="button" className="btn ghost sm" disabled={busy} onClick={() => onChange(null)}>Remover anexo</button></div>}

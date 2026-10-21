@@ -6,7 +6,7 @@ import { config } from '../config.js';
 import { fail } from '../errors.js';
 
 export type AssetKind = 'image' | 'briefing' | 'audio';
-interface AssetFile { path: string; mime: string; content: Buffer }
+export interface AssetFile { path: string; mime: string; content: Buffer }
 interface Asset { id: string; kind: AssetKind; name: string; entrypoint: string }
 const MAX_UPLOAD = 25 * 1024 * 1024;
 const MAX_EXPANDED = 80 * 1024 * 1024;
@@ -108,14 +108,24 @@ export async function uploadMissionAsset(adminId: string, kind: AssetKind, name:
     const audio = audioType(content);
     entrypoint = `music${audio.extension}`;
     files = [{ path: entrypoint, mime: audio.mime, content }];
-  } else if (content.toString('ascii', 0, 2) !== 'PK') {
-    // Um único arquivo HTML, sem ZIP.
-    if (!/<(html|body|script|!doctype)/i.test(content.toString('utf8', 0, 4096))) throw fail('VALIDATION', 'Envie um arquivo HTML ou um ZIP válido.');
+  } else {
+    // Briefing: um único arquivo HTML (ZIP não é mais aceito no envio).
+    if (content.toString('ascii', 0, 2) === 'PK') throw fail('VALIDATION', 'Envie apenas um arquivo HTML (ZIP não é aceito).');
+    if (!looksLikeHtml(content)) throw fail('VALIDATION', 'Envie um arquivo HTML válido.');
     entrypoint = 'index.html';
     files = [{ path: entrypoint, mime: TYPES['.html'], content }];
-  } else {
-    ({ files, entrypoint } = await unpackBriefing(content));
   }
+  return saveMissionAssetFiles(adminId, kind, name, files, entrypoint);
+}
+
+/** Aceita HTML completo ou fragmento (ex.: começando em <title>/<style>), procurando uma tag HTML conhecida no início. */
+function looksLikeHtml(content: Buffer) {
+  const head = content.toString('utf8', 0, 65536).replace(/^\uFEFF/, '');
+  return /<\s*(!doctype|html|head|body|title|meta|link|style|script|div|main|section|canvas|svg)\b/i.test(head);
+}
+
+/** Grava os arquivos já validados de um recurso da missão (em blocos) e devolve o recurso descrito. */
+export async function saveMissionAssetFiles(adminId: string, kind: AssetKind, name: string, files: AssetFile[], entrypoint: string) {
   const asset = await db.tx(async (query) => {
     const { rows } = await query.query<Asset>('insert into mission_assets(kind, name, entrypoint, created_by) values ($1,$2,$3,$4) returning *', [kind, name, entrypoint, adminId]);
     for (const file of files) {

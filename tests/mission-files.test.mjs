@@ -58,8 +58,15 @@ test('ZIP rejects traversal, executable types, ambiguous entrypoints and duplica
   await assert.rejects(files.unpackBriefing(zip(Array.from({ length: 129 }, (_, index) => [`${index}.json`, '{}']))));
   await assert.rejects(files.unpackBriefing(zip([['index.html', 'x'], ['big.json', Buffer.alloc(21 * 1024 * 1024)]])));
 });
+const storeZip = async (name, buffer) => { const { files: unpacked, entrypoint } = await files.unpackBriefing(buffer); return files.saveMissionAssetFiles(admin.id, 'briefing', name, unpacked, entrypoint); };
+test('briefing upload accepts only HTML, including fragments that start at <title>', async () => {
+  await assert.rejects(files.uploadMissionAsset(admin.id, 'briefing', 'x.zip', archive()), /ZIP/);
+  const fragment = Buffer.from('\uFEFF<title>ACS</title>\n<style>body{margin:0}</style>\n<div id="map"></div>');
+  assert.equal((await files.uploadMissionAsset(admin.id, 'briefing', 'frag.html', fragment)).name, 'frag.html');
+  await assert.rejects(files.uploadMissionAsset(admin.id, 'briefing', 'x.html', Buffer.from('texto qualquer')), /HTML/);
+});
 test('assets persist with mission copies and require scoped signed file URLs', async () => {
-  const asset = await files.uploadMissionAsset(admin.id, 'briefing', 'briefing.zip', archive());
+  const asset = await storeZip('briefing.zip', archive());
   const { ids } = await missions.createMission(admin, { title: 'Files', briefing: '', startsAt: '2030-01-01T20:00:00Z', defaultPm: null, briefingAssetId: asset.id }, 1);
   for (const id of ids) assert.equal((await missions.getMission(player, id)).briefingAsset.id, asset.id);
   const url = new URL(asset.url, base), pieces = url.pathname.split('/');
@@ -71,9 +78,11 @@ test('assets persist with mission copies and require scoped signed file URLs', a
   assert.equal((await missions.getMission(player, ids[0])).briefingAsset, null);
 });
 test('upload routes restrict writes to admins and isolate executable documents', async () => {
-  const upload = (session) => fetch(`${base}/api/admin/mission-files/briefing?name=test.zip`, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', ...(session ? { Cookie: session } : {}) }, body: archive() });
+  const upload = (session) => fetch(`${base}/api/admin/mission-files/briefing?name=test.html`, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', ...(session ? { Cookie: session } : {}) }, body: Buffer.from('<title>x</title><div>Operação</div>') });
   assert.equal((await upload()).status, 401);
   assert.equal((await upload(cookie(player))).status, 403);
+  const zipped = await fetch(`${base}/api/admin/mission-files/briefing?name=test.zip`, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', Cookie: cookie(admin) }, body: archive() });
+  assert.equal(zipped.status, 400);
   const response = await upload(cookie(admin)); assert.equal(response.status, 201);
   const asset = await response.json(); const document = await fetch(`${base}${asset.url}`);
   assert.equal(document.status, 200);
@@ -82,10 +91,11 @@ test('upload routes restrict writes to admins and isolate executable documents',
   assert.doesNotMatch(policy, /allow-same-origin/);
   assert.match(policy, /connect-src http:\/\/127.0.0.1:\d+\/api\/mission-files\//);
   assert.equal(document.headers.get('x-frame-options'), 'SAMEORIGIN');
-  const module = await fetch(new URL('scripts/map.js', `${base}${asset.url}`));
+  const packed = await storeZip('pack.zip', archive());
+  const module = await fetch(new URL('scripts/map.js', `${base}${packed.url}`));
   assert.equal(module.status, 200); assert.match(module.headers.get('content-type'), /javascript/);
   assert.equal(module.headers.get('access-control-allow-origin'), '*');
-  const audio = await fetch(new URL('Ace combat briefing.mp3', `${base}${asset.url}`)); assert.equal(audio.status, 200);
+  const audio = await fetch(new URL('Ace combat briefing.mp3', `${base}${packed.url}`)); assert.equal(audio.status, 200);
 });
 test('image upload validates signature and returns an image MIME type', async () => {
   await assert.rejects(files.uploadMissionAsset(admin.id, 'image', 'fake.png', Buffer.from('<script>alert(1)</script>')));
@@ -96,7 +106,7 @@ test('image upload validates signature and returns an image MIME type', async ()
 
 test('larger media is stored and read intact across database chunks', async () => {
   const media = Buffer.alloc(700 * 1024, 73);
-  const asset = await files.uploadMissionAsset(admin.id, 'briefing', 'media.zip', zip([['index.html', '<audio src="music.mp3"></audio>'], ['music.mp3', media]]));
+  const asset = await storeZip('media.zip', zip([['index.html', '<audio src="music.mp3"></audio>'], ['music.mp3', media]]));
   const response = await fetch(new URL('music.mp3', `${base}${asset.url}`));
   assert.equal(response.status, 200);
   assert.deepEqual(Buffer.from(await response.arrayBuffer()), media);
