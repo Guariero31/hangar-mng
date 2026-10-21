@@ -6,11 +6,12 @@ import { api, errorMessage } from '../../api/client';
 import type { ScoringRules } from '../../api/types';
 import { Select } from '../../components/Select';
 import { fmtPoints } from '../../lib/format';
+import { DEFAULT_TIER_BONUSES } from '../../lib/mission-report';
 import { AdminTabs } from './AdminTabs';
 import './admin.css';
 import './scoring.css';
 
-type Target = Exclude<keyof ScoringRules, 'survivalEnabled' | 'survivalMultiplier'>;
+type Target = Exclude<keyof ScoringRules, 'survivalEnabled' | 'survivalMultiplier' | 'tierBonuses'>;
 const TARGETS: { key: Target; label: string; description: string; category: 'combat' | 'transport' }[] = [
   { key: 'airborneAircraft', label: 'Aeronave em voo', description: 'Aeronave inimiga abatida no ar.', category: 'combat' },
   { key: 'groundAircraft', label: 'Aeronave no solo', description: 'Aeronave inimiga destruída em solo.', category: 'combat' },
@@ -53,6 +54,13 @@ function ScoringForm({ initial }: { initial: ScoringRules }) {
           <label className="field"><span className="label">Multiplicador de sobrevivência</span><span className="scoring-value"><input className="input" type="number" min={1} max={10} step={0.01} required disabled={!rules.survivalEnabled} value={rules.survivalMultiplier} onChange={(event) => update('survivalMultiplier', Number(event.target.value))} /><span>×</span></span></label>
         </div>
       </section>
+      <section className="card scoring-card"><div className="scoring-card-head"><span className="label">04 / Aeronave de tier menor</span><h2>Bônus por voar abaixo do tier da missão</h2><p>Quem voa uma aeronave de tier igual ou maior que o da missão recebe 1,0×. Quem voa tiers abaixo recebe o bônus da linha correspondente, somado ao de sobrevivência. Diferenças maiores que a última linha usam o último valor.</p></div>
+        <div className="scoring-targets">{rules.tierBonuses.map((bonus, index) => <label key={index} className="scoring-target">
+          <span><strong>{index + 1} {index === 0 ? 'tier abaixo' : 'tiers abaixo'}</strong><small>Ex.: aeronave Tier {Math.max(1, 3 - (index + 1))} em missão de Tier 3.</small></span>
+          <span className="scoring-value"><input className="input" type="number" min={1} max={3} step={0.01} required value={bonus} aria-label={`Bônus com ${index + 1} tier abaixo`} onChange={(event) => update('tierBonuses', rules.tierBonuses.map((item, i) => i === index ? Number(event.target.value) : item))} /><span>×</span></span>
+        </label>)}</div>
+        <button type="button" className="btn ghost" onClick={() => update('tierBonuses', [...DEFAULT_TIER_BONUSES])}>Restaurar padrão do sistema</button>
+      </section>
     </fieldset><aside className="scoring-sidebar">
       <section className="card scoring-simulation"><span className="label">Prévia do cálculo</span><h2>Simule um resultado</h2><p>Usa os valores do formulário. Não lança pontos para nenhum piloto.</p>
         <label className="field"><span className="label">Ação / alvo</span><Select aria-label="Alvo da simulação" value={target} onChange={(value) => setTarget(value as Target)} options={TARGETS.map((item) => ({ value: item.key, label: item.label }))} /></label>
@@ -61,7 +69,7 @@ function ScoringForm({ initial }: { initial: ScoringRules }) {
         <dl className="scoring-breakdown"><div><dt>Subtotal</dt><dd>{fmtPoints(subtotal)} PM</dd></div><div><dt>Multiplicador aplicado</dt><dd>{multiplier.toLocaleString('pt-BR')}×</dd></div></dl>
         <div className="scoring-total"><span>Total da simulação</span><strong>{fmtPoints(total)} <small>PM</small></strong></div><small className="muted">Total arredondado para o inteiro mais próximo.</small>
       </section>
-      <section className="scoring-existing"><span className="label">E o bônus por tier?</span><p>O “Bônus ao voar” da tech tree é outra configuração. Hoje ele calcula o ganho estimado mostrado no perfil e na árvore; não é aplicado automaticamente ao finalizar missões.</p><p>Esta simulação usa apenas o bônus de sobrevivência, sem combinar os multiplicadores.</p><Link to="/admin/aeronaves">Consultar bônus dos tiers →</Link></section>
+      <section className="scoring-existing"><span className="label">Como os bônus se combinam</span><p>PM = pontos × (1 + bônus da aeronave + bônus de sobrevivência), tudo sobre os pontos base. O tier da missão é escolhido no cadastro dela; missões sem tier não dão bônus de aeronave.</p><p>Esta simulação usa só o bônus de sobrevivência.</p><Link to="/admin/aeronaves">Ver tiers e aeronaves →</Link></section>
     </aside></div>
     <footer className="card scoring-save"><div>{save.error ? <p role="alert" className="op-error">{errorMessage(save.error)}</p> : message ? <p role="status">{message}</p> : <p>Salvar altera os parâmetros. Não modifica saldos nem pontuações já distribuídas.</p>}</div><button className="btn" disabled={save.isPending}>{save.isPending ? 'Salvando…' : 'Salvar regras de pontuação'}</button></footer>
   </form>;

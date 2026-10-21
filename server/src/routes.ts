@@ -331,6 +331,7 @@ const missionBody = z.object({
   imageAssetId: z.string().uuid().nullable().default(null),
   briefingAssetId: z.string().uuid().nullable().default(null),
   audioAssetId: z.string().uuid().nullable().default(null),
+  tier: z.number().int().min(1).nullable().default(null),
   title: z.string().trim().min(1).max(80),
   briefing: z.string().max(2000).default(''),
   mapName: z.string().trim().max(80).default(''),
@@ -356,6 +357,11 @@ adminApi.put('/missions/:id', async (req, res) => {
 
 adminApi.post('/missions/:id/cancel', async (req, res) => {
   await missions.cancelMission(req.user, z.string().uuid().parse(req.params.id));
+  res.json({ ok: true });
+});
+
+adminApi.delete('/missions/:id', async (req, res) => {
+  await missions.deleteMission(req.user, z.string().uuid().parse(req.params.id));
   res.json({ ok: true });
 });
 

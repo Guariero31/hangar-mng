@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { createHash } from 'node:crypto';
 import { db, type Queryable } from '../db.js';
 import { fail } from '../errors.js';
-import { DEFAULT_SCORING_RULES, scoringRulesSchema, type ScoringRules } from './scoring.js';
+import { aircraftMultiplier, DEFAULT_SCORING_RULES, scoringRulesSchema, type ScoringRules } from './scoring.js';
 import type { User } from './users.js';
 
 export const REPORT_TARGETS = [
@@ -65,19 +65,19 @@ export async function getMissionReport(user: User, id: string, editing = false) 
   return { missionId: id, state: 'draft' as const, version: 0, rulesFingerprint: fingerprint(rules), rules, pilots, summary: '', source: '', savedAt: null, publishedAt: null, publishedBy: null, total: 0 };
 }
 
-async function results(query: Queryable, input: ReportInput, rules: ScoringRules, publish: boolean, missionId: string): Promise<PilotResult[]> {
+async function results(query: Queryable, input: ReportInput, rules: ScoringRules, publish: boolean, missionId: string, missionTier: number | null): Promise<PilotResult[]> {
   if (new Set(input.pilots.map((pilot) => pilot.userId)).size !== input.pilots.length) throw fail('VALIDATION', 'Um piloto aparece mais de uma vez no relatório.');
   const signed = (await query.query<{ user_id: string }>('select user_id from mission_signups where mission_id=$1', [missionId])).rows;
   if (signed.some((pilot) => !input.pilots.some((item) => item.userId === pilot.user_id))) throw fail('VALIDATION', 'Inclua todos os inscritos e marque os ausentes como não participantes.');
   const users = await query.query<{ id: string; nickname: string }>('select id,nickname from users where id=any($1)', [input.pilots.map((pilot) => pilot.userId)]);
-  const aircraft = await query.query<{ id: string; name: string; multiplier: string }>('select a.id,a.name,t.multiplier from aircraft a join tiers t on t.tier=a.tier where a.id=any($1)', [input.pilots.map((pilot) => pilot.aircraftId)]);
+  const aircraft = await query.query<{ id: string; name: string; tier: number }>('select id,name,tier from aircraft where id=any($1)', [input.pilots.map((pilot) => pilot.aircraftId)]);
   return input.pilots.map((pilot) => {
     const user = users.rows.find((item) => item.id === pilot.userId);
     const plane = aircraft.rows.find((item) => item.id === pilot.aircraftId);
     if (!user?.nickname || !plane) throw fail('VALIDATION', 'Piloto ou aeronave indisponível. Reabra o relatório para atualizar os dados.');
     if (publish && (!pilot.reviewed || pilot.attended === null || (pilot.attended && pilot.survived === null))) throw fail('VALIDATION', `Confira a participação, sobrevivência e os resultados de ${user.nickname}.`);
     if (!pilot.attended && REPORT_TARGETS.some(([key]) => pilot.counts[key] > 0)) throw fail('VALIDATION', `Um piloto ausente não pode ter resultados: ${user.nickname}.`);
-    return { ...pilot, nickname: user.nickname, aircraftName: plane.name, ...calculatePilot(pilot, rules, Number(plane.multiplier)) };
+    return { ...pilot, nickname: user.nickname, aircraftName: plane.name, ...calculatePilot(pilot, rules, aircraftMultiplier(missionTier, plane.tier, rules.tierBonuses)) };
   });
 }
 
@@ -85,7 +85,7 @@ export async function saveMissionReport(admin: User, id: string, body: unknown, 
   adminOnly(admin);
   const input = reportInputSchema.parse(body);
   return db.tx(async (query) => {
-    const mission = (await query.query<{ status: string; title: string }>('select status,title from missions where id=$1 for update', [id])).rows[0];
+    const mission = (await query.query<{ status: string; title: string; tier: number | null }>('select status,title,tier from missions where id=$1 for update', [id])).rows[0];
     if (!mission) throw fail('MISSION_NOT_FOUND');
     const previous = (await query.query<ReportRow>('select * from mission_reports where mission_id=$1', [id])).rows[0];
     // A retry after a lost publication response must never credit the pilots again.
@@ -95,7 +95,7 @@ export async function saveMissionReport(admin: User, id: string, body: unknown, 
     const savedRules = (await query.query<{ value: ScoringRules }>("select value from settings where key='mission_scoring_rules'")).rows[0];
     const rules = previous?.rules ?? (savedRules ? scoringRulesSchema.parse(savedRules.value) : { ...DEFAULT_SCORING_RULES });
     if (input.rulesFingerprint !== fingerprint(rules)) throw fail('VALIDATION', 'As regras de pontuação mudaram. Reabra o relatório e confira os valores antes de continuar.');
-    const pilots = await results(query, input, rules, publish, id);
+    const pilots = await results(query, input, rules, publish, id, mission.tier);
     if (publish) {
       for (const pilot of pilots) {
         await query.query(`insert into mission_signups(mission_id,user_id,aircraft_id,attended,pm_awarded) values ($1,$2,$3,$4,$5)

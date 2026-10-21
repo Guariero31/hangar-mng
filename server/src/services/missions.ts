@@ -14,7 +14,7 @@ async function audit(q: Queryable, adminId: string, action: string, details: obj
 
 const MISSION_COLS = `m.id, m.title, m.briefing, m.starts_at as "startsAt", m.default_pm as "defaultPm",
   m.status, m.series_id as "seriesId", m.closed_at as "closedAt", m.map_name as "mapName", m.briefing_image_url as "briefingImageUrl",
-  m.image_asset_id as "imageAssetId", m.briefing_asset_id as "briefingAssetId", m.audio_asset_id as "audioAssetId",
+  m.image_asset_id as "imageAssetId", m.briefing_asset_id as "briefingAssetId", m.audio_asset_id as "audioAssetId", m.tier,
   exists(select 1 from mission_reports report where report.mission_id=m.id and report.state='published') as "hasReport"`;
 
 async function signupsOf(q: Queryable, ids: string[]) {
@@ -86,20 +86,27 @@ export async function cancelSignup(user: User, missionId: string) {
   });
 }
 
-export interface MissionInput { title: string; briefing: string; startsAt: string; defaultPm: number | null; mapName?: string; briefingImageUrl?: string; imageAssetId?: string | null; briefingAssetId?: string | null; audioAssetId?: string | null }
+export interface MissionInput { title: string; briefing: string; startsAt: string; defaultPm: number | null; mapName?: string; briefingImageUrl?: string; imageAssetId?: string | null; briefingAssetId?: string | null; audioAssetId?: string | null; tier?: number | null }
+
+async function assertTier(q: Queryable, tier: number | null | undefined) {
+  if (tier == null) return;
+  const { rows } = await q.query('select 1 from tiers where tier = $1', [tier]);
+  if (!rows.length) throw fail('VALIDATION', 'Escolha um tier cadastrado na progressão.');
+}
 
 /** Cria a missão; com repeatWeeks > 0 cria também cópias semanais (mesma série). */
 export async function createMission(admin: User, input: MissionInput, repeatWeeks: number) {
   await validateMissionAssets(input.imageAssetId, input.briefingAssetId, input.audioAssetId);
+  await assertTier(db, input.tier);
   const result = await db.tx(async (q) => {
     const seriesId = repeatWeeks > 0 ? (await q.query<{ id: string }>('select gen_random_uuid() as id')).rows[0].id : null;
     const ids: string[] = [];
     for (let i = 0; i <= repeatWeeks; i++) {
       const at = new Date(new Date(input.startsAt).getTime() + i * 7 * 86400_000).toISOString();
       const { rows } = await q.query<{ id: string }>(
-        `insert into missions (title, briefing, starts_at, default_pm, series_id, created_by, map_name, briefing_image_url, image_asset_id, briefing_asset_id, audio_asset_id)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning id`,
-        [input.title.trim(), input.briefing.trim(), at, input.defaultPm, seriesId, admin.id, input.mapName?.trim() ?? '', input.briefingImageUrl?.trim() ?? '', input.imageAssetId ?? null, input.briefingAssetId ?? null, input.audioAssetId ?? null]);
+        `insert into missions (title, briefing, starts_at, default_pm, series_id, created_by, map_name, briefing_image_url, image_asset_id, briefing_asset_id, audio_asset_id, tier)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) returning id`,
+        [input.title.trim(), input.briefing.trim(), at, input.defaultPm, seriesId, admin.id, input.mapName?.trim() ?? '', input.briefingImageUrl?.trim() ?? '', input.imageAssetId ?? null, input.briefingAssetId ?? null, input.audioAssetId ?? null, input.tier ?? null]);
       ids.push(rows[0].id);
     }
     await audit(q, admin.id, 'create_mission', { title: input.title.trim(), startsAt: input.startsAt, copies: ids.length });
@@ -120,11 +127,12 @@ async function notifyPilots(input: MissionInput, weeks: number) {
 
 export async function updateMission(admin: User, id: string, input: MissionInput) {
   await validateMissionAssets(input.imageAssetId, input.briefingAssetId, input.audioAssetId);
+  await assertTier(db, input.tier);
   await db.tx(async (q) => {
     const m = await lockMission(q, id);
     if (m.status !== 'scheduled') throw fail('MISSION_NOT_OPEN');
-    await q.query('update missions set title = $2, briefing = $3, starts_at = $4, default_pm = $5, map_name = $6, briefing_image_url = $7, image_asset_id=$8, briefing_asset_id=$9, audio_asset_id=$10 where id = $1',
-      [id, input.title.trim(), input.briefing.trim(), input.startsAt, input.defaultPm, input.mapName?.trim() ?? '', input.briefingImageUrl?.trim() ?? '', input.imageAssetId ?? null, input.briefingAssetId ?? null, input.audioAssetId ?? null]);
+    await q.query('update missions set title = $2, briefing = $3, starts_at = $4, default_pm = $5, map_name = $6, briefing_image_url = $7, image_asset_id=$8, briefing_asset_id=$9, audio_asset_id=$10, tier=$11 where id = $1',
+      [id, input.title.trim(), input.briefing.trim(), input.startsAt, input.defaultPm, input.mapName?.trim() ?? '', input.briefingImageUrl?.trim() ?? '', input.imageAssetId ?? null, input.briefingAssetId ?? null, input.audioAssetId ?? null, input.tier ?? null]);
     await audit(q, admin.id, 'update_mission', { id, title: input.title.trim() });
   });
 }
@@ -135,6 +143,28 @@ export async function cancelMission(admin: User, id: string) {
     if (m.status !== 'scheduled') throw fail('MISSION_NOT_OPEN');
     await q.query(`update missions set status = 'cancelled' where id = $1`, [id]);
     await audit(q, admin.id, 'cancel_mission', { id, title: m.title });
+  });
+}
+
+/** Apaga a missão de vez (inscrições e relatório rascunho vão junto). Recusa se algum PM já foi distribuído por ela. */
+export async function deleteMission(admin: User, id: string) {
+  await db.tx(async (q) => {
+    const m = await lockMission(q, id);
+    const { rows: [paid] } = await q.query<{ pm: number; published: boolean }>(
+      `select coalesce((select sum(pm_awarded) from mission_signups where mission_id = $1), 0)::int as pm,
+              exists(select 1 from mission_reports where mission_id = $1 and state = 'published') as published`, [id]);
+    const { rows: [ledger] } = await q.query<{ n: number }>(
+      `select count(*)::int as n from points_ledger where external_ref like $1`, [`mission-report:${id}:%`]);
+    if (paid.pm > 0 || paid.published || ledger.n > 0) throw fail('VALIDATION', 'Esta missão já distribuiu PM aos pilotos e não pode ser apagada. Para tirá-la da lista, mantenha o relatório publicado.');
+    const { rows: [files] } = await q.query<{ image: string | null; briefing: string | null; audio: string | null }>(
+      'select image_asset_id as image, briefing_asset_id as briefing, audio_asset_id as audio from missions where id = $1', [id]);
+    await q.query('delete from missions where id = $1', [id]);
+    for (const asset of [files.image, files.briefing, files.audio]) {
+      if (!asset) continue;
+      await q.query(`delete from mission_assets where id = $1 and not exists (
+        select 1 from missions where image_asset_id = $1 or briefing_asset_id = $1 or audio_asset_id = $1)`, [asset]);
+    }
+    await audit(q, admin.id, 'delete_mission', { id, title: m.title });
   });
 }
 

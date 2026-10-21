@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
+import { Pagination } from '../../components/Pagination';
 import { errorMessage } from '../../api/client';
 import { useAdminTree, useSaveAircraft, useSaveTier } from '../../api/hooks';
 import type { Aircraft, AircraftRole, Tier } from '../../api/types';
 import { useToast } from '../../components/Toast';
 import { Select } from '../../components/Select';
-import { AircraftIcon, fmtMult, iconOf, ICONS, ROLE_LABEL } from '../../lib/aircraft';
+import { AircraftIcon, iconOf, ICONS, ROLE_LABEL } from '../../lib/aircraft';
 import { fmtPoints } from '../../lib/format';
 import { AverageInfo } from '../../components/AverageInfo';
 import { AdminTabs } from './AdminTabs';
 import { Link } from 'react-router-dom';
 import './aircraft-admin.css';
+
+const PAGE_SIZE = 10;
 
 const EMPTY: Aircraft = {
   id: '', name: '', tier: 1, role: 'fighter', row: 0, icon: null, restriction: null, description: null,
@@ -28,6 +31,8 @@ export function AircraftAdmin() {
   const [tierFilter, setTierFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [offset, setOffset] = useState(0);
+  useEffect(() => { setOffset(0); }, [search, tierFilter, roleFilter, statusFilter]);
 
   const tierLabel = (n: number) => tree?.tiers.find((t) => t.tier === n)?.label ?? String(n);
   const set = <K extends keyof Aircraft>(k: K, v: Aircraft[K]) => setForm((f) => (f ? { ...f, [k]: v } : f));
@@ -128,19 +133,19 @@ export function AircraftAdmin() {
     </section></div>;
 
   return <div className="aircraft-admin">
-    <div className="page-head"><div><span className="label">Administração / Hangar</span><h1>Tech tree</h1><p>Organize as aeronaves e a progressão do esquadrão.</p></div>{tree && tab === 'aircraft' && <button className="btn" onClick={() => edit(null)}>+ Nova aeronave</button>}</div>
+    <div className="page-head"><div><span className="label">Administração / Hangar</span><h1>Aeronaves e progressão</h1><p>Organize as aeronaves e a progressão do esquadrão.</p></div>{tree && tab === 'aircraft' && <button className="btn" onClick={() => edit(null)}>+ Nova aeronave</button>}</div>
     <AdminTabs />
     {isLoading && <div className="loading">Carregando aeronaves…</div>}
     {error && <div className="empty">{errorMessage(error)}</div>}
     {tree && <>
       <div className="aircraft-tabs" role="tablist" aria-label="Configuração da árvore">
-        <button type="button" id="aircraft-tab" role="tab" aria-selected={tab === 'aircraft'} aria-controls="aircraft-panel" onClick={() => setTab('aircraft')}>Aeronaves <span>{tree.aircraft.length}</span></button>
-        <button type="button" id="progression-tab" role="tab" aria-selected={tab === 'progression'} aria-controls="progression-panel" onClick={() => setTab('progression')}>Progressão</button>
+        <button type="button" id="aircraft-tab" role="tab" aria-selected={tab === 'aircraft'} aria-controls="aircraft-panel" onClick={() => setTab('aircraft')}>Catálogo <span>{tree.aircraft.length}</span></button>
+        <button type="button" id="progression-tab" role="tab" aria-selected={tab === 'progression'} aria-controls="progression-panel" onClick={() => setTab('progression')}>Tiers e custos</button>
       </div>
       <section id="progression-panel" role="tabpanel" aria-labelledby="progression-tab" hidden={tab !== 'progression'}>
-        <div className="aircraft-progression-intro"><h2>Progressão por tier</h2><p className="muted">Configure custos de aquisição e os valores exibidos na árvore.</p></div>
+        <div className="aircraft-progression-intro"><h2>Tiers e custos</h2><p className="muted">Configure custos de aquisição e os valores exibidos na árvore.</p></div>
         <TiersCard tiers={tree.tiers} average={tree.baseMissionSample > 0 ? { value: tree.baseMissionPoints, sample: tree.baseMissionSample } : null} />
-        <p className="aircraft-scoring-note">Os pontos por abate, objetivos e bônus de sobrevivência são definidos em <Link to="/admin/pontuacao">Pontuação</Link>. O relatório pós-missão utiliza essas regras; o PM base e o multiplicador de tier são usados na estimativa exibida na árvore.</p>
+        <p className="aircraft-scoring-note">Os pontos por abate, objetivos e bônus de sobrevivência são definidos em <Link to="/admin/pontuacao">Pontuação</Link>. O relatório pós-missão utiliza essas regras; o bônus por tier abaixo da missão também fica em Pontuação.</p>
       </section>
       <section id="aircraft-panel" role="tabpanel" aria-labelledby="aircraft-tab" hidden={tab !== 'aircraft'}>
         <div className="aircraft-filters">
@@ -151,9 +156,10 @@ export function AircraftAdmin() {
         </div>
         <div className="aircraft-list-summary"><span role="status">{filtered.length} de {tree.aircraft.length} aeronaves</span>{(search || tierFilter || roleFilter || statusFilter) && <button type="button" className="btn ghost sm" onClick={() => { setSearch(''); setTierFilter(''); setRoleFilter(''); setStatusFilter(''); }}>Limpar filtros</button>}</div>
         <section className="card"><div className="table-wrap"><table className="players aircraft-table"><thead><tr><th>Aeronave</th><th>Tier</th><th>Função</th><th>Status</th><th><span className="sr-only">Ações</span></th></tr></thead><tbody>
-          {filtered.map((aircraft) => <tr key={aircraft.id}><td><div className="aircraft-list-name"><span style={{ color: `var(--role-${aircraft.role})` }}><AircraftIcon icon={iconOf(aircraft)} className="row-icon" /></span><div><strong>{aircraft.name}</strong><small>{aircraft.id}</small></div></div></td><td className="rank">{tierLabel(aircraft.tier)}</td><td className="muted">{ROLE_LABEL[aircraft.role]}</td><td><span className={`badge${aircraft.active ? ' ok' : ''}`}>{aircraft.active ? 'ativa' : 'inativa'}</span></td><td className="num"><button type="button" className="btn ghost sm" aria-label={`Editar ${aircraft.name}`} onClick={() => edit(aircraft)}>Editar ↗</button></td></tr>)}
+          {filtered.slice(offset >= filtered.length ? 0 : offset, (offset >= filtered.length ? 0 : offset) + PAGE_SIZE).map((aircraft) => <tr key={aircraft.id}><td><div className="aircraft-list-name"><span style={{ color: `var(--role-${aircraft.role})` }}><AircraftIcon icon={iconOf(aircraft)} className="row-icon" /></span><div><strong>{aircraft.name}</strong><small>{aircraft.id}</small></div></div></td><td className="rank">{tierLabel(aircraft.tier)}</td><td className="muted">{ROLE_LABEL[aircraft.role]}</td><td><span className={`badge${aircraft.active ? ' ok' : ''}`}>{aircraft.active ? 'ativa' : 'inativa'}</span></td><td className="num"><button type="button" className="btn ghost sm" aria-label={`Editar ${aircraft.name}`} onClick={() => edit(aircraft)}>Editar ↗</button></td></tr>)}
           {!filtered.length && <tr><td colSpan={5}><div className="empty">Nenhuma aeronave encontrada com esses filtros.</div></td></tr>}
         </tbody></table></div></section>
+        <Pagination offset={offset >= filtered.length ? 0 : offset} total={filtered.length} pageSize={PAGE_SIZE} onChange={setOffset} />
       </section>
     </>}
   </div>;
@@ -180,7 +186,7 @@ function TiersCard({ tiers, average }: { tiers: Tier[]; average: { value: number
   const isNew = (t: Tier) => !tiers.some((x) => x.tier === t.tier);
   const changed = (t: Tier) => {
     const o = tiers.find((x) => x.tier === t.tier);
-    return !o || o.label !== t.label || o.cost !== t.cost || o.multiplier !== t.multiplier;
+    return !o || o.label !== t.label || o.cost !== t.cost;
   };
 
   function saveRow(t: Tier) {
@@ -211,7 +217,7 @@ function TiersCard({ tiers, average }: { tiers: Tier[]; average: { value: number
       <div className="table-wrap">
         <table className="players tiers-table">
           <thead>
-            <tr><th>Tier</th><th>Rótulo</th><th>Custo (PM)</th><th>Multiplicador de PM</th><th></th></tr>
+            <tr><th>Tier</th><th>Rótulo</th><th>Custo (PM)</th><th></th></tr>
           </thead>
           <tbody>
             {rows.map((t, i) => (
@@ -220,13 +226,6 @@ function TiersCard({ tiers, average }: { tiers: Tier[]; average: { value: number
                 <td><input className="input" style={{ width: 80 }} value={t.label} onChange={(e) => update(i, { label: e.target.value })} /></td>
                 <td><input className="input" type="number" min={0} step={100} style={{ width: 130 }} value={t.cost}
                   onChange={(e) => update(i, { cost: Number(e.target.value) })} /></td>
-                <td>
-                  <div className="row-inline">
-                    <input className="input" type="number" min={0.01} step={0.01} style={{ width: 100 }} value={t.multiplier}
-                      onChange={(e) => update(i, { multiplier: Number(e.target.value) })} />
-                    <span className="muted mono">{fmtMult(t.multiplier || 0)}</span>
-                  </div>
-                </td>
                 <td style={{ textAlign: 'right' }}>
                   {t.cost === 0 && <span className="badge ok" style={{ marginRight: 8 }}>na frota de todos</span>}
                   <button className="btn ghost sm" disabled={!changed(t) || saveTier.isPending} onClick={() => saveRow(t)}>

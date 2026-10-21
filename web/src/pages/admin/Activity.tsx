@@ -11,7 +11,7 @@ import './admin.css';
 const GROUPS = [
   { key: '', label: 'Tudo' },
   { key: 'players', label: 'Jogadores' },
-  { key: 'tree', label: 'Tech tree' },
+  { key: 'tree', label: 'Aeronaves' },
   { key: 'missions', label: 'Missões' },
   { key: 'settings', label: 'Configurações' },
 ];
@@ -35,6 +35,7 @@ const KIND: Record<string, { label: string; tone: string }> = {
   create_mission: { label: 'Nova missão', tone: 'info' },
   update_mission: { label: 'Missão editada', tone: 'info' },
   cancel_mission: { label: 'Missão cancelada', tone: 'danger' },
+  delete_mission: { label: 'Missão apagada', tone: 'danger' },
   close_mission: { label: 'Missão encerrada', tone: 'ok' },
   save_mission_report: { label: 'Rascunho de relatório', tone: 'info' },
   publish_mission_report: { label: 'Relatório publicado', tone: 'ok' },
@@ -61,6 +62,7 @@ function describe(it: ActivityItem): string {
     case 'create_mission': return `Criou a missão ${d.title}${(d.copies ?? 1) > 1 ? ` (${d.copies} semanas)` : ''}`;
     case 'update_mission': return `Editou a missão ${d.title}`;
     case 'cancel_mission': return `Cancelou a missão ${d.title}`;
+    case 'delete_mission': return `Apagou a missão ${d.title}`;
     case 'close_mission': return `Encerrou ${d.title}: ${d.pilots} pilotos, ${fmtPoints(d.totalPm ?? 0)} PM`;
     case 'save_mission_report': return `Salvou o relatório de ${d.title} como rascunho`;
     case 'publish_mission_report': return `Publicou o relatório de ${d.title}: ${d.pilots} pilotos, ${fmtPoints(d.totalPm ?? 0)} PM`;

@@ -69,7 +69,7 @@
   background-size: 240px 240px; background-attachment: local; }
 .tt .chart::-webkit-scrollbar { display: none; }
 .tt .chart.grab { cursor: grabbing; user-select: none; }
-.tt .canvas { position: relative; margin: 0 auto; }
+.tt .canvas { position: relative; margin: 0; }
 .tt .stage { position: absolute; left: 0; top: 0; transform-origin: 0 0;
   background-image: linear-gradient(rgba(255, 190, 90, .045) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 190, 90, .045) 1px, transparent 1px); background-size: 44px 44px; }
 .tt .patch { position: absolute; pointer-events: none; }
@@ -281,3 +281,10 @@
   .tt .e.route-flow { display: none; animation: none; }
   .tt .node.just-unlocked .tile::after { animation: none; background: none; opacity: .7; }
 }
+/* Na tela da árvore a barra de rolagem da página fica escondida; a rolagem pela roda do mouse continua. */
+html.tt-page { scrollbar-width: none; -ms-overflow-style: none; }
+html.tt-page::-webkit-scrollbar { display: none; }
+/* Com mouse, a roda não move o mapa (rola a página); o mapa se move arrastando. No toque a rolagem nativa continua. */
+@media (hover: hover) and (pointer: fine) { .tt .chart { overflow: hidden; } }
+/* Em tela grande a página da árvore não rola: a roda do mouse não move nada. Em janelas pequenas a rolagem volta, para não cortar o conteúdo. */
+@media (min-width: 901px) and (min-height: 700px) { html.tt-page, html.tt-page body { overflow: hidden; } }

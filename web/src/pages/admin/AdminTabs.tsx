@@ -11,7 +11,7 @@ export function AdminTabs() {
       <NavLink to="/admin/visao-geral">Visão geral</NavLink>
       <NavLink to="/admin/aprovacoes">Aprovações{data?.pending ? <span className="tab-badge">{data.pending}</span> : null}</NavLink>
       <NavLink to="/admin" end>Jogadores</NavLink>
-      <NavLink to="/admin/aeronaves">Tech tree</NavLink>
+      <NavLink to="/admin/aeronaves">Aeronaves</NavLink>
       <NavLink to="/admin/missoes">Missões</NavLink>
       <NavLink to="/admin/pontuacao">Pontuação</NavLink>
       <NavLink to="/admin/atividade">Atividade</NavLink>

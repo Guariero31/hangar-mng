@@ -8,7 +8,7 @@ import { useMission } from '../../api/hooks';
 import { invalidatePlayerData } from '../../api/cache';
 import { Select } from '../../components/Select';
 import { fmtPoints } from '../../lib/format';
-import { previewPilot, reportPayload, reportPilot, REPORT_TARGETS, reportWhen } from '../../lib/mission-report';
+import { aircraftMultiplier, previewPilot, reportPayload, reportPilot, REPORT_TARGETS, reportWhen } from '../../lib/mission-report';
 import '../mission-report.css';
 
 function ReportEditor({ mission, initial }: { mission: Mission; initial: MissionReport }) {
@@ -28,7 +28,7 @@ function ReportEditor({ mission, initial }: { mission: Mission; initial: Mission
     else { setStep(index); }
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
-  const aircraft = useQuery({ queryKey: ['admin', 'tree'], queryFn: () => api.get<{ aircraft: Aircraft[]; tiers: { tier: number; multiplier: number }[] }>('/admin/tree') });
+  const aircraft = useQuery({ queryKey: ['admin', 'tree'], queryFn: () => api.get<{ aircraft: Aircraft[] }>('/admin/tree') });
   const players = useQuery({ queryKey: ['admin', 'report-players'], queryFn: async () => {
     const registered: { id: string; nickname: string }[] = [];
     let total = 0;
@@ -55,8 +55,7 @@ function ReportEditor({ mission, initial }: { mission: Mission; initial: Mission
     change((current) => ({ ...current, pilots: current.pilots.map((pilot) => pilot.userId === userId ? { ...pilot, reviewed: false, ...patch } : pilot) }));
   }
   const attended = report.pilots.filter((pilot) => pilot.attended);
-  const bonusOf = (aircraftId: string) => { const plane = aircraft.data?.aircraft.find((item) => item.id === aircraftId); return aircraft.data?.tiers.find((item) => item.tier === plane?.tier)?.multiplier ?? 1; };
-  const preview = (pilot: ReportPilot) => previewPilot(pilot, report.rules, bonusOf(pilot.aircraftId));
+  const preview = (pilot: ReportPilot) => previewPilot(pilot, report.rules, aircraftMultiplier(mission.tier, aircraft.data?.aircraft.find((item) => item.id === pilot.aircraftId)?.tier, report.rules.tierBonuses));
   const ready = report.pilots.every((pilot) => pilot.attended !== null && pilot.reviewed && (!pilot.attended || pilot.survived !== null));
   const total = report.pilots.reduce((sum, pilot) => sum + preview(pilot).total, 0);
   const pilotOptions = players.data?.filter((pilot) => !report.pilots.some((item) => item.userId === pilot.id)) ?? [];

@@ -18,7 +18,6 @@ const payload = (report) => ({ version: report.version, rulesFingerprint: report
   pilots: report.pilots.map(({ userId, aircraftId, attended, survived, counts, notes, reviewed }) => ({ userId, aircraftId, attended, survived, counts, notes, reviewed })) });
 before(async () => {
   await migrate(); await seed();
-  await db.query('update tiers set multiplier=1'); // bônus de aeronave é testado em mission-report-aircraft-bonus.test.mjs
   const make = async (name, role = 'player') => (await db.query('insert into users(google_sub,email,nickname,role) values ($1,$2,$1,$3) returning *', [name, `${name}@example.invalid`, role])).rows[0];
   admin = await make('ReportAdmin', 'admin'); pilot = await make('ReportPilot'); absent = await make('AbsentPilot'); extra = await make('ExtraPilot');
   free = (await db.query('select a.id from aircraft a join tiers t on t.tier=a.tier where t.cost=0 limit 1')).rows[0].id;

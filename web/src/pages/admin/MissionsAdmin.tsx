@@ -2,9 +2,10 @@ import { useToast } from '../../components/Toast';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MissionFileUpload } from '../../components/MissionFileUpload';
+import { useQuery } from '@tanstack/react-query';
 import { Select } from '../../components/Select';
-import { useAdminMissions, useSaveMission } from '../../api/hooks';
-import { errorMessage } from '../../api/client';
+import { useAdminMissions, useDeleteMission, useSaveMission } from '../../api/hooks';
+import { api, errorMessage } from '../../api/client';
 import { fmtPoints } from '../../lib/format';
 import type { Mission } from '../../api/types';
 import { Chips, DateBlock, fmtWhen } from '../Missions';
@@ -25,6 +26,9 @@ function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () 
   const [title, setTitle] = useState(editing?.title ?? '');
   const [briefing, setBriefing] = useState(editing?.briefing ?? '');
   const [mapName, setMapName] = useState(editing?.mapName ?? '');
+  const [tier, setTier] = useState(editing?.tier != null ? String(editing.tier) : '');
+  const tiers = useQuery({ queryKey: ['admin', 'tree'], queryFn: () => api.get<{ tiers: { tier: number; label: string }[] }>('/admin/tree') });
+  const tierLabel = tiers.data?.tiers.find((item) => String(item.tier) === tier)?.label;
   const [briefingImageUrl, setBriefingImageUrl] = useState(editing?.briefingImageUrl ?? '');
   const [imageAsset, setImageAsset] = useState(editing?.imageAsset ?? null);
   const [briefingAsset, setBriefingAsset] = useState(editing?.briefingAsset ?? null);
@@ -43,8 +47,9 @@ function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () 
     if (uploading) return;
     setErr('');
     if (!date || !time) return setErr('Informe a data e a hora.');
+    if (!tier && (!editing || editing.tier != null)) return setErr('Escolha o tier da missão.');
     const input = {
-      title, briefing, mapName, briefingImageUrl, startsAt: new Date(`${date}T${time}:00-03:00`).toISOString(),
+      title, briefing, mapName, tier: tier ? Number(tier) : null, briefingImageUrl, startsAt: new Date(`${date}T${time}:00-03:00`).toISOString(),
       imageAssetId: imageAsset?.id ?? null, briefingAssetId: briefingAsset?.id ?? null, audioAssetId: audioAsset?.id ?? null,
       defaultPm: pm.trim() === '' ? null : Number(pm),
       ...(editing ? {} : { repeatWeeks: Number(repeat) || 0 }),
@@ -63,6 +68,7 @@ function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () 
       <div className="mission-editor-grid">
         <label className="field"><span className="label">Título</span><input className="input" value={title} maxLength={80} required onChange={(e) => setTitle(e.target.value)} /></label>
         <label className="field"><span className="label">Mapa</span><input className="input" maxLength={80} placeholder="Ex.: Syria, Caucasus…" value={mapName} onChange={(event) => setMapName(event.target.value)} /></label>
+        <label className="field"><span className="label">Tier da missão</span><Select aria-label="Tier da missão" disabled={tiers.isPending || tiers.isError} value={tier} onChange={setTier} options={[{ value: '', label: tiers.isPending ? 'Carregando tiers…' : tiers.isError ? 'Não foi possível carregar os tiers' : 'Escolha o tier…' }, ...(tiers.data?.tiers ?? []).map((item) => ({ value: String(item.tier), label: `Tier ${item.label}` }))]} /></label>
       </div></fieldset>
       <fieldset className="mission-editor-section"><legend><span>02</span> Agendamento e recompensa</legend>
       <p className="mission-section-hint">Todos os horários seguem Brasília (UTC−3).</p>
@@ -88,7 +94,7 @@ function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () 
       </fieldset>
       </div><aside className="mission-editor-preview" aria-label="Prévia da missão">
         <span className="label">Resumo da operação</span><h3>{title.trim() || 'Nome da missão'}</h3>
-        <dl><div><dt>Mapa</dt><dd>{mapName.trim() || 'A definir'}</dd></div><div><dt>Data e hora</dt><dd>{date && time ? `${fmtWhen(new Date(`${date}T${time}:00-03:00`).toISOString())} · Brasília` : 'Defina o agendamento'}</dd></div><div><dt>Recompensa sugerida</dt><dd>{pm.trim() ? `${fmtPoints(Number(pm))} PM` : 'A definir'}</dd></div>
+        <dl><div><dt>Mapa</dt><dd>{mapName.trim() || 'A definir'}</dd></div><div><dt>Tier</dt><dd>{tierLabel ? `Tier ${tierLabel}` : 'A definir'}</dd></div><div><dt>Data e hora</dt><dd>{date && time ? `${fmtWhen(new Date(`${date}T${time}:00-03:00`).toISOString())} · Brasília` : 'Defina o agendamento'}</dd></div><div><dt>Recompensa sugerida</dt><dd>{pm.trim() ? `${fmtPoints(Number(pm))} PM` : 'A definir'}</dd></div>
           {!editing && <div><dt>Recorrência</dt><dd>{repeat === '0' ? 'Evento único' : `+${repeat} semanas`}</dd></div>}
         </dl><div className="mission-preview-note"><span aria-hidden="true">↗</span><p>Os pilotos leem o briefing e escolhem a aeronave na página da operação.</p></div>
         {editing && <Link to={`/missoes/${editing.id}`} target="_blank" rel="noopener noreferrer">Ver página publicada →</Link>}
@@ -106,6 +112,14 @@ const STATUS = { scheduled: 'Agendada', closed: 'Encerrada', cancelled: 'Cancela
 export function MissionsAdmin() {
   const { data, isLoading, error } = useAdminMissions();
   const [form, setForm] = useState<{ editing: Mission | null } | null>(null);
+  const toast = useToast();
+  const remove = useDeleteMission();
+  const [removeError, setRemoveError] = useState('');
+  function apagar(m: Mission) {
+    if (!confirm(`Apagar a missão "${m.title}"? Isso remove as inscrições e não pode ser desfeito.`)) return;
+    setRemoveError('');
+    remove.mutate(m.id, { onSuccess: () => toast('Missão apagada.'), onError: (x) => setRemoveError(errorMessage(x)) });
+  }
 
   return (
     <>
@@ -121,6 +135,7 @@ export function MissionsAdmin() {
       {form && <MissionForm key={form.editing?.id ?? 'new'} editing={form.editing} onDone={() => setForm(null)} />}
       {isLoading && <p className="muted">Carregando…</p>}
       {error && <p className="muted">{errorMessage(error)}</p>}
+      {removeError && <p className="op-error" role="alert">{removeError}</p>}
       <section className="ms-list mission-admin-list">
         {data && !data.items.length && <p className="muted">Nenhuma missão cadastrada.</p>}
         {data?.items.map((m) => (
@@ -142,6 +157,7 @@ export function MissionsAdmin() {
                       <Link className="btn" to={`/admin/missoes/${m.id}/relatorio`}>Finalizar missão</Link>
                     </div>
                   )}
+            {!m.hasReport && <button className="btn ghost danger" disabled={remove.isPending} onClick={() => apagar(m)}>Apagar</button>}
           </article>
         ))}
       </section>

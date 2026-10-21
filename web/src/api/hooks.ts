@@ -211,6 +211,8 @@ export const useSaveMission = () =>
 
 export const useCancelMission = () => useMissionMutation((id: string) => api.post(`/admin/missions/${id}/cancel`, {}));
 
+export const useDeleteMission = () => useMissionMutation((id: string) => api.del(`/admin/missions/${id}`));
+
 export const useCloseMission = () =>
   useMissionMutation((v: { id: string; attendees: { userId: string; pm: number }[] }) =>
     api.post<{ pilots: number; total: number }>(`/admin/missions/${v.id}/close`, { attendees: v.attendees }));

@@ -10,6 +10,13 @@ export function reportPilot(userId: string, nickname: string, aircraftId: string
   return { userId, nickname, aircraftId, aircraftName, attended: null, survived: null, reviewed: false,
     counts: Object.fromEntries(REPORT_TARGETS.map(({ key }) => [key, 0])) as Record<ReportTarget, number>, notes: '', subtotal: 0, aircraftMultiplier: 1, aircraftBonus: 0, multiplier: 1, survivalBonus: 0, total: 0, breakdown: [] };
 }
+export const DEFAULT_TIER_BONUSES = [1.14, 1.2, 1.25, 1.28];
+/** Igual ao servidor: 1,0 se a aeronave é do tier da missão ou maior (ou a missão não tem tier); abaixo vale a tabela. */
+export function aircraftMultiplier(missionTier: number | null | undefined, aircraftTier: number | undefined, bonuses: number[]) {
+  if (missionTier == null || aircraftTier == null) return 1;
+  const gap = missionTier - aircraftTier;
+  return gap <= 0 ? 1 : bonuses[Math.min(gap, bonuses.length) - 1] ?? 1;
+}
 export function previewPilot(pilot: ReportPilot, rules: ScoringRules, aircraftMultiplier = 1) {
   const subtotal = pilot.attended ? REPORT_TARGETS.reduce((sum, { key }) => sum + pilot.counts[key] * rules[key], 0) : 0;
   const multiplier = pilot.attended && pilot.survived && rules.survivalEnabled ? rules.survivalMultiplier : 1;

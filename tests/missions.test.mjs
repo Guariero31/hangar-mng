@@ -67,3 +67,31 @@ test('operation detail persists briefing metadata and personal signup across lif
   assert.equal((await m.getMission(p1, ids[0])).status, 'cancelled');
   await assert.rejects(m.getMission(p1, '00000000-0000-4000-8000-000000000000'), /encontrada/);
 });
+
+test('a missão guarda o tier escolhido entre os tiers cadastrados e recusa um tier inexistente', async () => {
+  const base = { title: 'Op Tier', briefing: '', startsAt: '2030-03-01T20:00:00Z', defaultPm: null };
+  const { ids } = await m.createMission(adm, { ...base, tier: 3 }, 0);
+  const row = async (id) => (await m.adminListMissions(50, 0)).items.find((item) => item.id === id);
+  assert.equal((await row(ids[0])).tier, 3);
+  await m.updateMission(adm, ids[0], { ...base, tier: 2 });
+  assert.equal((await row(ids[0])).tier, 2);
+  await assert.rejects(m.createMission(adm, { ...base, tier: 99 }, 0), /tier cadastrado/);
+  const semTier = await m.createMission(adm, base, 0);
+  assert.equal((await row(semTier.ids[0])).tier, null);
+});
+
+test('apagar missão remove inscrições e arquivos, e recusa uma missão que já distribuiu PM', async () => {
+  const base = { title: 'Op Apagar', briefing: '', startsAt: '2030-04-01T20:00:00Z', defaultPm: null };
+  const free = (await db.query(`select a.id from aircraft a join tiers t on t.tier=a.tier where t.cost=0 and a.active limit 1`)).rows[0].id;
+  const { ids } = await m.createMission(adm, base, 0);
+  await m.signUp(p1, ids[0], free);
+  await m.deleteMission(adm, ids[0]);
+  assert.equal((await db.query('select 1 from missions where id=$1', [ids[0]])).rows.length, 0);
+  assert.equal((await db.query('select 1 from mission_signups where mission_id=$1', [ids[0]])).rows.length, 0);
+  assert.equal((await db.query("select 1 from admin_audit_log where action='delete_mission'")).rows.length, 1);
+  await assert.rejects(m.deleteMission(adm, ids[0]));
+  const paid = await m.createMission(adm, { ...base, title: 'Op Paga' }, 0);
+  await m.signUp(p1, paid.ids[0], free);
+  await m.closeMission(adm, paid.ids[0], [{ userId: p1.id, pm: 250 }]);
+  await assert.rejects(m.deleteMission(adm, paid.ids[0]), /distribuiu PM/);
+});

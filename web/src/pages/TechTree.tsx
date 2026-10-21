@@ -30,6 +30,7 @@ export function TechTree() {
 }
 
 function TechTreeView({ state }: { state: TechTreeState }) {
+  useEffect(() => { document.documentElement.classList.add('tt-page'); return () => document.documentElement.classList.remove('tt-page'); }, []);
   const { tiers, bands, aircraft, balance, baseMissionPoints, baseMissionSample, squadAverage, squadSample } = state;
   const unlock = useUnlock();
   const undo = useUndoUnlock();
@@ -197,7 +198,7 @@ function TechTreeView({ state }: { state: TechTreeState }) {
     const nz = w < 700 ? 0.6 : w / L.W;
     autoFit.current = true;
     anchor.current = null;
-    zRef.current = Math.min(1.3, Math.max(0.35, Math.floor(nz * 100) / 100));
+    zRef.current = Math.min(1.6, Math.max(0.35, Math.floor(nz * 100) / 100));
     setZ(zRef.current);
     ch.scrollLeft = 0;
     ch.scrollTop = 0;
@@ -289,7 +290,7 @@ function TechTreeView({ state }: { state: TechTreeState }) {
                 <span><em>Regra 1:</em> aeronaves a partir do tier II exigem ao menos uma das aeronaves ligadas a elas pela linha tracejada (o tier anterior).</span>
                 <span><em className="b">Regra 2:</em> aeronaves Bound exigem também a compra da aeronave ligada pela linha magenta.</span>
                 <span>Passe o mouse (ou toque) em uma aeronave para ver as especificações e desbloquear.</span>
-                <span>Navegue com a roda do mouse (Shift + roda para os lados) ou arrastando o fundo. Ctrl + roda dá zoom e “Ajustar” volta a encaixar na tela.</span>
+                <span>Arraste o fundo para mover o mapa. Ctrl + roda dá zoom e “Ajustar” volta a encaixar na tela.</span>
               </span>
             </span>
           </h1>

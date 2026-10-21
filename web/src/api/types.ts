@@ -92,6 +92,8 @@ export interface Mission {
   hasReport: boolean;
   imageAsset: MissionAsset | null; briefingAsset: MissionAsset | null; audioAsset: MissionAsset | null;
   mapName: string; briefingImageUrl: string;
+  /** Tier da missão, entre os cadastrados na progressão. Nulo nas missões antigas. */
+  tier: number | null;
   id: string; title: string; briefing: string; startsAt: string; defaultPm: number | null;
   status: 'scheduled' | 'closed' | 'cancelled'; seriesId: string | null; closedAt: string | null;
   signups: MissionSignup[]; mine: MissionSignup | null;
@@ -101,8 +103,10 @@ export interface ScoringRules {
   airborneAircraft: number; groundAircraft: number; armoredVehicle: number; antiAircraft: number;
   helicopter: number; ship: number; sam: number; helicopterTransport: number; cargoTransport: number;
   survivalEnabled: boolean; survivalMultiplier: number;
+  /** Bônus por diferença de tier: posição 0 = aeronave 1 tier abaixo da missão, 1 = 2 abaixo... */
+  tierBonuses: number[];
 }
-export type ReportTarget = Exclude<keyof ScoringRules, 'survivalEnabled' | 'survivalMultiplier'>;
+export type ReportTarget = Exclude<keyof ScoringRules, 'survivalEnabled' | 'survivalMultiplier' | 'tierBonuses'>;
 export interface ReportPilot {
   userId: string; nickname: string; aircraftId: string; aircraftName: string;
   attended: boolean | null; survived: boolean | null; reviewed: boolean;
@@ -115,7 +119,7 @@ export interface MissionReport {
   pilots: ReportPilot[]; summary: string; source: string; savedAt: string | null;
   publishedAt: string | null; publishedBy: string | null; total: number;
 }
-export interface MissionInput { title: string; briefing: string; startsAt: string; defaultPm: number | null; repeatWeeks?: number; mapName?: string; briefingImageUrl?: string; imageAssetId?: string | null; briefingAssetId?: string | null; audioAssetId?: string | null }
+export interface MissionInput { title: string; briefing: string; startsAt: string; defaultPm: number | null; repeatWeeks?: number; mapName?: string; briefingImageUrl?: string; imageAssetId?: string | null; briefingAssetId?: string | null; audioAssetId?: string | null; tier?: number | null }
 
 export interface AdminTree {
   tiers: Tier[];
