@@ -12,6 +12,7 @@
     "start": "npm start -w server",
     "typecheck": "npm run typecheck -w server && npm run typecheck -w web",
     "lint": "node scripts/check-types.mjs",
+    "piloto-teste": "node --import tsx scripts/criar-piloto-teste.mjs",
     "test": "node --import tsx --test tests/*.test.mjs",
     "check": "npm run lint && npm run typecheck && npm test && npm run build"
   },
