@@ -1,5 +1,6 @@
 // Perfil do piloto: resumo, ranking, progresso por tier e por papel, próximos objetivos,
 // linha do tempo e PM ganhos por semana. Tudo calculado a partir do que o banco já guarda.
+import { getRibbonRack } from './ribbons.js';
 import { db } from '../db.js';
 import { getBalance, type User } from './users.js';
 import { topMedals } from './achievements.js';
@@ -76,6 +77,7 @@ export async function getProfile(user: User) {
   return {
     user: { medals: (await topMedals([user.id])).get(user.id) ?? [], nickname: user.nickname, email: user.email, avatarUrl: user.avatar_url, role: user.role, createdAt: user.created_at },
     rank: rank.rows[0],
+    ribbons: await getRibbonRack(user.id),
     totals: { balance, ...totals.rows[0], fleet: fleet.length, aircraftTotal: state.length },
     estimate: { baseMissionPoints: mine.average, perMission: mine.average },
     byTier,

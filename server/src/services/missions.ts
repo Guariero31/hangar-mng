@@ -15,7 +15,10 @@ async function audit(q: Queryable, adminId: string, action: string, details: obj
 const MISSION_COLS = `m.id, m.title, m.briefing, m.starts_at as "startsAt", m.default_pm as "defaultPm",
   m.status, m.series_id as "seriesId", m.closed_at as "closedAt", m.map_name as "mapName", m.briefing_image_url as "briefingImageUrl",
   m.image_asset_id as "imageAssetId", m.briefing_asset_id as "briefingAssetId", m.audio_asset_id as "audioAssetId", m.tier,
-  exists(select 1 from mission_reports report where report.mission_id=m.id and report.state='published') as "hasReport"`;
+  exists(select 1 from mission_reports report where report.mission_id=m.id and report.state='published') as "hasReport",
+  coalesce((select json_agg(json_build_object('id', r.id, 'name', r.name, 'description', r.description, 'allowsValor', r.allows_valor,
+      'hasImage', r.image is not null, 'imageVersion', r.image_version) order by r.precedence, lower(r.name))
+    from mission_ribbons mr join ribbons r on r.id = mr.ribbon_id where mr.mission_id = m.id), '[]'::json) as ribbons`;
 
 async function signupsOf(q: Queryable, ids: string[]) {
   if (!ids.length) return [];
@@ -86,12 +89,39 @@ export async function cancelSignup(user: User, missionId: string) {
   });
 }
 
-export interface MissionInput { title: string; briefing: string; startsAt: string; defaultPm: number | null; mapName?: string; briefingImageUrl?: string; imageAssetId?: string | null; briefingAssetId?: string | null; audioAssetId?: string | null; tier?: number | null }
+export interface MissionInput { title: string; briefing: string; startsAt: string; defaultPm: number | null; mapName?: string; briefingImageUrl?: string; imageAssetId?: string | null; briefingAssetId?: string | null; audioAssetId?: string | null; tier?: number | null; ribbonIds?: string[] }
 
 async function assertTier(q: Queryable, tier: number | null | undefined) {
   if (tier == null) return;
   const { rows } = await q.query('select 1 from tiers where tier = $1', [tier]);
   if (!rows.length) throw fail('VALIDATION', 'Escolha um tier cadastrado na progressão.');
+}
+
+/** Substitui as condecorações da missão. Só aceita fitas ativas (ou as que a missão já tinha). */
+async function setMissionRibbons(q: Queryable, missionId: string, ribbonIds: string[]) {
+  const ids = [...new Set(ribbonIds)];
+  if (ids.length) {
+    const { rows } = await q.query<{ id: string }>(
+      `select r.id from ribbons r where r.id = any($1::uuid[]) and (r.active or exists(select 1 from mission_ribbons mr where mr.mission_id = $2 and mr.ribbon_id = r.id))`, [ids, missionId]);
+    if (rows.length !== ids.length) throw fail('VALIDATION', 'Alguma condecoração escolhida não existe ou está inativa.');
+  }
+  await q.query('delete from mission_ribbons where mission_id = $1', [missionId]);
+  for (const id of ids) await q.query('insert into mission_ribbons (mission_id, ribbon_id) values ($1, $2)', [missionId, id]);
+}
+
+/** Revisão: troca as fitas de uma missão já encerrada. Não deixa tirar uma fita que já foi concedida nela. */
+export async function reviewMissionRibbons(admin: User, id: string, ribbonIds: string[]) {
+  await db.tx(async (q) => {
+    const m = await lockMission(q, id);
+    if (m.status === 'cancelled') throw fail('MISSION_NOT_OPEN');
+    const keep = new Set(ribbonIds);
+    const { rows: used } = await q.query<{ id: string; name: string }>(
+      `select distinct r.id, r.name from ribbon_awards a join ribbons r on r.id = a.ribbon_id where a.mission_id = $1`, [id]);
+    const blocked = used.find((r) => !keep.has(r.id));
+    if (blocked) throw fail('VALIDATION', `"${blocked.name}" já foi concedida nesta missão. Revogue as concessões antes de tirá-la.`);
+    await setMissionRibbons(q, id, ribbonIds);
+    await audit(q, admin.id, 'update_mission', { id, title: m.title });
+  });
 }
 
 /** Cria a missão; com repeatWeeks > 0 cria também cópias semanais (mesma série). */
@@ -108,6 +138,7 @@ export async function createMission(admin: User, input: MissionInput, repeatWeek
          values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) returning id`,
         [input.title.trim(), input.briefing.trim(), at, input.defaultPm, seriesId, admin.id, input.mapName?.trim() ?? '', input.briefingImageUrl?.trim() ?? '', input.imageAssetId ?? null, input.briefingAssetId ?? null, input.audioAssetId ?? null, input.tier ?? null]);
       ids.push(rows[0].id);
+      if (input.ribbonIds?.length) await setMissionRibbons(q, rows[0].id, input.ribbonIds);
     }
     await audit(q, admin.id, 'create_mission', { title: input.title.trim(), startsAt: input.startsAt, copies: ids.length });
     return { ids };
@@ -133,6 +164,7 @@ export async function updateMission(admin: User, id: string, input: MissionInput
     if (m.status !== 'scheduled') throw fail('MISSION_NOT_OPEN');
     await q.query('update missions set title = $2, briefing = $3, starts_at = $4, default_pm = $5, map_name = $6, briefing_image_url = $7, image_asset_id=$8, briefing_asset_id=$9, audio_asset_id=$10, tier=$11 where id = $1',
       [id, input.title.trim(), input.briefing.trim(), input.startsAt, input.defaultPm, input.mapName?.trim() ?? '', input.briefingImageUrl?.trim() ?? '', input.imageAssetId ?? null, input.briefingAssetId ?? null, input.audioAssetId ?? null, input.tier ?? null]);
+    if (input.ribbonIds !== undefined) await setMissionRibbons(q, id, input.ribbonIds);
     await audit(q, admin.id, 'update_mission', { id, title: input.title.trim() });
   });
 }

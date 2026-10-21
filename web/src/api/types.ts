@@ -94,10 +94,12 @@ export interface Mission {
   mapName: string; briefingImageUrl: string;
   /** Tier da missão, entre os cadastrados na progressão. Nulo nas missões antigas. */
   tier: number | null;
+  ribbons: MissionRibbon[];
   id: string; title: string; briefing: string; startsAt: string; defaultPm: number | null;
   status: 'scheduled' | 'closed' | 'cancelled'; seriesId: string | null; closedAt: string | null;
   signups: MissionSignup[]; mine: MissionSignup | null;
 }
+export interface MissionRibbon { id: string; name: string; description: string; allowsValor: boolean; hasImage: boolean; imageVersion: number }
 export interface MissionAsset { id: string; name: string; url: string; expiresAt: number }
 export interface ScoringRules {
   airborneAircraft: number; groundAircraft: number; armoredVehicle: number; antiAircraft: number;
@@ -119,7 +121,7 @@ export interface MissionReport {
   pilots: ReportPilot[]; summary: string; source: string; savedAt: string | null;
   publishedAt: string | null; publishedBy: string | null; total: number;
 }
-export interface MissionInput { title: string; briefing: string; startsAt: string; defaultPm: number | null; repeatWeeks?: number; mapName?: string; briefingImageUrl?: string; imageAssetId?: string | null; briefingAssetId?: string | null; audioAssetId?: string | null; tier?: number | null }
+export interface MissionInput { title: string; briefing: string; startsAt: string; defaultPm: number | null; repeatWeeks?: number; mapName?: string; briefingImageUrl?: string; imageAssetId?: string | null; briefingAssetId?: string | null; audioAssetId?: string | null; tier?: number | null; ribbonIds?: string[] }
 
 export interface AdminTree {
   tiers: Tier[];
@@ -173,9 +175,11 @@ export interface PlayerDetail {
   achievements: Achievements;
 }
 
+export interface RackRibbon { id: string; name: string; description: string; category: string; allowsValor: boolean; imageVersion: number; hasImage: boolean; count: number; valor: boolean; lastAt: string }
 export interface Profile {
   user: { nickname: string; email: string; avatarUrl: string | null; role: Role; createdAt: string; medals: MedalLite[] };
   rank: { position: number | null; total: number };
+  ribbons: RackRibbon[];
   totals: { balance: number; earned: number; spent: number; refunded: number; fleet: number; aircraftTotal: number };
   estimate: { baseMissionPoints: number; perMission: number };
   byTier: { tier: number; label: string; cost: number; multiplier: number; owned: number; total: number }[];
@@ -201,7 +205,7 @@ export interface ActivityItem {
     refund?: boolean; status?: string; from?: string | null; to?: string; email?: string;
     nickname?: string; role?: string; name?: string; id?: string; active?: boolean;
     label?: string; tier?: number; cost?: number; multiplier?: number; baseMissionPoints?: number;
-    title?: string; copies?: number; pilots?: number; totalPm?: number;
+    title?: string; image?: boolean; ribbon?: string; valor?: boolean; copies?: number; pilots?: number; totalPm?: number;
   };
 }
 export interface ApprovalItem { id: string; email: string; name: string | null; avatarUrl: string | null; status: 'pending' | 'rejected'; createdAt: string; decidedAt: string | null }

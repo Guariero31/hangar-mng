@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { api, errorMessage } from '../api/client';
 import type { MissionReport } from '../api/types';
 import { useMe, useMission } from '../api/hooks';
+import { RibbonImage } from '../components/RibbonImage';
+import '../components/ribbon-image.css';
 import { fmtPoints } from '../lib/format';
 import { reportWhen } from '../lib/mission-report';
 import './mission-report.css';
@@ -12,6 +14,7 @@ export function MissionReportPage() {
   const { id = '' } = useParams();
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [id]);
   const mission = useMission(id, { poll: false });
+  const awards = useQuery({ queryKey: ['mission-awards', id], queryFn: () => api.get<{ userId: string; nickname: string; ribbonId: string; valor: boolean }[]>(`/missions/${id}/awards`), enabled: !!id });
   const me = useMe();
   const { data: report, isLoading, error, refetch } = useQuery({ queryKey: ['mission-report', id], queryFn: () => api.get<MissionReport>(`/missions/${id}/report`), enabled: !!id });
   return <div className="published-report"><Link className="op-back" to={`/missoes/${id}`}>← Voltar à operação</Link>
@@ -32,6 +35,9 @@ export function MissionReportPage() {
           {pilot.notes && <div><span className="label">Observações</span><p className="report-narrative">{pilot.notes}</p></div>}
         </div>
       </details>)}
+      {!!awards.data?.length && <section className="card report-section"><span className="label">Reconhecimento</span><h2>Condecorações concedidas</h2>
+        <ul className="op-ribbons">{awards.data.map((a) => { const r = mission.data?.ribbons?.find((x) => x.id === a.ribbonId); return <li key={`${a.userId}:${a.ribbonId}`}>{r?.hasImage && <RibbonImage id={r.id} version={r.imageVersion} width={130} valor={a.valor} name={r.name} />}<div><strong>{a.nickname}</strong><p className="muted">{r?.name ?? 'Condecoração'}{a.valor ? ' · com valor' : ''}</p></div></li>; })}</ul>
+      </section>}
       <footer className="card report-section report-publication"><span className="label">Registro da publicação</span><p>Publicado por <strong>{report.publishedBy || 'Administração'}</strong>{report.publishedAt ? ` em ${reportWhen(report.publishedAt)} · Brasília` : ''}.</p>{report.source && <><span className="label">Referência da apuração</span><p className="report-narrative">{report.source}</p></>}<small className="muted">Relatório disponível apenas para consulta. Os resultados não podem ser alterados pelos pilotos.</small></footer>
     </>}
   </div>;

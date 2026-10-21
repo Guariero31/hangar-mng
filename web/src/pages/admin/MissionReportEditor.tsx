@@ -9,6 +9,7 @@ import { invalidatePlayerData } from '../../api/cache';
 import { Select } from '../../components/Select';
 import { fmtPoints } from '../../lib/format';
 import { aircraftMultiplier, previewPilot, reportPayload, reportPilot, REPORT_TARGETS, reportWhen } from '../../lib/mission-report';
+import { MissionAwards } from './MissionAwards';
 import '../mission-report.css';
 
 function ReportEditor({ mission, initial }: { mission: Mission; initial: MissionReport }) {
@@ -108,5 +109,6 @@ export function MissionReportEditor() {
     {(mission.isLoading || report.isLoading) && <p className="loading">Preparando relatório…</p>}
     {(mission.error || report.error) && <div role="alert"><p>{errorMessage(mission.error || report.error)}</p><button type="button" className="btn ghost" onClick={() => { void mission.refetch(); void report.refetch(); }}>Tentar novamente</button></div>}
     {report.data?.state === 'published' ? <section className="card report-section"><h2>Relatório publicado</h2><p>Esta missão já foi finalizada e os pontos foram distribuídos.</p><Link className="btn" to={`/missoes/${id}/relatorio`}>Ver relatório publicado</Link></section> : mission.data && report.data && <ReportEditor key={id} mission={mission.data} initial={report.data} />}
+    {mission.data && <MissionAwards mission={mission.data} />}
   </div>;
 }

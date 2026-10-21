@@ -8,6 +8,8 @@ import { preserveAssetUrl } from '../lib/asset-url';
 import { Select } from '../components/Select';
 import { fmtPoints } from '../lib/format';
 import { DateBlock, fmtWhen } from './Missions';
+import { RibbonImage } from '../components/RibbonImage';
+import '../components/ribbon-image.css';
 import './missions.css';
 
 const STATUS = { scheduled: 'Inscrições abertas', closed: 'Operação encerrada', cancelled: 'Operação cancelada' } as const;
@@ -132,6 +134,10 @@ export function MissionDetail() {
             {mission.briefing.trim() ? <div className="op-briefing">{mission.briefing.split(/\n\s*\n/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
               : <p className="muted">O briefing será publicado pela administração. Volte antes do início da operação para conferir os detalhes.</p>}
           </section>
+          {mission.ribbons?.length > 0 && <section className="card op-section"><span className="label">Reconhecimento</span><h2>Condecorações desta operação</h2>
+            <p className="muted">A administração pode conceder estas fitas aos pilotos que cumprirem os requisitos.</p>
+            <ul className="op-ribbons">{mission.ribbons.map((r) => <li key={r.id}>{r.hasImage && <RibbonImage id={r.id} version={r.imageVersion} width={150} name={r.name} />}<div><strong>{r.name}</strong>{r.description && <p className="muted">{r.description}</p>}</div></li>)}</ul>
+          </section>}
           {mission.briefingAsset && <section className="card op-section op-interactive-callout"><span className="label">Experiência interativa</span><h2>Briefing da missão</h2><p className="muted">Explore o cenário, os objetivos e os materiais da operação. Ative a música pelos controles do briefing.</p><Link className="btn" to={`/missoes/${mission.id}/briefing`}>Abrir briefing interativo →</Link></section>}
           <MissionManagement key={mission.id} mission={mission} />
           <section className="card op-section"><div className="op-section-head"><h2>{mission.status === 'closed' ? 'Participação e resultados' : 'Pilotos inscritos'}</h2><span className="ms-badge">{mission.signups.length} pilotos</span></div>

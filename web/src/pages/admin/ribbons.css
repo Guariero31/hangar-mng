@@ -1,0 +1,63 @@
+.rb-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.rb-card { display: flex; flex-direction: column; gap: 10px; padding: 14px; }
+.rb-card h3 { margin: 0; font: 700 16px var(--font-display, inherit); }
+.rb-card p { margin: 0; font-size: 13px; color: var(--muted); }
+.rb-meta { display: flex; gap: 8px; flex-wrap: wrap; font: 11px var(--font-mono, monospace); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.rb-off { opacity: .55; }
+.rb-editor { margin-bottom: 24px; overflow: hidden; }
+.rb-editor-header { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 24px 28px; border-bottom: 1px solid var(--line); }
+.rb-editor-header .label { color: var(--accent); }
+.rb-editor-header h2 { font-size: 25px; text-transform: none; margin: 8px 0; }
+.rb-editor-header p, .rb-editor-footer p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.rb-editor-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 32px; border: 0; margin: 0; padding: 28px; min-width: 0; }
+.rb-editor-fields { min-width: 0; }
+.rb-editor-section + .rb-editor-section { margin-top: 28px; padding-top: 26px; border-top: 1px solid var(--line); }
+.rb-editor-section h3 { display: flex; align-items: center; gap: 10px; margin: 0 0 22px; font-size: 17px; letter-spacing: 0; text-transform: none; }
+.rb-editor-section h3 > span { font: 11px var(--font-mono); color: var(--accent); }
+.rb-editor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 18px; }
+.rb-editor-wide { grid-column: 1 / -1; }
+.rb-field-hint { font-size: 12px; line-height: 1.5; color: var(--muted); }
+.rb-editor-checks { display: grid; align-content: start; gap: 18px; padding-top: 2px; }
+.rb-editor-checks .check { align-items: flex-start; font-size: 13px; }
+.rb-editor-checks input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--accent); flex: none; }
+.rb-editor-checks small { display: block; margin-top: 5px; color: var(--muted); line-height: 1.5; font-size: 12px; }
+.rb-editor-preview { min-width: 0; background: var(--hover); padding: 22px; border-radius: 8px; display: flex; flex-direction: column; align-self: start; }
+.rb-editor-preview h3 { margin: 12px 0 5px; font-size: 22px; text-transform: none; overflow-wrap: anywhere; }
+.rb-preview-category { font-size: 12px; color: var(--muted); }
+.rb-ribbon-stage { display: grid; place-items: center; min-height: 116px; margin: 20px 0; border: 1px dashed var(--line-2); border-radius: 7px; padding: 12px; }
+.rb-ribbon-stage .ribbon-img { max-width: 100%; }
+.rb-uploaded-ribbon { display: block; width: 100%; aspect-ratio: 330 / 90; object-fit: contain; }
+.rb-ribbon-placeholder { text-align: center; color: var(--muted); }
+.rb-ribbon-placeholder > span { display: block; font-size: 30px; opacity: .5; }
+.rb-ribbon-placeholder p { font-size: 12px; margin: 8px 0 0; }
+.rb-upload-label { display: grid; gap: 10px; }
+.rb-file-input { width: 100%; min-width: 0; color: var(--muted); font: 11px var(--font-body); }
+.rb-file-input::file-selector-button { display: block; width: 100%; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); color: var(--text); padding: 11px 12px; margin-bottom: 10px; font: 600 13px var(--font-body); cursor: pointer; }
+.rb-file-input::file-selector-button:hover { border-color: var(--accent); }
+.rb-image-specs, .rb-preview-note { color: var(--muted); line-height: 1.7; font-size: 12px; margin: 14px 0 0; }
+.rb-preview-note { padding-top: 16px; border-top: 1px solid var(--line); }
+.rb-editor-footer { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 20px 28px; border-top: 1px solid var(--line); }
+@media (max-width: 950px) { .rb-editor-layout { grid-template-columns: minmax(0, 1fr) 270px; gap: 22px; } }
+@media (max-width: 760px) { .rb-editor-layout { grid-template-columns: 1fr; padding: 20px; } .rb-editor-preview { width: 100%; } .rb-ribbon-stage { min-height: 130px; } .rb-uploaded-ribbon { max-width: 330px; } }
+@media (max-width: 520px) { .rb-editor-header, .rb-editor-footer { padding: 20px; } .rb-editor-grid { grid-template-columns: 1fr; } .rb-editor-wide { grid-column: auto; } .rb-editor-footer { flex-direction: column; align-items: stretch; } .rb-editor-footer .rb-actions { justify-content: flex-end; } }
+.rb-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 16px; margin-bottom: 18px; }
+.rb-form .wide { grid-column: 1 / -1; }
+.rb-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.rb-form .check { flex-direction: row; align-items: center; gap: 8px; }
+.rb-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.rb-preview { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.rb-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 12px; flex-wrap: wrap; }
+@media (max-width: 640px) { .rb-form { grid-template-columns: 1fr; } }
+
+.awards-section { margin-top: 18px; display: flex; flex-direction: column; gap: 12px; }
+.awards-list { display: flex; flex-direction: column; gap: 14px; }
+.awards-pilot { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.awards-ribbons { display: flex; flex-wrap: wrap; gap: 10px; }
+.awards-opt { border: 1px solid var(--line); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.awards-opt.on { border-color: var(--accent); }
+.awards-opt label { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+.awards-valor { font-size: 12px; color: var(--muted); }
+
+.awards-review { border: 1px solid var(--line); padding: 10px 12px; }
+.awards-review summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+.awards-review .mission-ribbon-pick { margin: 10px 0; }

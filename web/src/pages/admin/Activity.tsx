@@ -36,6 +36,11 @@ const KIND: Record<string, { label: string; tone: string }> = {
   update_mission: { label: 'Missão editada', tone: 'info' },
   cancel_mission: { label: 'Missão cancelada', tone: 'danger' },
   delete_mission: { label: 'Missão apagada', tone: 'danger' },
+  create_ribbon: { label: 'Nova condecoração', tone: 'info' },
+  update_ribbon: { label: 'Condecoração editada', tone: 'info' },
+  award_ribbon: { label: 'Condecoração concedida', tone: 'ok' },
+  revoke_ribbon: { label: 'Condecoração revogada', tone: 'danger' },
+  delete_ribbon: { label: 'Condecoração apagada', tone: 'danger' },
   close_mission: { label: 'Missão encerrada', tone: 'ok' },
   save_mission_report: { label: 'Rascunho de relatório', tone: 'info' },
   publish_mission_report: { label: 'Relatório publicado', tone: 'ok' },
@@ -62,6 +67,11 @@ function describe(it: ActivityItem): string {
     case 'create_mission': return `Criou a missão ${d.title}${(d.copies ?? 1) > 1 ? ` (${d.copies} semanas)` : ''}`;
     case 'update_mission': return `Editou a missão ${d.title}`;
     case 'cancel_mission': return `Cancelou a missão ${d.title}`;
+    case 'create_ribbon': return `Cadastrou a condecoração ${d.name}`;
+    case 'update_ribbon': return `Editou a condecoração ${d.name}${d.image ? ' (imagem)' : ''}`;
+    case 'award_ribbon': return `Concedeu ${d.ribbon}${d.valor ? ' com V' : ''} a ${d.nickname} (${d.title})`;
+    case 'revoke_ribbon': return `Revogou ${d.ribbon} de ${d.nickname} (${d.title})`;
+    case 'delete_ribbon': return `Apagou a condecoração ${d.name}`;
     case 'delete_mission': return `Apagou a missão ${d.title}`;
     case 'close_mission': return `Encerrou ${d.title}: ${d.pilots} pilotos, ${fmtPoints(d.totalPm ?? 0)} PM`;
     case 'save_mission_report': return `Salvou o relatório de ${d.title} como rascunho`;

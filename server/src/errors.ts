@@ -19,6 +19,7 @@ const CATALOG = {
   AIRCRAFT_EXISTS:          [409, 'Já existe uma aeronave com esse ID.'],
   BOUND_CYCLE:              [400, 'Esses vínculos Bound criariam um ciclo: nenhuma das aeronaves poderia ser comprada.'],
   TIER_NOT_FOUND:           [404, 'Tier não encontrado.'],
+  RIBBON_NOT_FOUND:         [404, 'Condecoração não encontrada.'],
   TIER_EXISTS:              [409, 'Esse tier já existe.'],
   ALREADY_UNLOCKED:         [409, 'Essa aeronave já está na frota.'],
   PREV_TIER_MISSING:        [400, 'Compre antes uma aeronave do tier anterior.'],

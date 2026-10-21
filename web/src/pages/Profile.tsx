@@ -7,6 +7,8 @@ import type { Achievement, Profile } from '../api/types';
 import { AircraftIcon, iconOf, ROLE_LABEL } from '../lib/aircraft';
 import { fmtDate, fmtPoints, fmtSigned, SOURCE_LABEL } from '../lib/format';
 import { MedalPreview } from '../components/MedalPreview';
+import { RibbonImage } from '../components/RibbonImage';
+import '../components/ribbon-image.css';
 import './profile.css';
 
 export function ProfilePage() {
@@ -119,6 +121,15 @@ function ProfileView({ p }: { p: Profile }) {
           <h2 className="pf-h">PM ganhos por semana</h2>
           <WeeklyChart weekly={p.weekly} />
         </section>
+
+        {/* ------------------------------------------------ condecorações */}
+        {p.ribbons.length > 0 && <section className="pf-card pf-wide">
+          <h2 className="pf-h">Condecorações <span className="muted">({p.ribbons.reduce((n, r) => n + r.count, 0)})</span></h2>
+          <ul className="pf-ribbons">{p.ribbons.map((r) => <li key={r.id} title={r.description || r.name}>
+            {r.hasImage ? <RibbonImage id={r.id} version={r.imageVersion} count={r.count} valor={r.valor} width={180} name={r.name} /> : null}
+            <strong>{r.name}</strong><span className="muted">{r.count > 1 ? `${r.count} concessões` : '1 concessão'}{r.valor ? ' · com valor' : ''}</span>
+          </li>)}</ul>
+        </section>}
 
         {/* ------------------------------------------------ frota */}
         <section className="pf-card pf-wide">

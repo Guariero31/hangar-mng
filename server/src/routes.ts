@@ -13,6 +13,7 @@ import { rateLimit } from './security.js';
 import { getRanking } from './services/ranking.js';
 import { getProfile } from './services/profile.js';
 import * as missions from './services/missions.js';
+import * as ribbons from './services/ribbons.js';
 import { adminErrorsRouter, clientErrorsRouter } from './error-routes.js';
 import { getMissionFile, uploadMissionAsset } from './services/mission-files.js';
 import { withBriefingAudioRecovery } from './services/briefing-audio.js';
@@ -222,6 +223,27 @@ adminApi.get('/overview', async (_req, res) => {
   res.json(await admin.getOverview());
 });
 
+api.get('/missions/:id/awards', requireUser, requireNickname, async (req, res) => { res.json(await ribbons.listMissionAwardsPublic(userIdParam.parse(req.params.id))); });
+const ribbonBody = z.object({
+  name: z.string().trim().min(2).max(80), description: z.string().max(500).default(''),
+  category: z.enum(ribbons.RIBBON_CATEGORIES), precedence: z.number().int().min(1).max(9999).default(100),
+  allowsValor: z.boolean().default(false), active: z.boolean().default(true),
+});
+adminApi.get('/ribbons', async (_req, res) => { res.json(await ribbons.listRibbons()); });
+adminApi.post('/ribbons', async (req, res) => { res.status(201).json({ id: await ribbons.createRibbon(req.user, ribbonBody.parse(req.body)) }); });
+adminApi.put('/ribbons/:id', async (req, res) => { await ribbons.updateRibbon(req.user, userIdParam.parse(req.params.id), ribbonBody.parse(req.body)); res.json({ ok: true }); });
+adminApi.delete('/ribbons/:id', async (req, res) => { await ribbons.deleteRibbon(req.user, userIdParam.parse(req.params.id)); res.json({ ok: true }); });
+adminApi.post('/ribbons/:id/image', rateLimit({ windowMs: 60_000, max: 20 }), raw({ type: 'application/octet-stream', limit: '200kb' }), async (req, res) => {
+  if (!Buffer.isBuffer(req.body)) throw fail('VALIDATION', 'Envie o PNG como conteúdo binário.');
+  await ribbons.setRibbonImage(req.user, userIdParam.parse(req.params.id), req.body);
+  res.status(201).json({ ok: true });
+});
+api.get('/ribbons/:id/image', requireUser, async (req, res) => {
+  const image = await ribbons.getRibbonImage(userIdParam.parse(req.params.id));
+  res.type('image/png').setHeader('Cache-Control', 'private, max-age=31536000, immutable');
+  res.send(image);
+});
+
 adminApi.get('/scoring', async (_req, res) => { res.json(await getScoringRules()); });
 adminApi.put('/scoring', async (req, res) => { res.json(await saveScoringRules(req.user, req.body)); });
 
@@ -332,6 +354,7 @@ const missionBody = z.object({
   briefingAssetId: z.string().uuid().nullable().default(null),
   audioAssetId: z.string().uuid().nullable().default(null),
   tier: z.number().int().min(1).nullable().default(null),
+  ribbonIds: z.array(z.string().uuid()).max(12).optional(),
   title: z.string().trim().min(1).max(80),
   briefing: z.string().max(2000).default(''),
   mapName: z.string().trim().max(80).default(''),
@@ -377,6 +400,15 @@ adminApi.put('/missions/:id/report', async (req, res) => {
 });
 adminApi.post('/missions/:id/report/publish', async (req, res) => {
   res.json(await saveMissionReport(req.user, z.string().uuid().parse(req.params.id), req.body, true));
+});
+
+const awardsBody = z.object({ awards: z.array(z.object({ userId: z.string().uuid(), ribbonId: z.string().uuid(), valor: z.boolean().default(false) })).max(500) });
+adminApi.get('/missions/:id/awards', async (req, res) => { res.json(await ribbons.getMissionAwards(userIdParam.parse(req.params.id))); });
+adminApi.put('/missions/:id/awards', async (req, res) => { res.json(await ribbons.saveMissionAwards(req.user, userIdParam.parse(req.params.id), awardsBody.parse(req.body).awards)); });
+
+adminApi.put('/missions/:id/ribbons', async (req, res) => {
+  await missions.reviewMissionRibbons(req.user, userIdParam.parse(req.params.id), z.object({ ribbonIds: z.array(z.string().uuid()).max(12) }).parse(req.body).ribbonIds);
+  res.json({ ok: true });
 });
 
 adminApi.get('/tree', async (_req, res) => {

@@ -14,6 +14,7 @@ export function AdminTabs() {
       <NavLink to="/admin/aeronaves">Aeronaves</NavLink>
       <NavLink to="/admin/missoes">Missões</NavLink>
       <NavLink to="/admin/pontuacao">Pontuação</NavLink>
+      <NavLink to="/admin/condecoracoes">Condecorações</NavLink>
       <NavLink to="/admin/atividade">Atividade</NavLink>
       <NavLink to="/admin/erros">Erros{errors?.open ? <span className="tab-badge">{errors.open}</span> : null}</NavLink>
     </nav>

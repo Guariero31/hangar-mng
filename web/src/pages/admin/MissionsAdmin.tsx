@@ -8,6 +8,9 @@ import { useAdminMissions, useDeleteMission, useSaveMission } from '../../api/ho
 import { api, errorMessage } from '../../api/client';
 import { fmtPoints } from '../../lib/format';
 import type { Mission } from '../../api/types';
+import { RibbonImage } from '../../components/RibbonImage';
+import type { RibbonRow } from './RibbonsAdmin';
+import '../../components/ribbon-image.css';
 import { Chips, DateBlock, fmtWhen } from '../Missions';
 import { AdminTabs } from './AdminTabs';
 import './admin.css';
@@ -27,6 +30,9 @@ function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () 
   const [title, setTitle] = useState(editing?.title ?? '');
   const [briefing, setBriefing] = useState(editing?.briefing ?? '');
   const [mapName, setMapName] = useState(editing?.mapName ?? '');
+  const ribbonCatalog = useQuery({ queryKey: ['admin', 'ribbons'], queryFn: () => api.get<RibbonRow[]>('/admin/ribbons') });
+  const [ribbonIds, setRibbonIds] = useState<string[]>(editing?.ribbons?.map((r) => r.id) ?? []);
+  const toggleRibbon = (id: string) => setRibbonIds((cur) => cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]);
   const [tier, setTier] = useState(editing?.tier != null ? String(editing.tier) : '');
   const tiers = useQuery({ queryKey: ['admin', 'tree'], queryFn: () => api.get<{ tiers: { tier: number; label: string }[] }>('/admin/tree') });
   const tierLabel = tiers.data?.tiers.find((item) => String(item.tier) === tier)?.label;
@@ -50,7 +56,7 @@ function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () 
     if (!date || !time) return setErr('Informe a data e a hora.');
     if (!tier && (!editing || editing.tier != null)) return setErr('Escolha o tier da missão.');
     const input = {
-      title, briefing, mapName, tier: tier ? Number(tier) : null, briefingImageUrl, startsAt: new Date(`${date}T${time}:00-03:00`).toISOString(),
+      title, briefing, mapName, ribbonIds, tier: tier ? Number(tier) : null, briefingImageUrl, startsAt: new Date(`${date}T${time}:00-03:00`).toISOString(),
       imageAssetId: imageAsset?.id ?? null, briefingAssetId: briefingAsset?.id ?? null, audioAssetId: audioAsset?.id ?? null,
       defaultPm: pm.trim() === '' ? null : Number(pm),
       ...(editing ? {} : { repeatWeeks: Number(repeat) || 0 }),
@@ -93,9 +99,24 @@ function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () 
         <MissionFileUpload kind="briefing" value={briefingAsset} onChange={setBriefingAsset} onBusy={setBriefingUploading} />
         <MissionFileUpload kind="audio" value={audioAsset} onChange={setAudioAsset} onBusy={setBriefingUploading} />
       </fieldset>
+      <fieldset className="mission-editor-section"><legend><span>04</span> Condecorações da missão</legend>
+        <p className="mission-section-hint">Marque as fitas que podem ser concedidas aos pilotos ao final da operação.</p>
+        {ribbonCatalog.isPending && <p className="muted">Carregando condecorações…</p>}
+        {ribbonCatalog.isError && <p role="alert" className="op-error">{errorMessage(ribbonCatalog.error)}</p>}
+        {ribbonCatalog.data && !ribbonCatalog.data.length && <p className="muted">Nenhuma condecoração cadastrada. Cadastre em Administração › Condecorações.</p>}
+        <div className="mission-ribbon-pick">
+          {ribbonCatalog.data?.filter((r) => r.active || ribbonIds.includes(r.id)).map((r) => (
+            <label key={r.id} className="mission-ribbon-opt">
+              <input type="checkbox" checked={ribbonIds.includes(r.id)} onChange={() => toggleRibbon(r.id)} />
+              {r.hasImage && <RibbonImage id={r.id} version={r.imageVersion} width={96} name="" />}
+              <span>{r.name}{!r.active && ' (inativa)'}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
       </div><aside className="mission-editor-preview" aria-label="Prévia da missão">
         <span className="label">Resumo da operação</span><h3>{title.trim() || 'Nome da missão'}</h3>
-        <dl><div><dt>Mapa</dt><dd>{mapName.trim() || 'A definir'}</dd></div><div><dt>Tier</dt><dd>{tierLabel ? `Tier ${tierLabel}` : 'A definir'}</dd></div><div><dt>Data e hora</dt><dd>{date && time ? `${fmtWhen(new Date(`${date}T${time}:00-03:00`).toISOString())} · Brasília` : 'Defina o agendamento'}</dd></div><div><dt>Recompensa sugerida</dt><dd>{pm.trim() ? `${fmtPoints(Number(pm))} PM` : 'A definir'}</dd></div>
+        <dl><div><dt>Mapa</dt><dd>{mapName.trim() || 'A definir'}</dd></div><div><dt>Tier</dt><dd>{tierLabel ? `Tier ${tierLabel}` : 'A definir'}</dd></div><div><dt>Condecorações</dt><dd>{ribbonIds.length ? `${ribbonIds.length} selecionada(s)` : 'Nenhuma'}</dd></div><div><dt>Data e hora</dt><dd>{date && time ? `${fmtWhen(new Date(`${date}T${time}:00-03:00`).toISOString())} · Brasília` : 'Defina o agendamento'}</dd></div><div><dt>Recompensa sugerida</dt><dd>{pm.trim() ? `${fmtPoints(Number(pm))} PM` : 'A definir'}</dd></div>
           {!editing && <div><dt>Recorrência</dt><dd>{repeat === '0' ? 'Evento único' : `+${repeat} semanas`}</dd></div>}
         </dl><div className="mission-preview-note"><span aria-hidden="true">↗</span><p>Os pilotos leem o briefing e escolhem a aeronave na página da operação.</p></div>
         {editing && <Link to={`/missoes/${editing.id}`} target="_blank" rel="noopener noreferrer">Ver página publicada →</Link>}
@@ -153,7 +174,7 @@ export function MissionsAdmin() {
             <div className="ms-actions mission-card-actions">
               <Link className="mission-card-view" to={m.hasReport ? `/missoes/${m.id}/relatorio` : `/missoes/${m.id}`}>{m.hasReport ? 'Ver relatório' : 'Ver operação'} <span aria-hidden="true">↗</span></Link>
               {m.status === 'scheduled' && <button type="button" className="btn ghost sm mission-card-edit" aria-label={`Editar missão ${m.title}`} title="Editar missão" onClick={() => setForm({ editing: m })}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6ZM14 5l5 5" /></svg></button>}
-              {(m.status === 'scheduled' || !m.hasReport) && <MissionOptions mission={m} deleting={remove.isPending} onDelete={() => apagar(m)} />}
+              {(m.status === 'scheduled' || m.status === 'closed' || !m.hasReport) && <MissionOptions mission={m} deleting={remove.isPending} onDelete={() => apagar(m)} />}
             </div>
           </article>
         ))}
@@ -179,6 +200,7 @@ function MissionOptions({ mission, deleting, onDelete }: { mission: Mission; del
     <button ref={trigger} type="button" className="btn ghost sm mission-card-more" aria-label={`Mais opções da missão ${mission.title}`} aria-expanded={open} aria-controls={open ? id : undefined} onClick={() => setOpen(!open)}>⋯</button>
     {open && <div id={id} className="mission-card-dropdown">
       {mission.status === 'scheduled' && <Link to={`/admin/missoes/${mission.id}/relatorio`} onClick={() => setOpen(false)}>Finalizar missão</Link>}
+      {mission.status === 'closed' && <Link to={`/admin/missoes/${mission.id}/relatorio`} onClick={() => setOpen(false)}>Condecorações</Link>}
       {!mission.hasReport && <button type="button" className="mission-card-delete" disabled={deleting} onClick={() => { setOpen(false); onDelete(); }}>Apagar missão</button>}
     </div>}
   </div>;
