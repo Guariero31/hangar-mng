@@ -27,9 +27,12 @@ function Editor({ ribbon, onDone }: { ribbon: RibbonRow | null; onDone: () => vo
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   useEffect(() => {
     if (!file) { setObjectUrl(null); return; }
-    const url = URL.createObjectURL(file);
-    setObjectUrl(url);
-    return () => URL.revokeObjectURL(url);
+    // A política de segurança do site não permite imagens blob:, então a prévia usa data URL.
+    let cancelled = false;
+    const reader = new FileReader();
+    reader.onload = () => { if (!cancelled) setObjectUrl(typeof reader.result === 'string' ? reader.result : null); };
+    reader.readAsDataURL(file);
+    return () => { cancelled = true; };
   }, [file]);
   const save = useMutation({
     mutationFn: async () => {
