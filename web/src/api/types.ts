@@ -4,6 +4,7 @@ export type LedgerSource = 'manual' | 'unlock' | 'refund' | 'server';
 
 export interface Me {
   tutorialStatus: 'completed' | 'skipped' | null;
+  tutorialModules: number[];
   id: string;
   email: string;
   name: string | null;

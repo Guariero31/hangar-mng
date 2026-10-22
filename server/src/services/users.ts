@@ -21,6 +21,7 @@ export interface User {
   goal_ready_at: Date | null;
   news_seen_at: Date;
   tutorial_status: 'completed' | 'skipped' | null;
+  tutorial_modules: number[];
 }
 
 export const NICKNAME_RULE = /^[A-Za-z0-9_]{3,16}$/;
@@ -93,6 +94,7 @@ export async function toMe(user: User) {
     avatarUrl: user.avatar_url,
     nickname: user.nickname,
     tutorialStatus: user.tutorial_status,
+    tutorialModules: user.tutorial_modules,
     role: user.role,
     status: user.status,
     goalAircraftId: user.goal_aircraft_id,
@@ -115,6 +117,16 @@ export async function setTutorialStatus(user: User, status: 'completed' | 'skipp
   const { rows } = await db.query<User>(
     `update users set tutorial_status = case when tutorial_status = 'completed' then tutorial_status else $2 end
      where id = $1 returning *`, [user.id, status]);
+  return rows[0];
+}
+
+export async function completeTutorialModule(user: User, moduleId: number): Promise<User> {
+  if (!user.nickname) throw fail('NICKNAME_REQUIRED');
+  if (![1, 2, 3].includes(moduleId)) throw fail('VALIDATION');
+  const { rows } = await db.query<User>(
+    `update users set tutorial_modules = array(select distinct module from unnest(tutorial_modules || array[$2::int]) module order by module),
+     tutorial_status = case when cardinality(array(select distinct module from unnest(tutorial_modules || array[$2::int]) module)) = 3
+       then 'completed' else tutorial_status end where id = $1 returning *`, [user.id, moduleId]);
   return rows[0];
 }
 

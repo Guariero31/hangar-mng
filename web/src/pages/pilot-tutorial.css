@@ -14,7 +14,22 @@
 .tutorial-topics li::before { content: '•'; color: var(--accent); margin-right: 9px; }
 .tutorial-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 .tutorial-intro .tutorial-note, .tutorial-note { font-size: 13px; color: var(--muted); margin-top: 18px; }
-.tutorial-player { width: 100%; max-width: 960px; align-self: center; }
+.tutorial-player { width: 100%; max-width: 1200px; align-self: center; }
+.tutorial-workspace { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 24px; align-items: start; }
+.tutorial-screen { min-width: 0; }
+.tutorial-playlist { background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+.tutorial-playlist-heading { display: flex; flex-direction: column; gap: 5px; padding: 0 4px 12px; }
+.tutorial-playlist-heading strong { font-family: var(--font-display); }
+.tutorial-playlist-heading > span { font: 12px var(--font-mono); color: var(--muted); }
+.tutorial-module { display: flex; text-align: left; gap: 12px; padding: 14px 10px; background: transparent; border: 1px solid transparent; border-radius: 7px; color: var(--text); cursor: pointer; font-family: var(--font-body); }
+.tutorial-module:hover { background: var(--hover); }
+.tutorial-module[aria-current] { border-color: var(--line-2); background: var(--hover-accent); }
+.tutorial-module-number { color: var(--accent); font: 15px var(--font-mono); padding-top: 2px; min-width: 20px; }
+.tutorial-module strong { display: block; font-size: 15px; }
+.tutorial-module small { display: block; font-size: 12px; line-height: 1.5; color: var(--muted); margin-top: 5px; }
+.tutorial-playlist > .btn { margin-top: 8px; }
+@media (max-width: 900px) { .tutorial-workspace { grid-template-columns: minmax(0, 1fr); } .tutorial-playlist { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); } .tutorial-playlist-heading, .tutorial-playlist > .btn { grid-column: 1 / -1; } }
+@media (max-width: 600px) { .tutorial-playlist { display: flex; } }
 .tutorial-player[hidden] { display: none; }
 .tutorial-player h1 { font-size: clamp(25px, 3vw, 34px); margin: 0 0 22px; }
 .tutorial-player video { display: block; width: 100%; aspect-ratio: 16 / 9; background: #080a08; border: 1px solid var(--line-2); border-radius: 10px; }

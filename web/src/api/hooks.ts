@@ -53,6 +53,14 @@ export function useSetTutorialStatus() {
   });
 }
 
+export function useCompleteTutorialModule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (moduleId: number) => api.post<Me>(`/me/tutorial/modules/${moduleId}`),
+    onSuccess: (me) => queryClient.setQueryData(['me'], me),
+  });
+}
+
 // ------------------------------------------------------------------ jogador
 
 export function useTechTree() {

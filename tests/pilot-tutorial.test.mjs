@@ -6,7 +6,7 @@ Object.assign(process.env, {
   JWT_SECRET: 'pilot-tutorial-secret-at-least-thirty-two-characters', SMTP_HOST: '', SEED_DEMO: 'false',
 });
 const { db, migrate } = await import('../server/src/db.ts');
-const { findUserById, setNickname, setTutorialStatus } = await import('../server/src/services/users.ts');
+const { completeTutorialModule, findUserById, setNickname, setTutorialStatus } = await import('../server/src/services/users.ts');
 before(async () => { await migrate(); });
 after(async () => { await db.close(); });
 const create = async name => (await db.query(
@@ -36,9 +36,32 @@ test('tutorial choice requires a nickname', async () => {
 });
 
 test('tutorial media and Portuguese captions are included in the public build assets', async () => {
-  const video = await fs.stat(new URL('../web/public/tutorial/apresentacao-v2.mp4', import.meta.url));
-  assert.ok(video.size > 1000);
-  const captions = await fs.readFile(new URL('../web/public/tutorial/apresentacao-v2.vtt', import.meta.url), 'utf8');
-  assert.ok(captions.startsWith('WEBVTT\n'));
-  assert.match(captions, /00:00:00\.200 --> 00:00:01\.571/);
+  const { TUTORIAL_MODULES } = await import('../web/src/lib/tutorial.ts');
+  assert.equal(TUTORIAL_MODULES.length, 3);
+  for (const module of TUTORIAL_MODULES) {
+    const video = await fs.stat(new URL(`../web/public${module.video}`, import.meta.url));
+    assert.ok(video.size > 1000);
+    const captions = await fs.readFile(new URL(`../web/public${module.captions}`, import.meta.url), 'utf8');
+    assert.ok(captions.startsWith('WEBVTT\n'));
+    assert.match(captions, /00:00:00\.200 --> /);
+  }
+});
+
+test('module progress persists independently and completes only after all three modules', async () => {
+  const pilot = await setNickname(await create('Modules'), 'Modules');
+  const other = await setNickname(await create('ModuleOther'), 'ModuleOther');
+  await completeTutorialModule(pilot, 2);
+  assert.equal((await findUserById(pilot.id)).tutorial_status, null);
+  await setTutorialStatus(pilot, 'skipped');
+  await Promise.all([completeTutorialModule(pilot, 1), completeTutorialModule(pilot, 2)]);
+  let current = await findUserById(pilot.id);
+  assert.deepEqual(current.tutorial_modules, [1, 2]);
+  assert.equal(current.tutorial_status, 'skipped');
+  await completeTutorialModule(pilot, 3);
+  current = await findUserById(pilot.id);
+  assert.deepEqual(current.tutorial_modules, [1, 2, 3]);
+  assert.equal(current.tutorial_status, 'completed');
+  assert.deepEqual((await findUserById(other.id)).tutorial_modules, []);
+  await assert.rejects(completeTutorialModule(pilot, 4), error => error.code === 'VALIDATION');
+  await assert.rejects(completeTutorialModule(await create('ModuleNoNick'), 1), error => error.code === 'NICKNAME_REQUIRED');
 });
