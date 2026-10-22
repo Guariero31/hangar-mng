@@ -13,7 +13,6 @@ export interface User {
   avatar_url: string | null;
   nickname: string | null;
   role: 'player' | 'admin';
-  role_managed: boolean;
   status: 'pending' | 'active' | 'banned' | 'rejected';
   created_at: Date;
   last_login_at: Date | null;
@@ -53,9 +52,8 @@ export async function upsertLogin(p: { sub: string; email: string; name?: string
     [p.sub, email, p.name ?? null, p.picture ?? null, startStatus]);
   let user = rows[0];
 
-  if (user.role !== 'admin' && !user.role_managed && config.adminEmails.includes(user.email)) {
-    const promoted = await db.query<User>(`update users set role = 'admin', status = case when status in ('pending') then 'active' else status end where id = $1 and not role_managed returning *`, [user.id]);
-    user = promoted.rows[0] ?? (await findUserById(user.id)) ?? user;
+  if (user.role !== 'admin' && config.adminEmails.includes(user.email)) {
+    ({ rows: [user] } = await db.query<User>(`update users set role = 'admin', status = case when status in ('pending') then 'active' else status end where id = $1 returning *`, [user.id]));
   }
   // e-mail de boas-vindas: só no primeiro cadastro que ficou aguardando aprovação
   if (!known.length && user.status === 'pending') sendWelcome(user);

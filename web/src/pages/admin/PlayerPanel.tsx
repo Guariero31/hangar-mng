@@ -1,9 +1,6 @@
 import { runOperation } from '../../lib/mutations';
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { invalidatePlayerData } from '../../api/cache';
-import { api, errorMessage } from '../../api/client';
+import { useState } from 'react';
+import { errorMessage } from '../../api/client';
 import {
   useAdminTree, useDeletePlayer, useGrantAircraft, useMe, usePlayer, useRenamePlayer, useRevokeAircraft, useUpdatePlayer,
 } from '../../api/hooks';
@@ -24,15 +21,6 @@ export function PlayerPanel({ id, onDeleted }: { id: string; onDeleted?: () => v
   const rename = useRenamePlayer();
   const del = useDeletePlayer();
   const [confirmText, setConfirmText] = useState('');
-  const [selfRemoval, setSelfRemoval] = useState(false);
-  const selfDialog = useRef<HTMLDialogElement>(null);
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const relinquish = useMutation({
-    mutationFn: () => api.patch(`/admin/players/${id}`, { role: 'player' }),
-    onSuccess: () => { setSelfRemoval(false); toast('Seu acesso de administrador foi removido.'); navigate('/perfil', { replace: true }); return invalidatePlayerData(queryClient); },
-  });
-  useEffect(() => { if (selfRemoval && !selfDialog.current?.open) selfDialog.current?.showModal(); if (!selfRemoval && selfDialog.current?.open) selfDialog.current.close(); }, [selfRemoval]);
   const [renaming, setRenaming] = useState(false);
   const [newNick, setNewNick] = useState('');
   const toast = useToast();
@@ -127,7 +115,7 @@ export function PlayerPanel({ id, onDeleted }: { id: string; onDeleted?: () => v
       <div className="section">
         <span className="label">Conta</span>
         {isMe ? (
-          <div className="self-admin-access"><span className="muted" style={{ fontSize: 14 }}>Esta é a sua conta.</span><button type="button" className="btn ghost danger" onClick={() => { relinquish.reset(); setSelfRemoval(true); }}>Remover meu acesso de administrador</button></div>
+          <span className="muted" style={{ fontSize: 14 }}>Esta é a sua conta.</span>
         ) : (
           <div className="row-inline">
             {banned ? (
@@ -177,12 +165,6 @@ export function PlayerPanel({ id, onDeleted }: { id: string; onDeleted?: () => v
           ))}
         </ul>
       </div>
-
-      {isMe && <dialog ref={selfDialog} className="self-admin-dialog" aria-labelledby="self-admin-title" onCancel={(event) => { if (relinquish.isPending) event.preventDefault(); else setSelfRemoval(false); }} onClose={() => setSelfRemoval(false)}>
-        <h2 id="self-admin-title">Remover seu acesso de administrador?</h2><p>Você continuará como piloto, com seu saldo, frota e histórico preservados. Perderá o acesso ao painel administrativo e só outro administrador poderá concedê-lo novamente.</p>
-        {relinquish.error && <p role="alert" className="op-error">{errorMessage(relinquish.error)}</p>}
-        <div className="row-inline"><button type="button" className="btn ghost" disabled={relinquish.isPending} onClick={() => setSelfRemoval(false)}>Cancelar</button><button type="button" className="btn danger" disabled={relinquish.isPending} onClick={() => relinquish.mutate()}>{relinquish.isPending ? 'Removendo…' : 'Remover meu acesso'}</button></div>
-      </dialog>}
 
       {!isMe && user.role !== 'admin' && (
         <div className="section danger-zone">

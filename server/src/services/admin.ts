@@ -210,17 +210,10 @@ export async function deleteUser(admin: User, userId: string) {
 }
 
 export async function setRole(admin: User, userId: string, role: 'player' | 'admin') {
+  if (userId === admin.id) throw fail('CANNOT_CHANGE_OWN_STATUS', 'Você não pode alterar o seu próprio papel.');
   await db.tx(async (q) => {
-    await q.query('lock table users in share row exclusive mode');
-    const actor = (await q.query<{ role: string; status: string }>('select role, status from users where id=$1', [admin.id])).rows[0];
-    if (actor?.role !== 'admin' || actor.status !== 'active') throw fail('FORBIDDEN');
-    const target = (await q.query<{ role: string; status: string }>('select role, status from users where id=$1', [userId])).rows[0];
-    if (!target) throw fail('USER_NOT_FOUND');
-    if (role === 'player' && target.role === 'admin' && target.status === 'active') {
-      const others = await q.query("select id from users where role='admin' and status='active' and id<>$1 limit 1", [userId]);
-      if (!others.rows.length) throw fail('VALIDATION', 'Promova outro administrador ativo antes de remover este acesso. O sistema precisa manter pelo menos um administrador.');
-    }
-    await q.query('update users set role = $2, role_managed = true where id = $1', [userId, role]);
+    const { rows } = await q.query('update users set role = $2 where id = $1 returning id', [userId, role]);
+    if (!rows.length) throw fail('USER_NOT_FOUND');
     await audit(q, admin.id, 'set_role', userId, { role });
   });
 }
