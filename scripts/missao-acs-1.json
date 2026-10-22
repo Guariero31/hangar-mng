@@ -1,0 +1,11 @@
+{
+  "title": "ACS Mission 1 — Estreito de Varkan",
+  "briefing": "Primeira missão da campanha Sung War. O esquadrão deve limpar o espaço aéreo do Estreito de Varkan e destruir a coluna blindada yuktobaniana antes que ela avance. Abra o briefing interativo para ver o mapa, os objetivos e as comunicações.",
+  "mapName": "",
+  "tier": 1,
+  "startsAt": "2026-10-24T21:00:00-03:00",
+  "defaultPm": null,
+  "briefingFile": "ACS_Mission_1_Briefing.html",
+  "audioFile": "Briefing.mp3",
+  "ribbons": ["Honra de Sung", "Medalha Sung", "Serviço Aéreo Osea", "Cruz do Estreito", "Ás do Estreito", "Fita Caçador", "Quebra-Blindados", "Coluna Rompida", "Tiro Único"]
+}

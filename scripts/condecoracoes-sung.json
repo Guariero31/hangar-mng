@@ -1,0 +1,83 @@
+[
+  {
+    "name": "Honra de Sung",
+    "file": "Honra de Sung.png",
+    "category": "honra",
+    "description": "A distinção dos que nunca faltaram. Reconhece os pilotos que voaram todas as missões da campanha, do primeiro ao último chamado. Requisito (individual): participar de todas as missões da campanha. Concedida ao fim da campanha.",
+    "precedence": 10,
+    "allowsValor": false,
+    "active": true
+  },
+  {
+    "name": "Medalha Sung",
+    "file": "Medalha Sung.png",
+    "category": "campanha",
+    "description": "Medalha de Campanha de Sung. Reconhece o serviço prestado na defesa do espaço aéreo de Sung. Requisito (esquadrão): o esquadrão completa a missão. Recebem todos os pilotos que participaram.",
+    "precedence": 20,
+    "allowsValor": false,
+    "active": true
+  },
+  {
+    "name": "Serviço Aéreo Osea",
+    "file": "Serviço Aéreo Osea.png",
+    "category": "servico",
+    "description": "Reconhece a participação na operação conjunta ao lado das forças aéreas de Osea. Requisito (individual): participar da operação.",
+    "precedence": 30,
+    "allowsValor": false,
+    "active": true
+  },
+  {
+    "name": "Cruz do Estreito",
+    "file": "Cruz do Estreito.png",
+    "category": "honra",
+    "description": "A mais alta honra da campanha. Reconhece os pilotos que, juntos, limparam o espaço aéreo do Estreito de Varkan e não deixaram nenhuma aeronave inimiga em condições de combater. Requisito (esquadrão): o esquadrão destrói todas as aeronaves inimigas da missão. Recebem os pilotos com pelo menos 1 abate.",
+    "precedence": 100,
+    "allowsValor": true,
+    "active": true
+  },
+  {
+    "name": "Ás do Estreito",
+    "file": "Ás do Estreito.png",
+    "category": "combate",
+    "description": "Reservada aos esquadrões que agem como uma só equipe. O céu foi limpo com rapidez e coordenação, antes que o inimigo pudesse se reorganizar. Requisito (esquadrão): o esquadrão destrói todas as aeronaves inimigas em até 25 minutos. Recebem os pilotos com pelo menos 1 abate.",
+    "precedence": 110,
+    "allowsValor": true,
+    "active": true
+  },
+  {
+    "name": "Fita Caçador",
+    "file": "Fita Caçador.png",
+    "category": "combate",
+    "description": "Concedida ao piloto que provou seu valor no combate aéreo, derrubando mais de um adversário no mesmo dia. Requisito (individual): abater 2 ou mais aeronaves inimigas.",
+    "precedence": 120,
+    "allowsValor": true,
+    "active": true
+  },
+  {
+    "name": "Quebra-Blindados",
+    "file": "Quebra-Blindados.png",
+    "category": "combate",
+    "description": "Reconhece o esforço conjunto que destruiu a coluna blindada yuktobaniana e eliminou sua capacidade de avançar. Requisito (esquadrão): o esquadrão destrói os 24 BTR-80 da coluna (opcional). Recebem os pilotos com pelo menos 1 veículo destruído.",
+    "precedence": 130,
+    "allowsValor": true,
+    "active": true
+  },
+  {
+    "name": "Coluna Rompida",
+    "file": "Coluna Rompida.png",
+    "category": "combate",
+    "description": "Concedida ao piloto que, por conta própria, quebrou o ímpeto da coluna blindada inimiga. Requisito (individual): destruir pelo menos 4 BTR-80.",
+    "precedence": 140,
+    "allowsValor": true,
+    "active": true
+  },
+  {
+    "name": "Tiro Único",
+    "file": "Tiro Único.png",
+    "category": "combate",
+    "description": "Para quem não desperdiça munição. Um míssil, um abate, e a certeza de ter escolhido bem o momento do disparo. Requisito (individual): abater uma aeronave com apenas 1 míssil.",
+    "precedence": 150,
+    "allowsValor": true,
+    "active": true
+  }
+]
