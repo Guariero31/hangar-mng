@@ -1,0 +1,30 @@
+.pilot-tutorial { min-height: 100dvh; display: flex; flex-direction: column; background: var(--bg); }
+.tutorial-header { padding: 20px clamp(20px, 4vw, 64px); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.tutorial-brand { display: flex; align-items: center; gap: 12px; }
+.tutorial-brand strong { font: 700 20px var(--font-display); letter-spacing: 2px; }
+.tutorial-brand span { display: block; font: 10px var(--font-mono); letter-spacing: 3px; color: var(--muted); margin-top: 5px; }
+.tutorial-main { position: relative; isolation: isolate; flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 70px max(24px, calc((100% - 1100px) / 2)); background: radial-gradient(ellipse at 85% 45%, var(--hover-accent), transparent 65%); }
+.tutorial-main::before { content: ''; position: absolute; z-index: -1; inset: 5% 0 5% 45%; background: url('/mng-logo.png') right center / contain no-repeat; opacity: .045; pointer-events: none; }
+.tutorial-intro { max-width: 700px; animation: tutorial-arrive .35s ease-out; }
+.tutorial-eyebrow { display: block; color: var(--accent); font: 12px var(--font-mono); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; }
+.tutorial-intro h1 { font-size: clamp(32px, 4vw, 54px); line-height: 1.15; margin: 0 0 24px; overflow-wrap: anywhere; }
+.tutorial-intro p { color: var(--muted); max-width: 540px; font-size: 17px; line-height: 1.7; }
+.tutorial-topics { list-style: none; display: flex; flex-wrap: wrap; gap: 16px 28px; padding: 0; margin: 32px 0 38px; }
+.tutorial-topics li { font-size: 14px; }
+.tutorial-topics li::before { content: '•'; color: var(--accent); margin-right: 9px; }
+.tutorial-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.tutorial-intro .tutorial-note, .tutorial-note { font-size: 13px; color: var(--muted); margin-top: 18px; }
+.tutorial-player { width: 100%; max-width: 960px; align-self: center; }
+.tutorial-player[hidden] { display: none; }
+.tutorial-player h1 { font-size: clamp(25px, 3vw, 34px); margin: 0 0 22px; }
+.tutorial-player video { display: block; width: 100%; aspect-ratio: 16 / 9; background: #080a08; border: 1px solid var(--line-2); border-radius: 10px; }
+.tutorial-main.is-video { padding-top: 32px; padding-bottom: 32px; }
+.tutorial-player-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; color: var(--muted); font-size: 13px; }
+.tutorial-check { width: 60px; height: 60px; display: grid; place-items: center; color: var(--accent); background: var(--hover-accent); border: 1px solid var(--line-2); border-radius: 50%; font-size: 28px; margin-bottom: 28px; }
+.tutorial-save-error { color: var(--danger); margin-top: 20px; }
+.tutorial-footer { border-top: 1px solid var(--line); padding: 20px clamp(20px, 4vw, 64px); display: flex; justify-content: space-between; gap: 20px; color: var(--muted); font: 11px var(--font-mono); }
+.tutorial-footer ol { display: flex; flex-wrap: wrap; list-style: none; padding: 0; margin: 0; gap: 14px 30px; }
+.tutorial-footer [aria-current] { color: var(--accent); }
+@keyframes tutorial-arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .tutorial-intro { animation: none; } }
+@media (max-width: 600px) { .tutorial-main { padding: 38px 24px; } .tutorial-main::before { inset: 15% 0 15% 10%; } .tutorial-topics { flex-direction: column; margin: 24px 0 30px; } .tutorial-footer { flex-direction: column; } .tutorial-player-footer { align-items: flex-start; flex-direction: column; } .tutorial-header { flex-wrap: wrap; } }

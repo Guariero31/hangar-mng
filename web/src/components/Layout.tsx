@@ -45,6 +45,7 @@ export function Layout() {
         <div className="pilot">
           <ThemeToggle />
           <NewsBell />
+          <Link className="btn ghost sm" to="/ajuda" aria-label="Ajuda: rever tutorial">Ajuda</Link>
           <span className="chip points" title="Seus Pontos de Missão">
             <span className="chip-label">PM</span><span id="my-balance">{fmtPoints(me.balance)}</span>
           </span>

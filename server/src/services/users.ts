@@ -20,6 +20,7 @@ export interface User {
   goal_ready_for: string | null;
   goal_ready_at: Date | null;
   news_seen_at: Date;
+  tutorial_status: 'completed' | 'skipped' | null;
 }
 
 export const NICKNAME_RULE = /^[A-Za-z0-9_]{3,16}$/;
@@ -91,6 +92,7 @@ export async function toMe(user: User) {
     name: user.name,
     avatarUrl: user.avatar_url,
     nickname: user.nickname,
+    tutorialStatus: user.tutorial_status,
     role: user.role,
     status: user.status,
     goalAircraftId: user.goal_aircraft_id,
@@ -106,6 +108,14 @@ export async function setGoal(user: User, aircraftId: string | null) {
     if (!rows.length) throw fail('AIRCRAFT_NOT_FOUND');
   }
   await db.query('update users set goal_aircraft_id = $2, goal_ready_for = null, goal_ready_at = null where id = $1', [user.id, aircraftId]);
+}
+
+export async function setTutorialStatus(user: User, status: 'completed' | 'skipped'): Promise<User> {
+  if (!user.nickname) throw fail('NICKNAME_REQUIRED');
+  const { rows } = await db.query<User>(
+    `update users set tutorial_status = case when tutorial_status = 'completed' then tutorial_status else $2 end
+     where id = $1 returning *`, [user.id, status]);
+  return rows[0];
 }
 
 /** Novidades vindas do admin (PM lançados, reembolsos, aeronaves liberadas) desde a última vez que o piloto olhou */

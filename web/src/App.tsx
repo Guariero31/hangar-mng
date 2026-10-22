@@ -6,6 +6,7 @@ import { Privacy } from './pages/Privacy';
 import { Pending } from './pages/Pending';
 import { Approvals } from './pages/admin/Approvals';
 import { Nickname } from './pages/Nickname';
+import { PilotTutorial } from './pages/PilotTutorial';
 import { TechTree } from './pages/TechTree';
 import { ProfilePage } from './pages/Profile';
 import { Players } from './pages/admin/Players';
@@ -30,6 +31,8 @@ export function App() {
       <Route path="/privacidade" element={<Privacy />} />
       <Route path="/pendente" element={<Pending />} />
       <Route path="/nickname" element={<RequireUser needNickname={false}><Nickname /></RequireUser>} />
+      <Route path="/boas-vindas" element={<RequireUser needTutorial={false}><PilotTutorial /></RequireUser>} />
+      <Route path="/ajuda" element={<RequireUser needTutorial={false}><PilotTutorial replay /></RequireUser>} />
 
       {/* Páginas com a barra superior */}
       <Route element={<RequireUser><Layout /></RequireUser>}>

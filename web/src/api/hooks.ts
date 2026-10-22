@@ -45,6 +45,14 @@ export function useSetNickname() {
 export const checkNickname = (nickname: string) =>
   api.get<{ available: boolean }>(`/me/nickname-available?nickname=${encodeURIComponent(nickname)}`);
 
+export function useSetTutorialStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (status: 'completed' | 'skipped') => api.post<Me>('/me/tutorial', { status }),
+    onSuccess: (me) => queryClient.setQueryData(['me'], me),
+  });
+}
+
 // ------------------------------------------------------------------ jogador
 
 export function useTechTree() {

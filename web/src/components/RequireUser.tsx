@@ -14,10 +14,11 @@ export function Loading() {
  *  - sem nickname         → /nickname   (se needNickname)
  *  - não é admin          → /           (se admin)
  */
-export function RequireUser({ children, needNickname = true, admin = false }: {
+export function RequireUser({ children, needNickname = true, admin = false, needTutorial = true }: {
   children: ReactNode;
   needNickname?: boolean;
   admin?: boolean;
+  needTutorial?: boolean;
 }) {
   const { data: me, isLoading, error, refetch } = useMe();
 
@@ -37,6 +38,7 @@ export function RequireUser({ children, needNickname = true, admin = false }: {
   }
   if (!me) return <Navigate to="/login" replace />;
   if (needNickname && !me.nickname) return <Navigate to="/nickname" replace />;
+  if (needTutorial && me.nickname && me.tutorialStatus === null) return <Navigate to="/boas-vindas" replace />;
   if (admin && me.role !== 'admin') return <Navigate to="/" replace />;
   return <>{children}</>;
 }

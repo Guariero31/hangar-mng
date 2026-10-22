@@ -38,12 +38,12 @@ export function Nickname() {
   }, [value]);
 
   if (!me) return null;
-  if (me.nickname) return <Navigate to="/" replace />;
+  if (me.nickname) return <Navigate to={me.tutorialStatus === null ? '/boas-vindas' : '/'} replace />;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     save.mutate(value.trim(), {
-      onSuccess: () => navigate('/', { replace: true }),
+      onSuccess: () => navigate('/boas-vindas', { replace: true }),
       onError: (err) => setCheck({ state: 'err', text: errorMessage(err) }),
     });
   }

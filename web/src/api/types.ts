@@ -3,6 +3,7 @@ export type Status = 'pending' | 'active' | 'banned' | 'rejected';
 export type LedgerSource = 'manual' | 'unlock' | 'refund' | 'server';
 
 export interface Me {
+  tutorialStatus: 'completed' | 'skipped' | null;
   id: string;
   email: string;
   name: string | null;

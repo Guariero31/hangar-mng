@@ -5,7 +5,7 @@ import { config } from './config.js';
 import { db } from './db.js';
 import { fail } from './errors.js';
 import { endSession, loadSessionUser, requireAdmin, requireNickname, requireUser, startSession, verifyGoogleToken } from './auth.js';
-import { getHistory, getHistoryPage, getNews, isNicknameAvailable, markNewsSeen, setGoal, setNickname, toMe, upsertLogin } from './services/users.js';
+import { getHistory, getHistoryPage, getNews, isNicknameAvailable, markNewsSeen, setGoal, setNickname, setTutorialStatus, toMe, upsertLogin } from './services/users.js';
 import { getTree, getTechTreeState, undoUnlock, unlockAircraft, UNDO_SECONDS } from './services/techtree.js';
 import * as admin from './services/admin.js';
 import { getAchievements, syncAchievements } from './services/achievements.js';
@@ -126,6 +126,11 @@ api.post('/me/nickname', requireUser, async (req, res) => {
 api.get('/me/history', requireUser, requireNickname, async (req, res) => {
   const { limit, offset } = pagination.parse(req.query);
   res.json(await getHistory(req.user.id, limit, offset));
+});
+
+api.post('/me/tutorial', requireUser, requireNickname, async (req, res) => {
+  const { status } = z.object({ status: z.enum(['completed', 'skipped']) }).parse(req.body);
+  res.json(await toMe(await setTutorialStatus(req.user, status)));
 });
 
 api.get('/me/history/page', requireUser, requireNickname, async (req, res) => {
