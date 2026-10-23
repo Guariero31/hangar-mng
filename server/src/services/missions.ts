@@ -6,6 +6,7 @@ import { getOwnedIds } from './techtree.js';
 import type { User } from './users.js';
 import { sendNewMission } from './mail.js';
 import { missionAssetMetadata, validateMissionAssets } from './mission-files.js';
+import { enqueueMissionDiscord } from './discord-notifications.js';
 
 async function audit(q: Queryable, adminId: string, action: string, details: object) {
   await q.query('insert into admin_audit_log (admin_id, action, target_user_id, details) values ($1, $2, null, $3)',
@@ -159,6 +160,7 @@ export async function createMission(admin: User, input: MissionInput, repeatWeek
       if (input.ribbonIds?.length) await setMissionRibbons(q, rows[0].id, input.ribbonIds);
     }
     await audit(q, admin.id, 'create_mission', { title: input.title.trim(), startsAt: input.startsAt, copies: ids.length });
+    await enqueueMissionDiscord(q, ids[0], ids.length);
     return { ids };
   });
   // fora da transação: e-mail lento ou com erro nunca desfaz a criação

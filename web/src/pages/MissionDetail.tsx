@@ -9,6 +9,7 @@ import { Select } from '../components/Select';
 import { fmtPoints } from '../lib/format';
 import { DateBlock, fmtWhen } from './Missions';
 import { RibbonPreview } from '../components/RibbonPreview';
+import { MissionShare } from '../components/MissionShare';
 import '../components/ribbon-image.css';
 import './missions.css';
 
@@ -121,7 +122,7 @@ export function MissionDetail() {
   const { data: mission, isLoading, error, refetch } = useMission(id);
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [id]);
   return <div className="operation">
-    <Link className="op-back" to="/missoes">← Todas as missões</Link>
+    <div className="op-page-actions"><Link className="op-back" to="/missoes">← Todas as missões</Link>{mission && <MissionShare key={mission.id} mission={mission} />}</div>
     {isLoading && <p className="loading">Carregando operação…</p>}
     {error && <div className="card op-section" role="alert"><h1>Operação indisponível</h1><p>{errorMessage(error)}</p><button className="btn ghost" onClick={() => refetch()}>Tentar novamente</button></div>}
     {mission && <>
@@ -139,8 +140,8 @@ export function MissionDetail() {
             <ul className="operation-ribbon-gallery">{mission.ribbons.filter((ribbon) => ribbon.hasImage).map((ribbon) => <li key={ribbon.id}><RibbonPreview ribbon={ribbon} /></li>)}</ul>
           </section>}
           {mission.briefingAsset && <section className="card op-section op-interactive-callout"><span className="label">Experiência interativa</span><h2>Briefing da missão</h2><p className="muted">Explore o cenário, os objetivos e os materiais da operação. Ative a música pelos controles do briefing.</p><Link className="btn" to={`/missoes/${mission.id}/briefing`}>Abrir briefing interativo →</Link></section>}
-          <MissionManagement key={mission.id} mission={mission} />
-          <MissionRoster key={mission.id} mission={mission} />
+          <MissionManagement key={`management:${mission.id}`} mission={mission} />
+          <MissionRoster key={`roster:${mission.id}`} mission={mission} />
         </div>
       </div>
     </>}

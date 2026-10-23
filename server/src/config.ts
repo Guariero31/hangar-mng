@@ -68,6 +68,9 @@ export const config = {
   /** Endereço público do site (links nos e-mails). Em produção vem de DOMAIN. */
   appUrl: (env.APP_URL?.trim() || (env.DOMAIN?.trim() ? `https://${env.DOMAIN.trim()}` : 'http://localhost:5173')).replace(/\/+$/, ''),
 
+  discordWebhookUrl: env.DISCORD_WEBHOOK_URL?.trim() || '',
+  discordNotificationsEnabled: bool(env.DISCORD_NOTIFICATIONS_ENABLED, env.NODE_ENV === 'production') && env.NODE_ENV !== 'test',
+
   /** E-mails de boas-vindas/aprovação. Sem SMTP_HOST, nada é enviado (só aparece no log). */
   smtp: {
     host: env.SMTP_HOST?.trim() || '',

@@ -12,6 +12,7 @@ import { rateLimit, securityHeaders } from './security.js';
 import { drainServer } from './shutdown.js';
 import { logServerError } from './services/errorlog.js';
 import { startAchievementRefresh } from './services/achievement-refresh.js';
+import { startDiscordNotifications } from './services/discord-notifications.js';
 
 console.log('\n  Hangar MNG — API');
 console.log(`  banco: ${db.kind === 'pglite' ? `Postgres embutido (${path.relative(process.cwd(), config.pgliteDir)})` : 'PostgreSQL'}`);
@@ -70,12 +71,13 @@ const server = app.listen(config.port, config.host, () => {
 });
 
 const stopAchievementRefresh = startAchievementRefresh();
+const stopDiscordNotifications = startDiscordNotifications();
 let shuttingDown = false;
 async function shutdown() {
   if (shuttingDown) return;
   shuttingDown = true;
   try {
-    await drainServer(server, async () => { await stopAchievementRefresh(); await db.close(); });
+    await drainServer(server, async () => { await stopDiscordNotifications(); await stopAchievementRefresh(); await db.close(); });
     process.exitCode = 0;
   } catch (error) { console.error(error); process.exitCode = 1; }
 }

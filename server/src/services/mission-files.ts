@@ -160,6 +160,10 @@ export async function getMissionFile(token: string, filename: string) {
     if (typeof payload === 'string' || payload.purpose !== 'mission-file' || typeof payload.assetId !== 'string') throw new Error();
     assetId = payload.assetId;
   } catch { throw fail('VALIDATION', 'O acesso ao arquivo expirou. Reabra a página da missão.'); }
+  return getAssetFile(assetId, filename);
+}
+
+async function getAssetFile(assetId: string, filename: string) {
   safeAssetPath(filename);
   const { rows } = await db.query<{ mime: string; chunks: number; lastSize: number }>(
     `select file.mime,file.chunks,coalesce(octet_length(last.content),0) as "lastSize"
@@ -188,4 +192,9 @@ export async function getMissionFile(token: string, filename: string) {
 export async function readMissionFile(token: string, filename: string) {
   const file = await getMissionFile(token, filename);
   return { mime: file.mime, content: await file.read() };
+}
+
+export async function getMissionImageFile(assetId: string) {
+  const { rows: [asset] } = await db.query<Asset>("select id,kind,name,entrypoint from mission_assets where id=$1 and kind='image'", [assetId]);
+  return asset ? getAssetFile(assetId, asset.entrypoint) : null;
 }
