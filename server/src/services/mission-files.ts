@@ -198,3 +198,12 @@ export async function getMissionImageFile(assetId: string) {
   const { rows: [asset] } = await db.query<Asset>("select id,kind,name,entrypoint from mission_assets where id=$1 and kind='image'", [assetId]);
   return asset ? getAssetFile(assetId, asset.entrypoint) : null;
 }
+
+export async function getMissionAssetDownload(assetId: string) {
+  const { rows: [asset] } = await db.query<Asset>('select id,kind,name,entrypoint from mission_assets where id=$1', [assetId]);
+  if (!asset) throw fail('MISSION_NOT_FOUND');
+  const file = await getAssetFile(asset.id, asset.entrypoint);
+  // Legacy briefing packages are stored unpacked; this action downloads their HTML entrypoint.
+  const name = asset.kind === 'briefing' && /\.zip$/i.test(asset.name) ? path.posix.basename(asset.entrypoint) : asset.name;
+  return { name, content: await file.read() };
+}

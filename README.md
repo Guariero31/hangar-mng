@@ -114,6 +114,10 @@ O ZIP deve conter um único HTML de entrada ou um `index.html` na raiz, mantendo
 
 Os pilotos abrem o anexo em **Ver operação → Abrir briefing interativo → Iniciar briefing**, com opção de tela cheia. O briefing escrito permanece disponível como alternativa. O visualizador usa sandbox sem acesso à sessão, URLs temporárias de leitura e recursos limitados ao pacote, Three.js no jsDelivr e fontes Google. A música depende de interação e dos controles do próprio briefing. Arquivos usam o banco de dados em blocos, incluindo o banco embutido, e acompanham os backups PostgreSQL. Remover um anexo da missão desvincula o arquivo; não apaga cópias referenciadas por outras missões.
 
+## Biblioteca de músicas
+
+Em **Admin → Músicas**, envie MP3, OGG ou WAV (até 25 MB), ouça as faixas, pesquise pelo nome e baixe os arquivos. As músicas anexadas anteriormente às missões aparecem automaticamente na biblioteca. No cadastro da missão, selecione uma faixa ou **Sem música**; várias missões podem reutilizar o mesmo arquivo, sem novas cópias. A exclusão é permitida apenas quando nenhuma missão usa a faixa. O áudio do briefing só começa a carregar após a interação de reprodução. Arquivos continuam armazenados no banco e acompanham seus backups.
+
 ## Relatório pós-missão
 
 Em **Admin → Missões → Finalizar missão**, o administrador confirma a participação e a aeronave de cada piloto, informa as quantidades de alvos e objetivos, declara a sobrevivência e confere os resultados. É possível adicionar um piloto sem inscrição e salvar rascunhos privados. Os pilotos não podem preencher ou alterar resultados.

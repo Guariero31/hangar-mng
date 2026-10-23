@@ -19,6 +19,7 @@ import { Missions } from './pages/Missions';
 import { MissionDetail } from './pages/MissionDetail';
 import { MissionBriefing } from './pages/MissionBriefing';
 import { MissionsAdmin } from './pages/admin/MissionsAdmin';
+import { MusicAdmin } from './pages/admin/MusicAdmin';
 import { AircraftAdmin } from './pages/admin/AircraftAdmin';
 import { ScoringAdmin } from './pages/admin/ScoringAdmin';
 import { RibbonsAdmin } from './pages/admin/RibbonsAdmin';
@@ -50,6 +51,7 @@ export function App() {
           <Route path="visao-geral" element={<Overview />} />
           <Route path="aprovacoes" element={<Approvals />} />
           <Route path="missoes" element={<MissionsAdmin />} />
+          <Route path="musicas" element={<MusicAdmin />} />
           <Route path="missoes/:id/relatorio" element={<MissionReportEditor />} />
           <Route path="pontuacao" element={<ScoringAdmin />} />
           <Route path="condecoracoes" element={<RibbonsAdmin />} />

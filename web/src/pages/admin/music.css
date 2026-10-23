@@ -1,0 +1,13 @@
+.music-upload-section, .music-catalog { margin-top: 24px; padding: 24px; }
+.music-upload-section h2, .music-catalog h2 { margin: 0 0 14px; font-size: 22px; }
+.music-catalog-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.music-catalog-header p { margin: 0; }
+.music-catalog-header .field { width: min(100%, 320px); }
+.music-list { list-style: none; padding: 0; margin: 24px 0; }
+.music-list li { display: grid; grid-template-columns: minmax(0, 1fr) 270px auto; gap: 20px; align-items: center; padding: 20px 0; border-top: 1px solid var(--line); }
+.music-track-info { display: flex; flex-direction: column; gap: 6px; overflow-wrap: anywhere; }
+.music-track-info > span { font-size: 13px; }
+.music-list audio { width: 100%; max-width: 100%; }
+.music-track-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 900px) { .music-list li { grid-template-columns: minmax(0, 1fr) auto; } .music-list audio { grid-column: 1 / -1; grid-row: 2; } }
+@media (max-width: 520px) { .music-upload-section, .music-catalog { padding: 18px; } .music-list li { display: flex; flex-direction: column; align-items: stretch; } }

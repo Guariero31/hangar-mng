@@ -104,6 +104,7 @@ export interface Mission {
 }
 export interface MissionRibbon { id: string; name: string; description: string; allowsValor: boolean; hasImage: boolean; imageVersion: number }
 export interface MissionAsset { id: string; name: string; url: string; expiresAt: number }
+export interface MusicTrack extends MissionAsset { uses: number; size: number }
 export interface ScoringRules {
   airborneAircraft: number; groundAircraft: number; armoredVehicle: number; antiAircraft: number;
   helicopter: number; ship: number; sam: number; helicopterTransport: number; cargoTransport: number;

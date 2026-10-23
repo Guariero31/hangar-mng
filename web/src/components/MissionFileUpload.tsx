@@ -25,7 +25,7 @@ export function MissionFileUpload({ kind, value, onChange, onBusy }: {
       <span className="hint">{kind === 'image' ? 'PNG, JPG ou WebP · até 10 MB.' : kind === 'audio' ? 'MP3, OGG ou WAV · até 25 MB. Toca só na tela do briefing.' : 'Apenas um arquivo HTML · até 25 MB.'}</span>
     </label>
     {busy && <p role="status">Enviando e validando arquivo…</p>}
-    {value && <div className="mission-upload-current"><span>✓ {value.name}</span><button type="button" className="btn ghost sm" disabled={busy} onClick={() => onChange(null)}>Remover anexo</button></div>}
+    {value && <div className="mission-upload-current"><span>✓ {value.name}</span><a className="btn ghost sm" href={`/api/admin/mission-files/${encodeURIComponent(value.id)}/download`} download>Baixar anexo</a><button type="button" className="btn ghost sm" disabled={busy} onClick={() => onChange(null)}>Remover anexo</button></div>}
     {value && kind === 'image' && <img className="mission-upload-preview" src={value.url} alt="Prévia do mapa enviado" />}
     {error && <p className="op-error" role="alert">{error}</p>}
   </div>;

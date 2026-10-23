@@ -58,7 +58,7 @@ export function MissionBriefing() {
     {error && <div role="alert"><p>{errorMessage(error)}</p><button className="btn ghost" onClick={() => refetch()}>Tentar novamente</button></div>}
     {mission && !mission.briefingAsset && <p className="muted">Esta operação ainda não tem um briefing interativo.</p>}
     {fullscreenError && <p role="status">{fullscreenError}</p>}
-    {musicUrl.current && <audio ref={music} src={musicUrl.current} loop preload="auto" muted={muted} onEnded={(event) => { event.currentTarget.currentTime = 0; void event.currentTarget.play().catch(() => undefined); }} />}
+    {musicUrl.current && <audio ref={music} src={musicUrl.current} loop preload="none" muted={muted} onEnded={(event) => { event.currentTarget.currentTime = 0; void event.currentTarget.play().catch(() => undefined); }} />}
     {mission?.briefingAsset && <>
       <div ref={viewer} className="mission-briefing-viewer">
         {!started ? <div className="mission-briefing-start">

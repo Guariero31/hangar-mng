@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { MissionFileUpload } from '../../components/MissionFileUpload';
 import { useQuery } from '@tanstack/react-query';
 import { Select } from '../../components/Select';
-import { useAdminMissions, useDeleteMission, useSaveMission } from '../../api/hooks';
+import { useAdminMissions, useDeleteMission, useSaveMission, useMusicLibrary } from '../../api/hooks';
 import { api, errorMessage } from '../../api/client';
 import { fmtPoints } from '../../lib/format';
 import type { Mission } from '../../api/types';
@@ -41,6 +41,7 @@ function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () 
   const [imageAsset, setImageAsset] = useState(editing?.imageAsset ?? null);
   const [briefingAsset, setBriefingAsset] = useState(editing?.briefingAsset ?? null);
   const [audioAsset, setAudioAsset] = useState(editing?.audioAsset ?? null);
+  const music = useMusicLibrary();
   const [imageUploading, setImageUploading] = useState(false);
   const [briefingUploading, setBriefingUploading] = useState(false);
   const uploading = imageUploading || briefingUploading;
@@ -98,7 +99,15 @@ function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () 
         <MissionFileUpload kind="image" value={imageAsset} onChange={setImageAsset} onBusy={setImageUploading} />
         {!imageAsset && <label className="field"><span className="label">Ou use um link de imagem <small>Opcional</small></span><input className="input" type="url" placeholder="https://…" maxLength={2000} value={briefingImageUrl} onChange={(event) => setBriefingImageUrl(event.target.value)} /></label>}
         <MissionFileUpload kind="briefing" value={briefingAsset} onChange={setBriefingAsset} onBusy={setBriefingUploading} />
-        <MissionFileUpload kind="audio" value={audioAsset} onChange={setAudioAsset} onBusy={setBriefingUploading} />
+        <div className="mission-upload"><label className="field"><span className="label">Música do briefing</span>
+          <Select aria-label="Música do briefing" value={audioAsset?.id ?? ''} disabled={!music.data} onChange={id => setAudioAsset(music.data?.find(track => track.id === id) ?? null)}
+            options={[{ value: '', label: 'Sem música' }, ...(music.data ?? (audioAsset ? [audioAsset] : [])).map(track => ({ value: track.id, label: track.name }))]} />
+          <span className="hint">Selecione uma faixa da biblioteca. O mesmo arquivo pode ser usado em várias missões.</span></label>
+          {music.isLoading && <p className="muted">Carregando músicas…</p>}
+          {music.error && <p role="alert">{errorMessage(music.error)} <button type="button" className="btn ghost sm" onClick={() => music.refetch()}>Tentar novamente</button></p>}
+          {audioAsset && <audio key={audioAsset.id} src={audioAsset.url} controls preload="none" aria-label="Prévia da música selecionada" style={{ width: '100%' }} />}
+          <Link to="/admin/musicas" target="_blank" rel="noopener noreferrer">Gerenciar biblioteca de músicas ↗</Link>
+        </div>
       </fieldset>
       <fieldset className="mission-editor-section"><legend><span>04</span> Condecorações da missão</legend>
         <p className="mission-section-hint">Marque as fitas que podem ser concedidas aos pilotos ao final da operação.</p>

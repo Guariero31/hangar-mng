@@ -164,7 +164,6 @@ function TechTreeView({ state }: { state: TechTreeState }) {
     const ch = chartRef.current;
     if (!ch) return;
     const onWheel = (e: WheelEvent) => {
-      if (!e.ctrlKey) return;
       e.preventDefault();
       const r = ch.getBoundingClientRect();
       setZoom(zRef.current * (e.deltaY < 0 ? 1.1 : 1 / 1.1), e.clientX - r.left, e.clientY - r.top);
@@ -290,7 +289,7 @@ function TechTreeView({ state }: { state: TechTreeState }) {
                 <span><em>Regra 1:</em> aeronaves a partir do tier II exigem ao menos uma das aeronaves ligadas a elas pela linha tracejada (o tier anterior).</span>
                 <span><em className="b">Regra 2:</em> aeronaves Bound exigem também a compra da aeronave ligada pela linha magenta.</span>
                 <span>Passe o mouse (ou toque) em uma aeronave para ver as especificações e desbloquear.</span>
-                <span>Arraste o fundo para mover o mapa. Ctrl + roda dá zoom e “Ajustar” volta a encaixar na tela.</span>
+                <span>Arraste o fundo para mover o mapa. Use a roda do mouse para aproximar ou afastar e “Ajustar” para encaixar na tela.</span>
               </span>
             </span>
           </h1>

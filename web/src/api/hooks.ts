@@ -2,7 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from './client';
 import { invalidatePlayerData } from './cache';
-import type { Mission, MissionInput, Approvals, MedalLite, Achievements, Ranking, Activity, Overview, News, Profile, AdminTree, Aircraft, AuthConfig, LedgerEntry, Me, PlayerDetail, PlayerRow, TechTreeState, Tier } from './types';
+import type { MusicTrack, Mission, MissionInput, Approvals, MedalLite, Achievements, Ranking, Activity, Overview, News, Profile, AdminTree, Aircraft, AuthConfig, LedgerEntry, Me, PlayerDetail, PlayerRow, TechTreeState, Tier } from './types';
 
 // ------------------------------------------------------------------ sessão
 
@@ -219,6 +219,10 @@ export const useMissionSignup = () =>
 
 export function useAdminMissions() {
   return useQuery({ queryKey: ['admin', 'missions'], queryFn: () => api.get<{ items: Mission[]; total: number }>('/admin/missions?limit=100') });
+}
+
+export function useMusicLibrary() {
+  return useQuery({ queryKey: ['admin', 'music'], queryFn: () => api.get<MusicTrack[]>('/admin/music') });
 }
 
 export const useSaveMission = () =>

@@ -1,5 +1,5 @@
 import { runOperation } from '../../lib/mutations';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { errorMessage } from '../../api/client';
 import {
   useAdminTree, useDeletePlayer, useGrantAircraft, useMe, usePlayer, useRenamePlayer, useRevokeAircraft, useUpdatePlayer,
@@ -27,6 +27,12 @@ export function PlayerPanel({ id, onDeleted }: { id: string; onDeleted?: () => v
 
   const [refund, setRefund] = useState(false);
   const [grantId, setGrantId] = useState('');
+  const [roleConfirmation, setRoleConfirmation] = useState<'admin' | 'player' | null>(null);
+  const roleDialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    if (roleConfirmation && !roleDialog.current?.open) roleDialog.current?.showModal();
+    if (!roleConfirmation && roleDialog.current?.open) roleDialog.current.close();
+  }, [roleConfirmation]);
 
   if (isLoading) return <div className="loading">CARREGANDO…</div>;
   if (error || !data) return <div className="empty">{errorMessage(error)}</div>;
@@ -45,6 +51,26 @@ export function PlayerPanel({ id, onDeleted }: { id: string; onDeleted?: () => v
 
   return (
     <>
+      <dialog ref={roleDialog} className="approval-confirm" aria-labelledby="role-confirm-title" aria-describedby="role-confirm-description"
+        onCancel={event => { if (update.isPending) event.preventDefault(); else setRoleConfirmation(null); }}
+        onClose={() => { if (!update.isPending) setRoleConfirmation(null); }}
+        onClick={event => { if (event.target === event.currentTarget && !update.isPending) setRoleConfirmation(null); }}>
+        {roleConfirmation && <div className="approval-confirm-content" aria-busy={update.isPending}>
+          <span className={`approval-confirm-symbol ${roleConfirmation === 'player' ? 'is-reject' : ''}`} aria-hidden="true">{roleConfirmation === 'player' ? '!' : '✓'}</span>
+          <span className="label">Controle de acesso</span>
+          <h2 id="role-confirm-title">{roleConfirmation === 'player' ? 'Remover acesso de administrador?' : 'Tornar administrador?'}</h2>
+          <p id="role-confirm-description">{roleConfirmation === 'player' ? 'Este usuário perderá acesso ao painel administrativo e continuará usando o Hangar como piloto.' : 'Este usuário poderá acessar o painel administrativo e gerenciar o esquadrão.'}</p>
+          <div className="approval-confirm-person">{label}</div>
+          {update.error && <p className="approval-feedback is-error" role="alert">{errorMessage(update.error)}</p>}
+          <div className="approval-confirm-actions">
+            <button type="button" className="btn ghost" autoFocus disabled={update.isPending} onClick={() => setRoleConfirmation(null)}>Cancelar</button>
+            <button type="button" className={`btn ${roleConfirmation === 'player' ? 'danger' : ''}`} disabled={update.isPending} onClick={() => {
+              const role = roleConfirmation;
+              run(update.mutateAsync({ id, role }), role === 'admin' ? 'Agora é admin.' : 'Não é mais admin.').then(success => { if (success) setRoleConfirmation(null); });
+            }}>{update.isPending ? 'Salvando…' : roleConfirmation === 'player' ? 'Remover acesso' : 'Confirmar acesso'}</button>
+          </div>
+        </div>}
+      </dialog>
       <div className="detail-head">
         <span className="label">Jogador</span>
         {!renaming ? (
@@ -134,9 +160,8 @@ export function PlayerPanel({ id, onDeleted }: { id: string; onDeleted?: () => v
             )}
             <button className="btn ghost" disabled={update.isPending}
               onClick={() => {
-                const role = user.role === 'admin' ? 'player' : 'admin';
-                if (!confirm(role === 'admin' ? `Tornar ${label} administrador?` : `Remover o acesso de admin de ${label}?`)) return;
-                run(update.mutateAsync({ id, role }), role === 'admin' ? 'Agora é admin.' : 'Não é mais admin.');
+                update.reset();
+                setRoleConfirmation(user.role === 'admin' ? 'player' : 'admin');
               }}>
               {user.role === 'admin' ? 'Remover admin' : 'Tornar admin'}
             </button>

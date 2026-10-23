@@ -13,6 +13,7 @@ export function AdminTabs() {
       <NavLink to="/admin" end>Jogadores</NavLink>
       <NavLink to="/admin/aeronaves">Aeronaves</NavLink>
       <NavLink to="/admin/missoes">Missões</NavLink>
+      <NavLink to="/admin/musicas">Músicas</NavLink>
       <NavLink to="/admin/pontuacao">Pontuação</NavLink>
       <NavLink to="/admin/condecoracoes">Condecorações</NavLink>
       <NavLink to="/admin/atividade">Atividade</NavLink>

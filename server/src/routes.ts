@@ -15,10 +15,11 @@ import { getProfile } from './services/profile.js';
 import * as missions from './services/missions.js';
 import * as ribbons from './services/ribbons.js';
 import { adminErrorsRouter, clientErrorsRouter } from './error-routes.js';
-import { getMissionFile, uploadMissionAsset } from './services/mission-files.js';
+import { getMissionAssetDownload, getMissionFile, uploadMissionAsset } from './services/mission-files.js';
 import { withBriefingAudioRecovery } from './services/briefing-audio.js';
 import { getScoringRules, saveScoringRules } from './services/scoring.js';
 import { getMissionReport, saveMissionReport } from './services/mission-reports.js';
+import { listMusic, deleteMusic } from './services/music.js';
 
 export const api = Router();
 const pagination = z.object({
@@ -229,6 +230,19 @@ adminApi.post('/mission-files/:kind', rateLimit({ windowMs: 60_000, max: 10 }), 
 });
 
 const userIdParam = z.string().uuid();
+
+adminApi.get('/music', async (_req, res) => { res.json(await listMusic()); });
+adminApi.delete('/music/:id', async (req, res) => {
+  await deleteMusic(userIdParam.parse(req.params.id));
+  res.json({ ok: true });
+});
+
+adminApi.get('/mission-files/:id/download', async (req, res) => {
+  const file = await getMissionAssetDownload(userIdParam.parse(req.params.id));
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
+  res.attachment(file.name).type('application/octet-stream').send(file.content);
+});
 
 adminApi.get('/overview', async (_req, res) => {
   res.json(await admin.getOverview());

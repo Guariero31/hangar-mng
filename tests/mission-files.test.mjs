@@ -104,6 +104,25 @@ test('image upload validates signature and returns an image MIME type', async ()
   const response = await fetch(`${base}${asset.url}`); assert.equal(response.status, 200); assert.match(response.headers.get('content-type'), /image\/png/);
 });
 
+test('administrators download original attachment bytes with a safe filename and without executing HTML', async () => {
+  const html = Buffer.from('<title>Briefing</title><script>alert("test")</script>');
+  const asset = await files.uploadMissionAsset(admin.id, 'briefing', 'Operação Varkan.html', html);
+  const url = `${base}/api/admin/mission-files/${asset.id}/download`;
+  assert.equal((await fetch(url)).status, 401);
+  assert.equal((await fetch(url, { headers: { Cookie: cookie(player) } })).status, 403);
+  const response = await fetch(url, { headers: { Cookie: cookie(admin) } });
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-disposition'), /^attachment;/);
+  assert.match(response.headers.get('content-disposition'), /filename\*=UTF-8''Opera%C3%A7%C3%A3o%20Varkan.html/);
+  assert.match(response.headers.get('content-type'), /application\/octet-stream/);
+  assert.match(response.headers.get('cache-control'), /no-store/);
+  assert.deepEqual(Buffer.from(await response.arrayBuffer()), html);
+  const missing = await fetch(`${base}/api/admin/mission-files/00000000-0000-4000-8000-000000000000/download`, { headers: { Cookie: cookie(admin) } });
+  assert.equal(missing.status, 404);
+  const packed = await storeZip('antigo.zip', archive());
+  assert.equal((await files.getMissionAssetDownload(packed.id)).name, 'Briefing da missão.html');
+});
+
 test('larger media is stored and read intact across database chunks', async () => {
   const media = Buffer.alloc(700 * 1024, 73);
   const asset = await storeZip('media.zip', zip([['index.html', '<audio src="music.mp3"></audio>'], ['music.mp3', media]]));
