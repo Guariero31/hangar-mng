@@ -18,3 +18,8 @@ test('closed and cancelled invitations do not advertise open registrations', () 
     assert.doesNotMatch(result.text, /Inscrições abertas|Mapa:/);
   }
 });
+
+test('invitations prefer the readable mission address', () => {
+  const result = missionShare({ id: 'old-id', slug: 'estreito-de-varkan', title: 'Voo', startsAt: '2026-10-25T22:30:00Z', mapName: '', status: 'scheduled' }, 'https://hangar.example');
+  assert.equal(result.url, 'https://hangar.example/missoes/estreito-de-varkan');
+});

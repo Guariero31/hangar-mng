@@ -10,6 +10,7 @@ import { fmtPoints } from '../lib/format';
 import { DateBlock, fmtWhen } from './Missions';
 import { RibbonPreview } from '../components/RibbonPreview';
 import { MissionShare } from '../components/MissionShare';
+import { missionPath } from '../lib/mission-path';
 import '../components/ribbon-image.css';
 import './missions.css';
 
@@ -130,7 +131,7 @@ export function MissionDetail() {
       <div className="op-layout">
         <Participation key={mission.id} mission={mission} />
         <div className="op-content">
-          {mission.hasReport && <section className="card op-section op-interactive-callout"><span className="label">Operação concluída</span><h2>Relatório pós-missão disponível</h2><p className="muted">Consulte os resultados de cada piloto e o detalhamento dos pontos distribuídos.</p><Link className="btn" to={`/missoes/${mission.id}/relatorio`}>Ver relatório →</Link></section>}
+          {mission.hasReport && <section className="card op-section op-interactive-callout"><span className="label">Operação concluída</span><h2>Relatório pós-missão disponível</h2><p className="muted">Consulte os resultados de cada piloto e o detalhamento dos pontos distribuídos.</p><Link className="btn" to={missionPath(mission, '/relatorio')}>Ver relatório →</Link></section>}
           <section className="card op-section"><span className="label">Informações da missão</span><h2>Briefing da operação</h2>
             {mission.briefing.trim() ? <div className="op-briefing">{mission.briefing.split(/\n\s*\n/).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
               : <p className="muted">O briefing será publicado pela administração. Volte antes do início da operação para conferir os detalhes.</p>}
@@ -139,7 +140,7 @@ export function MissionDetail() {
             <p className="muted">A administração pode conceder estas fitas aos pilotos que cumprirem os requisitos.</p>
             <ul className="operation-ribbon-gallery">{mission.ribbons.filter((ribbon) => ribbon.hasImage).map((ribbon) => <li key={ribbon.id}><RibbonPreview ribbon={ribbon} /></li>)}</ul>
           </section>}
-          {mission.briefingAsset && <section className="card op-section op-interactive-callout"><span className="label">Experiência interativa</span><h2>Briefing da missão</h2><p className="muted">Explore o cenário, os objetivos e os materiais da operação. Ative a música pelos controles do briefing.</p><Link className="btn" to={`/missoes/${mission.id}/briefing`}>Abrir briefing interativo →</Link></section>}
+          {mission.briefingAsset && <section className="card op-section op-interactive-callout"><span className="label">Experiência interativa</span><h2>Briefing da missão</h2><p className="muted">Explore o cenário, os objetivos e os materiais da operação. Ative a música pelos controles do briefing.</p><Link className="btn" to={missionPath(mission, '/briefing')}>Abrir briefing interativo →</Link></section>}
           <MissionManagement key={`management:${mission.id}`} mission={mission} />
           <MissionRoster key={`roster:${mission.id}`} mission={mission} />
         </div>

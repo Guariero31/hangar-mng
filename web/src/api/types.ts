@@ -91,6 +91,7 @@ export interface TechTreeState {
 
 export interface MissionSignup { missionId: string; userId: string; nickname: string; aircraftId: string; aircraftName: string; attended: boolean; pmAwarded: number }
 export interface Mission {
+  slug: string | null;
   hasReport: boolean;
   imageAsset: MissionAsset | null; briefingAsset: MissionAsset | null; audioAsset: MissionAsset | null;
   mapName: string; briefingImageUrl: string;

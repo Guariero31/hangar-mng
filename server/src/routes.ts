@@ -185,12 +185,13 @@ api.get('/missions', requireUser, requireNickname, async (req, res) => {
   res.json(await missions.listMissions(req.user));
 });
 
+const missionAddress = z.string().min(1).max(140).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/i);
 api.get('/missions/:id', requireUser, requireNickname, async (req, res) => {
-  res.json(await missions.getMission(req.user, z.string().uuid().parse(req.params.id)));
+  res.json(await missions.getMission(req.user, missionAddress.parse(req.params.id)));
 });
 
 api.get('/missions/:id/report', requireUser, requireNickname, async (req, res) => {
-  res.json(await getMissionReport(req.user, z.string().uuid().parse(req.params.id)));
+  res.json(await getMissionReport(req.user, await missions.resolveMissionId(missionAddress.parse(req.params.id))));
 });
 
 api.put('/missions/:id/signup', requireUser, requireNickname, async (req, res) => {
@@ -233,7 +234,7 @@ adminApi.get('/overview', async (_req, res) => {
   res.json(await admin.getOverview());
 });
 
-api.get('/missions/:id/awards', requireUser, requireNickname, async (req, res) => { res.json(await ribbons.listMissionAwardsPublic(userIdParam.parse(req.params.id))); });
+api.get('/missions/:id/awards', requireUser, requireNickname, async (req, res) => { res.json(await ribbons.listMissionAwardsPublic(await missions.resolveMissionId(missionAddress.parse(req.params.id)))); });
 const ribbonBody = z.object({
   name: z.string().trim().min(2).max(80), description: z.string().max(500).default(''),
   category: z.enum(ribbons.RIBBON_CATEGORIES), precedence: z.number().int().min(1).max(9999).default(100),

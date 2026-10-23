@@ -1,5 +1,6 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { RequireUser } from './components/RequireUser';
+import { CanonicalMissionRoute } from './components/CanonicalMissionRoute';
 import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
 import { Privacy } from './pages/Privacy';
@@ -39,9 +40,9 @@ export function App() {
         <Route index element={<TechTree />} />
         <Route path="perfil" element={<ProfilePage />} />
         <Route path="missoes" element={<Missions />} />
-        <Route path="missoes/:id" element={<MissionDetail />} />
-        <Route path="missoes/:id/briefing" element={<MissionBriefing />} />
-        <Route path="missoes/:id/relatorio" element={<MissionReportPage />} />
+        <Route path="missoes/:id" element={<CanonicalMissionRoute><MissionDetail /></CanonicalMissionRoute>} />
+        <Route path="missoes/:id/briefing" element={<CanonicalMissionRoute suffix="/briefing"><MissionBriefing /></CanonicalMissionRoute>} />
+        <Route path="missoes/:id/relatorio" element={<CanonicalMissionRoute suffix="/relatorio"><MissionReportPage /></CanonicalMissionRoute>} />
         <Route path="ranking" element={<RankingPage />} />
         <Route path="admin" element={<RequireUser admin><Outlet /></RequireUser>}>
           <Route index element={<Players />} />

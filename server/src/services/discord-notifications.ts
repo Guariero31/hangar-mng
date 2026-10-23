@@ -30,8 +30,8 @@ export async function deliverDiscordNotifications(shouldStop: () => boolean = ()
        where mission_id=(select mission_id from discord_notifications where state='pending' and next_attempt_at<=now()
          order by next_attempt_at limit 1 for update skip locked) returning mission_id, attempts, copies`);
     if (!job) return;
-    const { rows: [mission] } = await db.query<{ id: string; title: string; startsAt: Date; mapName: string; status: string; imageAssetId: string | null }>(
-      'select id, title, starts_at as "startsAt", map_name as "mapName", status, image_asset_id as "imageAssetId" from missions where id=$1', [job.mission_id]);
+    const { rows: [mission] } = await db.query<{ id: string; slug: string | null; title: string; startsAt: Date; mapName: string; status: string; imageAssetId: string | null }>(
+      'select id, slug, title, starts_at as "startsAt", map_name as "mapName", status, image_asset_id as "imageAssetId" from missions where id=$1', [job.mission_id]);
     if (!mission || mission.status !== 'scheduled' || new Date(mission.startsAt).getTime() <= Date.now()) {
       await db.query("update discord_notifications set state='skipped' where mission_id=$1", [job.mission_id]);
       continue;

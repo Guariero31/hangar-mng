@@ -48,8 +48,8 @@ export async function sendDiscord(payload: DiscordPayload, image?: DiscordImage)
   return body.id;
 }
 
-export function missionDiscordPayload(mission: { id: string; title: string; startsAt: Date; mapName: string; copies: number }): DiscordPayload {
-  const url = `${config.appUrl}/missoes/${encodeURIComponent(mission.id)}`;
+export function missionDiscordPayload(mission: { id: string; slug?: string | null; title: string; startsAt: Date; mapName: string; copies: number }): DiscordPayload {
+  const url = `${config.appUrl}/missoes/${encodeURIComponent(mission.slug || mission.id)}`;
   const when = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'full', timeStyle: 'short', timeZone: 'America/Sao_Paulo' }).format(new Date(mission.startsAt));
   return {
     username: 'Hangar MNG', allowed_mentions: { parse: [] },

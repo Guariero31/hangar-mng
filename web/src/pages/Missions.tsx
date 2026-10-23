@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { missionPath } from '../lib/mission-path';
 import { useMissions } from '../api/hooks';
 import { errorMessage } from '../api/client';
 import { fmtPoints } from '../lib/format';
@@ -26,7 +27,7 @@ export function Chips({ m, showResult }: { m: Mission; showResult?: boolean }) {
 }
 
 function MissionCard({ mission }: { mission: Mission }) {
-  return <Link to={mission.hasReport ? `/missoes/${mission.id}/relatorio` : `/missoes/${mission.id}`} className="ms-operation-card">
+  return <Link to={missionPath(mission, mission.hasReport ? '/relatorio' : '')} className="ms-operation-card">
     <DateBlock iso={mission.startsAt} />
     <div className="ms-body">
       <div className="ms-head"><h2>{mission.title}</h2>

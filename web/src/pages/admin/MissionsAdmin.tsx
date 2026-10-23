@@ -1,4 +1,5 @@
 import { useToast } from '../../components/Toast';
+import { missionPath } from '../../lib/mission-path';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MissionFileUpload } from '../../components/MissionFileUpload';
@@ -119,7 +120,7 @@ function MissionForm({ editing, onDone }: { editing: Mission | null; onDone: () 
         <dl><div><dt>Mapa</dt><dd>{mapName.trim() || 'A definir'}</dd></div><div><dt>Tier</dt><dd>{tierLabel ? `Tier ${tierLabel}` : 'A definir'}</dd></div><div><dt>Condecorações</dt><dd>{ribbonIds.length ? `${ribbonIds.length} selecionada(s)` : 'Nenhuma'}</dd></div><div><dt>Data e hora</dt><dd>{date && time ? `${fmtWhen(new Date(`${date}T${time}:00-03:00`).toISOString())} · Brasília` : 'Defina o agendamento'}</dd></div><div><dt>Recompensa sugerida</dt><dd>{pm.trim() ? `${fmtPoints(Number(pm))} PM` : 'A definir'}</dd></div>
           {!editing && <div><dt>Recorrência</dt><dd>{repeat === '0' ? 'Evento único' : `+${repeat} semanas`}</dd></div>}
         </dl><div className="mission-preview-note"><span aria-hidden="true">↗</span><p>Os pilotos leem o briefing e escolhem a aeronave na página da operação.</p></div>
-        {editing && <Link to={`/missoes/${editing.id}`} target="_blank" rel="noopener noreferrer">Ver página publicada →</Link>}
+        {editing && <Link to={missionPath(editing)} target="_blank" rel="noopener noreferrer">Ver página publicada →</Link>}
       </aside></div>
       <footer className="mission-editor-footer">
         <div>{err ? <p className="op-error" role="alert">{err}</p> : <p className="muted">{editing ? 'As alterações serão exibidas aos pilotos após salvar.' : 'A missão ficará disponível para inscrições após a criação.'}</p>}</div>
@@ -172,7 +173,7 @@ export function MissionsAdmin() {
             <Chips m={m} showResult={m.status === 'closed'} />
             </div>
             <div className="ms-actions mission-card-actions">
-              <Link className="mission-card-view" to={m.hasReport ? `/missoes/${m.id}/relatorio` : `/missoes/${m.id}`}>{m.hasReport ? 'Ver relatório' : 'Ver operação'} <span aria-hidden="true">↗</span></Link>
+              <Link className="mission-card-view" to={missionPath(m, m.hasReport ? '/relatorio' : '')}>{m.hasReport ? 'Ver relatório' : 'Ver operação'} <span aria-hidden="true">↗</span></Link>
               {m.status === 'scheduled' && <button type="button" className="btn ghost sm mission-card-edit" aria-label={`Editar missão ${m.title}`} title="Editar missão" onClick={() => setForm({ editing: m })}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6ZM14 5l5 5" /></svg></button>}
               {(m.status === 'scheduled' || m.status === 'closed' || !m.hasReport) && <MissionOptions mission={m} deleting={remove.isPending} onDelete={() => apagar(m)} />}
             </div>

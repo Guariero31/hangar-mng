@@ -33,7 +33,7 @@ test('mission creation queues exactly one announcement per series; edits and rep
   assert.equal(requests.length, 1);
   assert.match(requests[0].url, /\?wait=true$/);
   assert.equal(requests[0].body.embeds[0].title, 'Nova missão · Série atualizada');
-  assert.equal(requests[0].body.embeds[0].url, `https://hangar.example/missoes/${ids[0]}`);
+  assert.equal(requests[0].body.embeds[0].url, 'https://hangar.example/missoes/serie');
   assert.deepEqual(requests[0].body.allowed_mentions, { parse: [] });
   assert.equal((await job(ids[0])).state, 'sent');
   fetchMock.mock.restore();

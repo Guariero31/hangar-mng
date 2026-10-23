@@ -7,13 +7,14 @@ import type { User } from './users.js';
 import { sendNewMission } from './mail.js';
 import { missionAssetMetadata, validateMissionAssets } from './mission-files.js';
 import { enqueueMissionDiscord } from './discord-notifications.js';
+import { nextMissionSlug, UUID_ADDRESS } from './mission-slug.js';
 
 async function audit(q: Queryable, adminId: string, action: string, details: object) {
   await q.query('insert into admin_audit_log (admin_id, action, target_user_id, details) values ($1, $2, null, $3)',
     [adminId, action, JSON.stringify(details)]);
 }
 
-const MISSION_COLS = `m.id, m.title, m.briefing, m.starts_at as "startsAt", m.default_pm as "defaultPm",
+const MISSION_COLS = `m.id, m.slug, m.title, m.briefing, m.starts_at as "startsAt", m.default_pm as "defaultPm",
   m.status, m.series_id as "seriesId", m.closed_at as "closedAt", m.map_name as "mapName", m.briefing_image_url as "briefingImageUrl",
   m.image_asset_id as "imageAssetId", m.briefing_asset_id as "briefingAssetId", m.audio_asset_id as "audioAssetId", m.tier,
   exists(select 1 from mission_reports report where report.mission_id=m.id and report.state='published') as "hasReport",
@@ -50,9 +51,16 @@ export async function listMissions(user: User) {
 }
 
 export async function getMission(user: User, id: string) {
-  const { rows } = await db.query<{ id: string }>(`select ${MISSION_COLS} from missions m where m.id = $1`, [id]);
+  const { rows } = await db.query<{ id: string }>(`select ${MISSION_COLS} from missions m where m.${UUID_ADDRESS.test(id) ? 'id' : 'slug'} = $1`, [id]);
   if (!rows.length) throw fail('MISSION_NOT_FOUND');
   return (await withSignups(rows, user.id))[0];
+}
+
+export async function resolveMissionId(address: string): Promise<string> {
+  if (UUID_ADDRESS.test(address)) return address;
+  const { rows: [mission] } = await db.query<{ id: string }>('select id from missions where slug=$1', [address]);
+  if (!mission) throw fail('MISSION_NOT_FOUND');
+  return mission.id;
 }
 
 export async function adminListMissions(limit: number, offset: number) {
@@ -148,14 +156,17 @@ export async function createMission(admin: User, input: MissionInput, repeatWeek
   await validateMissionAssets(input.imageAssetId, input.briefingAssetId, input.audioAssetId);
   await assertTier(db, input.tier);
   const result = await db.tx(async (q) => {
+    // PGlite serializes transactions; PostgreSQL needs a lock for duplicate titles.
+    if (db.kind === 'postgres') await q.query('select pg_advisory_xact_lock(721406, 2)');
     const seriesId = repeatWeeks > 0 ? (await q.query<{ id: string }>('select gen_random_uuid() as id')).rows[0].id : null;
     const ids: string[] = [];
     for (let i = 0; i <= repeatWeeks; i++) {
       const at = new Date(new Date(input.startsAt).getTime() + i * 7 * 86400_000).toISOString();
+      const slug = await nextMissionSlug(q, input.title);
       const { rows } = await q.query<{ id: string }>(
-        `insert into missions (title, briefing, starts_at, default_pm, series_id, created_by, map_name, briefing_image_url, image_asset_id, briefing_asset_id, audio_asset_id, tier)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) returning id`,
-        [input.title.trim(), input.briefing.trim(), at, input.defaultPm, seriesId, admin.id, input.mapName?.trim() ?? '', input.briefingImageUrl?.trim() ?? '', input.imageAssetId ?? null, input.briefingAssetId ?? null, input.audioAssetId ?? null, input.tier ?? null]);
+        `insert into missions (title, briefing, starts_at, default_pm, series_id, created_by, map_name, briefing_image_url, image_asset_id, briefing_asset_id, audio_asset_id, tier, slug)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) returning id`,
+        [input.title.trim(), input.briefing.trim(), at, input.defaultPm, seriesId, admin.id, input.mapName?.trim() ?? '', input.briefingImageUrl?.trim() ?? '', input.imageAssetId ?? null, input.briefingAssetId ?? null, input.audioAssetId ?? null, input.tier ?? null, slug]);
       ids.push(rows[0].id);
       if (input.ribbonIds?.length) await setMissionRibbons(q, rows[0].id, input.ribbonIds);
     }
