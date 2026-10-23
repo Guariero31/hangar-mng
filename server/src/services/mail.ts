@@ -6,6 +6,9 @@ import { fileURLToPath } from 'node:url';
 import nodemailer from 'nodemailer';
 import { config } from '../config.js';
 import { logServerError } from './errorlog.js';
+import { createMailDelivery } from './mail-delivery.js';
+
+const deliverMail = createMailDelivery();
 
 const mailEnabled = !!(config.smtp.host && config.smtp.user && config.smtp.pass);
 
@@ -37,10 +40,10 @@ async function send(to: string, subject: string, html: string, text: string) {
     return;
   }
   try {
-    await transport.sendMail({
+    await deliverMail(() => transport.sendMail({
       from: config.smtp.from, to, subject, html, text,
       attachments: hasLogo && html.includes(`cid:${LOGO_CID}`) ? [{ filename: 'mng-logo.png', path: LOGO_FILE, cid: LOGO_CID, contentDisposition: 'inline' }] : [],
-    });
+    }));
   } catch (e) {
     console.error(`[e-mail] falha ao enviar "${subject}" para ${to}:`, e instanceof Error ? e.message : e);
     void logServerError(e, { source: 'mail', route: subject });

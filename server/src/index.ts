@@ -13,6 +13,7 @@ import { drainServer } from './shutdown.js';
 import { logServerError } from './services/errorlog.js';
 import { startAchievementRefresh } from './services/achievement-refresh.js';
 import { startDiscordNotifications } from './services/discord-notifications.js';
+import { missionPreviewRoutes } from './mission-preview-routes.js';
 
 console.log('\n  Hangar MNG — API');
 console.log(`  banco: ${db.kind === 'pglite' ? `Postgres embutido (${path.relative(process.cwd(), config.pgliteDir)})` : 'PostgreSQL'}`);
@@ -28,12 +29,14 @@ app.use('/api', rateLimit({ windowMs: 60_000, max: 240 }));
 app.use(/^\/api\/admin\/missions\/[^/]+\/report(?:\/publish)?$/, express.json({ limit: '5mb' }));
 app.use(express.json({ limit: '100kb' }));
 app.use(cookieParser());
+const webDist = path.resolve(SERVER_ROOT, '../web/dist');
+const webIndex = path.join(webDist, 'index.html');
+if (fs.existsSync(webIndex)) app.use(missionPreviewRoutes(fs.readFileSync(webIndex, 'utf8')));
 
 app.use('/api', api);
 app.use('/api', (_req, res) => { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Rota não encontrada.' } }); });
 
 // Em produção o próprio servidor entrega o site React já compilado (web/dist)
-const webDist = path.resolve(SERVER_ROOT, '../web/dist');
 if (fs.existsSync(path.join(webDist, 'index.html'))) {
   app.use(express.static(webDist, { index: false, maxAge: '1h' }));
   app.use((req, res, next) => {
