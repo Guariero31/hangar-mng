@@ -17,7 +17,7 @@
 .rq-done { font-size: 14px; color: var(--ok); }
 .rq-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .rq-table { border: 1px solid var(--line); background: var(--bg-2, transparent); overflow-x: auto; }
-.rq-row { display: grid; grid-template-columns: minmax(150px, 1.4fr) minmax(120px, 1fr) 80px 80px 70px 100px; gap: 12px; align-items: center; padding: 10px 16px; min-width: 640px; border-top: 1px solid var(--line); font-size: 15px; }
+.rq-row { display: grid; grid-template-columns: minmax(150px, 1.4fr) minmax(120px, 1fr) 80px 110px 70px 100px; gap: 12px; align-items: center; padding: 10px 16px; min-width: 640px; border-top: 1px solid var(--line); font-size: 15px; }
 .rq-head-row { border-top: 0; font: 12px var(--font-mono, monospace); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .rq-row .num { text-align: right; font-family: var(--font-mono, monospace); }
 .rq-pm { color: var(--accent); font-weight: 700; }

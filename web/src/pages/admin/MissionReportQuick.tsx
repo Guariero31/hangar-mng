@@ -145,7 +145,7 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
               {resolved[i] ? <span className="rq-done">{resolved[i]} <button type="button" className="btn ghost sm" onClick={() => setResolved((c) => { const n = { ...c }; delete n[i]; return n; })}>Desfazer</button></span>
                 : d.kind === 'vanished' ? (
                   <span className="rq-actions">
-                    <button type="button" className="btn ghost sm" onClick={() => resolve(i, 'Mantido como sobreviveu')}>Voltou</button>
+                    <button type="button" className="btn ghost sm" onClick={() => resolve(i, 'Mantido como sobreviveu')}>Sobreviveu</button>
                     <button type="button" className="btn ghost sm" onClick={() => { const p = rows.find((x) => x.nickname === d.label || x.nickname.toLowerCase() === d.label.toLowerCase()) ?? rows.find((x) => d.label.toLowerCase().includes(x.nickname.toLowerCase())); if (p) patch(p.userId, { survived: false }); resolve(i, 'Marcado como perdido'); }}>Foi perdido</button>
                   </span>
                 ) : (
@@ -160,7 +160,7 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
       )}
 
       <section className="rq-table" aria-label="Pontuação por piloto">
-        <div className="rq-row rq-head-row"><span>Piloto</span><span>Aeronave</span><span>Voou</span><span>Voltou</span><span className="num">Alvos</span><span className="num">PM</span></div>
+        <div className="rq-row rq-head-row"><span>Piloto</span><span>Aeronave</span><span>Voou</span><span>Sobreviveu</span><span className="num">Alvos</span><span className="num">PM</span></div>
         {rows.map((p) => {
           const c = calc(p);
           return (
