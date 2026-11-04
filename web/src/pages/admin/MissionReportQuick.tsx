@@ -168,9 +168,9 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
               <div className="rq-row">
                 <button type="button" className="rq-name" aria-expanded={open === p.userId} onClick={() => setOpen(open === p.userId ? '' : p.userId)}>{p.nickname}</button>
                 <span className="muted">{p.aircraftName}</span>
-                <span><button type="button" className={`rq-chip ${p.attended ? 'ok' : p.attended === false ? 'no' : ''}`} aria-pressed={!!p.attended} onClick={() => patch(p.userId, p.attended ? { attended: false, survived: null, counts: zeroCounts() } : { attended: true, survived: p.survived ?? true })}>{p.attended ? 'Sim' : p.attended === false ? 'Não' : '—'}</button></span>
+                <span><button type="button" className={`rq-chip ${p.attended ? 'ok' : p.attended === false ? 'no' : ''}`} aria-pressed={!!p.attended} onClick={() => patch(p.userId, p.attended ? { attended: false } : { attended: true, survived: p.survived ?? true })}>{p.attended ? 'Sim' : p.attended === false ? 'Não' : '—'}</button></span>
                 <span>{p.attended ? <button type="button" className={`rq-chip ${p.survived ? 'ok' : p.survived === false ? 'no' : ''}`} aria-pressed={!!p.survived} onClick={() => patch(p.userId, { survived: !p.survived })}>{p.survived ? 'Sim' : p.survived === false ? 'Não' : '—'}</button> : <span className="muted">—</span>}</span>
-                <span className="num">{p.attended ? totalTargets(p) : '—'}</span>
+                <span className="num" style={p.attended ? undefined : { opacity: .45 }}>{totalTargets(p)}</span>
                 <span className="num rq-pm">{fmtPoints(c.total)}</span>
               </div>
               {open === p.userId && (
