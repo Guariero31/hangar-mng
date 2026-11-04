@@ -180,18 +180,22 @@ export async function grantRibbon(admin: User, input: { userId: string; ribbonId
   const { rows: [pilot] } = await db.query<{ nickname: string | null; status: string }>('select nickname, status from users where id=$1', [input.userId]);
   if (!pilot?.nickname || pilot.status !== 'active') throw fail('VALIDATION', 'Escolha um piloto ativo com apelido.');
   const reason = input.reason.trim().slice(0, 200);
-  const { rows: [g] } = await db.query<{ id: string }>(
-    'insert into ribbon_grants (ribbon_id, user_id, valor, reason, awarded_by) values ($1,$2,$3,$4,$5) returning id',
-    [input.ribbonId, input.userId, input.valor, reason, admin.id]);
-  await audit(admin.id, 'award_ribbon', { title: reason ? `avulsa: ${reason}` : 'concessão avulsa', ribbon: ribbon.name, nickname: pilot.nickname, valor: input.valor });
-  return g.id;
+  return db.tx(async (q) => {
+    const { rows: [g] } = await q.query<{ id: string }>(
+      'insert into ribbon_grants (ribbon_id, user_id, valor, reason, awarded_by) values ($1,$2,$3,$4,$5) returning id',
+      [input.ribbonId, input.userId, input.valor, reason, admin.id]);
+    await audit(admin.id, 'award_ribbon', { title: reason ? `avulsa: ${reason}` : 'concessão avulsa', ribbon: ribbon.name, nickname: pilot.nickname, valor: input.valor }, q);
+    return g.id;
+  });
 }
 
 export async function revokeGrant(admin: User, id: string) {
-  const { rows } = await db.query<{ nickname: string; name: string }>(
-    `delete from ribbon_grants g using users u, ribbons r where g.id=$1 and u.id=g.user_id and r.id=g.ribbon_id returning u.nickname, r.name`, [id]);
-  if (!rows.length) throw fail('RIBBON_NOT_FOUND', 'Concessão não encontrada.');
-  await audit(admin.id, 'revoke_ribbon', { title: 'concessão avulsa', ribbon: rows[0].name, nickname: rows[0].nickname });
+  await db.tx(async (q) => {
+    const { rows } = await q.query<{ nickname: string; name: string }>(
+      `delete from ribbon_grants g using users u, ribbons r where g.id=$1 and u.id=g.user_id and r.id=g.ribbon_id returning u.nickname, r.name`, [id]);
+    if (!rows.length) throw fail('RIBBON_NOT_FOUND', 'Concessão não encontrada.');
+    await audit(admin.id, 'revoke_ribbon', { title: 'concessão avulsa', ribbon: rows[0].name, nickname: rows[0].nickname }, q);
+  });
 }
 
 /** Concessões de uma missão encerrada, visíveis a todos os pilotos (aparecem no relatório publicado). */

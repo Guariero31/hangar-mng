@@ -20,6 +20,7 @@ interface TacviewResult {
   matches: { key: string; userId: string | null }[];
 }
 
+const nameKey = (raw: string) => (raw.includes('|') ? raw.slice(raw.lastIndexOf('|') + 1) : raw).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const mmss = (sec: number | null) => (sec == null ? '' : `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`);
 const zeroCounts = () => Object.fromEntries(REPORT_TARGETS.map(({ key }) => [key, 0])) as Record<ReportTarget, number>;
 const totalTargets = (p: ReportPilot) => REPORT_TARGETS.reduce((n, { key }) => n + p.counts[key], 0);
@@ -35,6 +36,9 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
   
   const [fileName, setFileName] = useState('');
   const [doubts, setDoubts] = useState<Doubt[]>([]);
+  const [idByName, setIdByName] = useState<Record<string, string>>({});
+  const [notice, setNotice] = useState('');
+  const [skipped, setSkipped] = useState(0);
   const [resolved, setResolved] = useState<Record<number, string>>({});
   const [unlinked, setUnlinked] = useState<AnalyzedPilot[]>([]);
   const [open, setOpen] = useState('');
@@ -57,6 +61,8 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
         const a = byUser.get(p.userId);
         return a ? { ...p, reviewed: false, ...fromAnalysis(a) } : { ...p, reviewed: false, attended: false, survived: null, counts: zeroCounts() };
       }) }));
+      setIdByName(Object.fromEntries(data.analysis.pilots.flatMap((p) => { const m = data.matches.find((x) => x.key === p.key)?.userId; return m ? [[p.name, m]] : []; })));
+      setSkipped(data.analysis.doubts.filter((d) => d.kind !== 'unclaimed' && d.kind !== 'vanished').length);
       setUnlinked(data.analysis.pilots.filter((p) => !data.matches.find((m) => m.key === p.key)?.userId));
       setDoubts(data.analysis.doubts.filter((d) => d.kind === 'unclaimed' || d.kind === 'vanished'));
       setResolved({});
@@ -89,8 +95,8 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
   const open_ = doubts.filter((_, i) => !resolved[i]).length + unlinked.length;
   const resolve = (i: number, text: string) => setResolved((cur) => ({ ...cur, [i]: text }));
   const pilotOptions = rows.map((p) => ({ value: p.userId, label: p.nickname }));
-  const pilotByLabel = (label: string) => rows.find((x) => x.nickname.toLowerCase() === label.toLowerCase()) ?? rows.find((x) => label.toLowerCase().includes(x.nickname.toLowerCase()));
-  const flagged = new Set(doubts.flatMap((d, i) => (d.kind === 'vanished' && !resolved[i] ? [pilotByLabel(d.label)?.userId ?? ''] : [])));
+  const pilotByLabel = (label: string) => rows.find((x) => x.userId === idByName[label]) ?? rows.find((x) => nameKey(x.nickname) === nameKey(label));
+  const flagged = new Set(doubts.flatMap((d, i) => (d.kind === 'vanished' && !resolved[i] ? [pilotByLabel(d.pilot ?? d.label)?.userId ?? ''] : [])));
   const targetsTotal = rows.reduce((n, p) => n + (p.attended ? totalTargets(p) : 0), 0);
   const baseTotal = rows.reduce((n, p) => n + calc(p).subtotal, 0);
   const blocked = pending > 0 || open_ > 0 || !rows.length;
@@ -102,7 +108,7 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
     resolve(i, `Atribuído a ${p.nickname}`);
   };
   const linkPilot = (a: AnalyzedPilot, userId: string) => { patch(userId, fromAnalysis(a)); setUnlinked((cur) => cur.filter((x) => x.key !== a.key)); };
-  const pick = (file?: File) => { if (file) { setFileName(file.name); upload.mutate(file); } };
+  const pick = (file?: File) => { if (file && dirty && !window.confirm('Importar de novo substitui os abates e as atribuições já feitos nesta tela. Continuar?')) return; if (file) { setFileName(file.name); upload.mutate(file); } };
 
   const steps = (
     <div className="rq-steps" aria-label="Etapas">
@@ -168,6 +174,8 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
         <div className="warn"><span>Para conferir</span><strong>{open_ + pending}</strong></div>
       </section>
 
+      {skipped > 0 && <p className="rq-block" role="status">{skipped} {skipped === 1 ? 'objeto do arquivo não pôde' : 'objetos do arquivo não puderam'} ser classificados e ficou de fora da pontuação.</p>}
+      {notice && <p className="rq-block" role="alert">{notice}</p>}
       {(doubts.length > 0 || unlinked.length > 0) && (
         <section className="rq-doubts" aria-label="Itens para conferir">
           <div className="rq-doubts-title">
@@ -187,7 +195,7 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
                 : d.kind === 'vanished' ? (
                   <span className="rq-actions">
                     <button type="button" className="rq-btn warn" onClick={() => resolve(i, 'Mantido como sobreviveu')}>Sobreviveu</button>
-                    <button type="button" className="rq-btn" onClick={() => { const p = pilotByLabel(d.label); if (p) patch(p.userId, { survived: false }); resolve(i, 'Marcado como perdido'); }}>Foi perdido</button>
+                    <button type="button" className="rq-btn" onClick={() => { const p = pilotByLabel(d.pilot ?? d.label); if (!p) { setNotice(`Não achei ${d.pilot ?? d.label} na tabela. Corrija o Sobreviveu dele à mão.`); return; } setNotice(''); patch(p.userId, { survived: false }); resolve(i, 'Marcado como perdido'); }}>Foi perdido</button>
                   </span>
                 ) : (
                   <span className="rq-actions">

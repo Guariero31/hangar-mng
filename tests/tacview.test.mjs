@@ -50,3 +50,21 @@ test('name matching ignores squadron tags, case and symbols', () => {
   assert.equal(nameKey('Mr_Magoo'), 'mrmagoo');
   assert.equal(nameKey('Piloto Ás'), 'pilotoas');
 });
+
+test('ZIP real é lido; ZIP sem gravação é recusado', async () => {
+  const zlibmod = zlib;
+  const name = Buffer.from('rec.txt.acmi');
+  const data = zlibmod.deflateRawSync(acmi);
+  const crc = zlibmod.crc32 ? zlibmod.crc32(acmi) : 0;
+  const lf = Buffer.alloc(30); lf.writeUInt32LE(0x04034b50, 0); lf.writeUInt16LE(20, 4); lf.writeUInt16LE(8, 8);
+  lf.writeUInt32LE(crc >>> 0, 14); lf.writeUInt32LE(data.length, 18); lf.writeUInt32LE(acmi.length, 22); lf.writeUInt16LE(name.length, 26);
+  const cd = Buffer.alloc(46); cd.writeUInt32LE(0x02014b50, 0); cd.writeUInt16LE(20, 4); cd.writeUInt16LE(20, 6); cd.writeUInt16LE(8, 10);
+  cd.writeUInt32LE(crc >>> 0, 16); cd.writeUInt32LE(data.length, 20); cd.writeUInt32LE(acmi.length, 24); cd.writeUInt16LE(name.length, 28);
+  const local = Buffer.concat([lf, name, data]);
+  const dir = Buffer.concat([cd, name]);
+  const end = Buffer.alloc(22); end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(1, 8); end.writeUInt16LE(1, 10); end.writeUInt32LE(dir.length, 12); end.writeUInt32LE(local.length, 16);
+  const zip = Buffer.concat([local, dir, end]);
+  const r = await analyzeTacview(zip, ['Alpha', 'Bravo']);
+  assert.equal(r.pilots.length, 2);
+  await assert.rejects(analyzeTacview(Buffer.concat([Buffer.from('PK'), Buffer.alloc(40)])), /arquivo|Tacview|corrompido/);
+});
