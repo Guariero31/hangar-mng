@@ -106,6 +106,7 @@ export function MissionReportEditor() {
   const mission = useMission(id, { poll: false });
   const report = useQuery({ queryKey: ['admin', 'mission-report', id], queryFn: () => api.get<MissionReport>(`/admin/missions/${id}/report`), enabled: !!id });
   return <div className="report-editor-page"><Link className="op-back" to="/admin/missoes">← Administração de missões</Link>
+    {report.data?.state !== 'published' && <p className="muted">Quer testar o fluxo mais curto, com importação do Tacview? <Link to={`/admin/missoes/${id}/relatorio-rapido`}>Abrir a versão em uma tela</Link></p>}
     {(mission.isLoading || report.isLoading) && <p className="loading">Preparando relatório…</p>}
     {(mission.error || report.error) && <div role="alert"><p>{errorMessage(mission.error || report.error)}</p><button type="button" className="btn ghost" onClick={() => { void mission.refetch(); void report.refetch(); }}>Tentar novamente</button></div>}
     {report.data?.state === 'published' ? <section className="card report-section"><h2>Relatório publicado</h2><p>Esta missão já foi finalizada e os pontos foram distribuídos.</p><Link className="btn" to={`/missoes/${id}/relatorio`}>Ver relatório publicado</Link></section> : mission.data && report.data && <ReportEditor key={id} mission={mission.data} initial={report.data} />}

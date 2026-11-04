@@ -24,6 +24,7 @@ import { AircraftAdmin } from './pages/admin/AircraftAdmin';
 import { ScoringAdmin } from './pages/admin/ScoringAdmin';
 import { RibbonsAdmin } from './pages/admin/RibbonsAdmin';
 import { MissionReportEditor } from './pages/admin/MissionReportEditor';
+import { MissionReportQuick } from './pages/admin/MissionReportQuick';
 import { MissionReportPage } from './pages/MissionReport';
 
 export function App() {
@@ -53,6 +54,7 @@ export function App() {
           <Route path="missoes" element={<MissionsAdmin />} />
           <Route path="musicas" element={<MusicAdmin />} />
           <Route path="missoes/:id/relatorio" element={<MissionReportEditor />} />
+          <Route path="missoes/:id/relatorio-rapido" element={<MissionReportQuick />} />
           <Route path="pontuacao" element={<ScoringAdmin />} />
           <Route path="condecoracoes" element={<RibbonsAdmin />} />
           <Route path="atividade" element={<Activity />} />

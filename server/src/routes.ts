@@ -14,6 +14,7 @@ import { getRanking } from './services/ranking.js';
 import { getProfile } from './services/profile.js';
 import * as missions from './services/missions.js';
 import * as ribbons from './services/ribbons.js';
+import { analyzeTacview, nameKey } from './services/tacview.js';
 import { adminErrorsRouter, clientErrorsRouter } from './error-routes.js';
 import { getMissionAssetDownload, getMissionFile, uploadMissionAsset } from './services/mission-files.js';
 import { withBriefingAudioRecovery } from './services/briefing-audio.js';
@@ -426,6 +427,19 @@ adminApi.get('/missions/:id/report', async (req, res) => {
 });
 adminApi.put('/missions/:id/report', async (req, res) => {
   res.json(await saveMissionReport(req.user, z.string().uuid().parse(req.params.id), req.body));
+});
+adminApi.post('/missions/:id/report/tacview', rateLimit({ windowMs: 60_000, max: 6 }), raw({ type: 'application/octet-stream', limit: '60mb' }), async (req, res) => {
+  const id = z.string().uuid().parse(req.params.id);
+  if (!Buffer.isBuffer(req.body) || !req.body.length) throw fail('VALIDATION', 'Envie o arquivo do Tacview como conteúdo binário.');
+  const mission = await missions.getMission(req.user, id);
+  const analysis = await analyzeTacview(req.body, mission.signups.map((s) => s.nickname));
+  // liga cada piloto do arquivo a um inscrito: nome igual, ou um contido no outro (ex.: "HRP | Mr. Magoo" x "Mr_Magoo")
+  const matches = analysis.pilots.map((p) => {
+    const exact = mission.signups.find((s) => nameKey(s.nickname) === p.key);
+    const loose = exact ?? mission.signups.find((s) => { const k = nameKey(s.nickname); return k.length >= 3 && p.key.length >= 3 && (p.key.includes(k) || k.includes(p.key)); });
+    return { key: p.key, userId: loose?.userId ?? null };
+  });
+  res.json({ analysis, matches });
 });
 adminApi.post('/missions/:id/report/publish', async (req, res) => {
   res.json(await saveMissionReport(req.user, z.string().uuid().parse(req.params.id), req.body, true));
