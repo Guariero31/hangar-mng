@@ -153,9 +153,45 @@ export async function getRibbonRack(userId: string): Promise<RackRibbon[]> {
   const { rows } = await db.query<RackRibbon>(
     `select r.id, r.name, r.description, r.category, r.allows_valor as "allowsValor", r.image_version as "imageVersion",
             (r.image is not null) as "hasImage", count(*)::int as count, bool_or(a.valor) as valor, max(a.created_at) as "lastAt"
-       from ribbon_awards a join ribbons r on r.id = a.ribbon_id
+       from (select ribbon_id, user_id, valor, created_at from ribbon_awards
+             union all select ribbon_id, user_id, valor, created_at from ribbon_grants) a
+       join ribbons r on r.id = a.ribbon_id
       where a.user_id = $1 group by r.id order by r.precedence, lower(r.name)`, [userId]);
   return rows;
+}
+
+export interface GrantRow { id: string; userId: string; nickname: string; ribbonId: string; ribbonName: string; valor: boolean; reason: string; createdAt: string }
+
+/** Concessões avulsas (fora de missões), mais recentes primeiro. */
+export async function listGrants(): Promise<GrantRow[]> {
+  const { rows } = await db.query<GrantRow>(
+    `select g.id, g.user_id as "userId", u.nickname, g.ribbon_id as "ribbonId", r.name as "ribbonName", g.valor, g.reason, g.created_at as "createdAt"
+       from ribbon_grants g join users u on u.id = g.user_id join ribbons r on r.id = g.ribbon_id
+      order by g.created_at desc limit 200`);
+  return rows;
+}
+
+export async function grantRibbon(admin: User, input: { userId: string; ribbonId: string; valor: boolean; reason: string }) {
+  const { rows: [ribbon] } = await db.query<{ name: string; allowsValor: boolean; active: boolean }>(
+    'select name, allows_valor as "allowsValor", active from ribbons where id=$1', [input.ribbonId]);
+  if (!ribbon) throw fail('RIBBON_NOT_FOUND');
+  if (!ribbon.active) throw fail('VALIDATION', 'Esta condecoração está inativa.');
+  if (input.valor && !ribbon.allowsValor) throw fail('VALIDATION', 'Esta condecoração não aceita o "V" de valor.');
+  const { rows: [pilot] } = await db.query<{ nickname: string | null; status: string }>('select nickname, status from users where id=$1', [input.userId]);
+  if (!pilot?.nickname || pilot.status !== 'active') throw fail('VALIDATION', 'Escolha um piloto ativo com apelido.');
+  const reason = input.reason.trim().slice(0, 200);
+  const { rows: [g] } = await db.query<{ id: string }>(
+    'insert into ribbon_grants (ribbon_id, user_id, valor, reason, awarded_by) values ($1,$2,$3,$4,$5) returning id',
+    [input.ribbonId, input.userId, input.valor, reason, admin.id]);
+  await audit(admin.id, 'award_ribbon', { title: reason ? `avulsa: ${reason}` : 'concessão avulsa', ribbon: ribbon.name, nickname: pilot.nickname, valor: input.valor });
+  return g.id;
+}
+
+export async function revokeGrant(admin: User, id: string) {
+  const { rows } = await db.query<{ nickname: string; name: string }>(
+    `delete from ribbon_grants g using users u, ribbons r where g.id=$1 and u.id=g.user_id and r.id=g.ribbon_id returning u.nickname, r.name`, [id]);
+  if (!rows.length) throw fail('RIBBON_NOT_FOUND', 'Concessão não encontrada.');
+  await audit(admin.id, 'revoke_ribbon', { title: 'concessão avulsa', ribbon: rows[0].name, nickname: rows[0].nickname });
 }
 
 /** Concessões de uma missão encerrada, visíveis a todos os pilotos (aparecem no relatório publicado). */

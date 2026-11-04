@@ -115,3 +115,25 @@ test('review: change ribbons of a closed mission, but not ones already awarded',
   await m.reviewMissionRibbons(adm, id, [x, y]);
   assert.equal((await r.listMissionAwardsPublic(id))[0].nickname, 'RvP');
 });
+
+test('avulsas: concede fora de missão, valida V/inativa/piloto sem apelido, aparece na estante, revoga e bloqueia apagar a fita', async () => {
+  const pilot = (await db.query(`insert into users (google_sub,email,nickname) values ('Av','av@example.invalid','Avulso') returning *`)).rows[0];
+  const noNick = (await db.query(`insert into users (google_sub,email) values ('Nn','nn@example.invalid') returning *`)).rows[0];
+  const ribbonId = await r.createRibbon(adm, input({ name: 'Avulsa A', allowsValor: false }));
+  const valorId = await r.createRibbon(adm, input({ name: 'Avulsa V', allowsValor: true }));
+  const offId = await r.createRibbon(adm, input({ name: 'Avulsa Off', active: false }));
+  await assert.rejects(r.grantRibbon(adm, { userId: pilot.id, ribbonId, valor: true, reason: '' }), /não aceita/);
+  await assert.rejects(r.grantRibbon(adm, { userId: pilot.id, ribbonId: offId, valor: false, reason: '' }), /inativa/);
+  await assert.rejects(r.grantRibbon(adm, { userId: noNick.id, ribbonId, valor: false, reason: '' }), /piloto ativo/);
+  const id = await r.grantRibbon(adm, { userId: pilot.id, ribbonId, valor: false, reason: ' Evento ' });
+  await r.grantRibbon(adm, { userId: pilot.id, ribbonId: valorId, valor: true, reason: '' });
+  await r.grantRibbon(adm, { userId: pilot.id, ribbonId, valor: false, reason: '' });
+  const rack = await r.getRibbonRack(pilot.id);
+  assert.equal(rack.find((x) => x.id === ribbonId).count, 2);
+  assert.equal(rack.find((x) => x.id === valorId).valor, true);
+  assert.equal((await r.listGrants()).find((g) => g.id === id).reason, 'Evento');
+  await assert.rejects(r.deleteRibbon(adm, ribbonId), /já foi concedida/);
+  await r.revokeGrant(adm, id);
+  assert.equal((await r.getRibbonRack(pilot.id)).find((x) => x.id === ribbonId).count, 1);
+  await assert.rejects(r.revokeGrant(adm, id), /não encontrada/);
+});

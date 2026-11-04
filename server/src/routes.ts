@@ -256,6 +256,12 @@ const ribbonBody = z.object({
   allowsValor: z.boolean().default(false), active: z.boolean().default(true),
 });
 adminApi.get('/ribbons', async (_req, res) => { res.json(await ribbons.listRibbons()); });
+adminApi.get('/ribbon-grants', async (_req, res) => { res.json(await ribbons.listGrants()); });
+adminApi.post('/ribbon-grants', async (req, res) => {
+  const body = z.object({ userId: z.string().uuid(), ribbonId: z.string().uuid(), valor: z.boolean().default(false), reason: z.string().max(200).default('') }).parse(req.body);
+  res.status(201).json({ id: await ribbons.grantRibbon(req.user, body) });
+});
+adminApi.delete('/ribbon-grants/:id', async (req, res) => { await ribbons.revokeGrant(req.user, userIdParam.parse(req.params.id)); res.json({ ok: true }); });
 adminApi.post('/ribbons', async (req, res) => { res.status(201).json({ id: await ribbons.createRibbon(req.user, ribbonBody.parse(req.body)) }); });
 adminApi.put('/ribbons/:id', async (req, res) => { await ribbons.updateRibbon(req.user, userIdParam.parse(req.params.id), ribbonBody.parse(req.body)); res.json({ ok: true }); });
 adminApi.delete('/ribbons/:id', async (req, res) => { await ribbons.deleteRibbon(req.user, userIdParam.parse(req.params.id)); res.json({ ok: true }); });

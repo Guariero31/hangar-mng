@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { RibbonGrants } from './RibbonGrants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '../../api/client';
 import { useToast } from '../../components/Toast';
@@ -106,6 +107,7 @@ export function RibbonsAdmin() {
           </article>
         ))}
       </div>
+      {data && <RibbonGrants ribbons={data} />}
     </div>
   );
 }

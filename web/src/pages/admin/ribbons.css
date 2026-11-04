@@ -61,3 +61,14 @@
 .awards-review { border: 1px solid var(--line); padding: 10px 12px; }
 .awards-review summary { cursor: pointer; font-weight: 600; font-size: 14px; }
 .awards-review .mission-ribbon-pick { margin: 10px 0; }
+
+.rb-grants { margin-top: 28px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.rb-grants h2, .rb-grants h3 { margin: 0; }
+.rb-grants p { margin: 0; }
+.rb-grant-form { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+.rb-grant-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); min-width: 200px; }
+.rb-grant-form .rb-grant-reason { flex: 1 1 260px; }
+.rb-grant-form input[type=text] { padding: 9px 10px; background: transparent; border: 1px solid var(--line-2); color: var(--text); font: 15px inherit; }
+.rb-grant-form .rb-grant-valor { flex-direction: row; align-items: center; gap: 8px; min-width: 0; font-size: 15px; color: var(--text); }
+.rb-grant-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.rb-grant-list li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 15px; }
