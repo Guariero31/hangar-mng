@@ -75,7 +75,7 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
       if (publish) {
         toast('Relatório publicado e missão finalizada.');
         await Promise.all([invalidatePlayerData(queryClient), queryClient.invalidateQueries({ queryKey: ['missions'] })]);
-        navigate(`/admin/missoes/${mission.id}/relatorio`);
+        navigate(`/admin/missoes/${mission.id}/relatorio?publicado=1`);
       } else { setReport(saved); setDirty(false); toast('Rascunho salvo. Nenhum ponto foi distribuído.'); }
     },
   });

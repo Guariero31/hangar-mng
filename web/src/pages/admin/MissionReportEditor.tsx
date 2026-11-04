@@ -1,6 +1,6 @@
 import { useToast } from '../../components/Toast';
-import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '../../api/client';
 import type { Aircraft, Mission, MissionReport, ReportPilot } from '../../api/types';
@@ -103,13 +103,17 @@ function ReportEditor({ mission, initial }: { mission: Mission; initial: Mission
 
 export function MissionReportEditor() {
   const { id = '' } = useParams();
+  const [params] = useSearchParams();
+  const justPublished = params.get('publicado') === '1';
+  const awardsRef = useRef<HTMLDivElement>(null);
   const mission = useMission(id, { poll: false });
+  useEffect(() => { if (justPublished && mission.data) awardsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, [justPublished, !!mission.data]);
   const report = useQuery({ queryKey: ['admin', 'mission-report', id], queryFn: () => api.get<MissionReport>(`/admin/missions/${id}/report`), enabled: !!id });
   return <div className="report-editor-page"><Link className="op-back" to="/admin/missoes">← Administração de missões</Link>
     {report.data?.state !== 'published' && <p className="muted">Quer testar o fluxo mais curto, com importação do Tacview? <Link to={`/admin/missoes/${id}/relatorio-rapido`}>Abrir a versão em uma tela</Link></p>}
     {(mission.isLoading || report.isLoading) && <p className="loading">Preparando relatório…</p>}
     {(mission.error || report.error) && <div role="alert"><p>{errorMessage(mission.error || report.error)}</p><button type="button" className="btn ghost" onClick={() => { void mission.refetch(); void report.refetch(); }}>Tentar novamente</button></div>}
-    {report.data?.state === 'published' ? <section className="card report-section"><h2>Relatório publicado</h2><p>Esta missão já foi finalizada e os pontos foram distribuídos.</p><Link className="btn" to={`/missoes/${id}/relatorio`}>Ver relatório publicado</Link></section> : mission.data && report.data && <ReportEditor key={id} mission={mission.data} initial={report.data} />}
-    {mission.data && <MissionAwards mission={mission.data} />}
+    {report.data?.state === 'published' ? <section className="card report-section"><h2>Relatório publicado</h2><p>{justPublished ? 'Missão encerrada e PM distribuídos. Agora conceda as condecorações logo abaixo; é opcional e pode ser feito depois.' : 'Esta missão já foi finalizada e os pontos foram distribuídos.'}</p><Link className="btn" to={`/missoes/${id}/relatorio`}>Ver relatório publicado</Link></section> : mission.data && report.data && <ReportEditor key={id} mission={mission.data} initial={report.data} />}
+    <div ref={awardsRef}>{mission.data && <MissionAwards mission={mission.data} />}</div>
   </div>;
 }
