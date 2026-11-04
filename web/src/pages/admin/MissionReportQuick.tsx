@@ -32,17 +32,18 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
     ...initial,
     pilots: [...initial.pilots, ...mission.signups.filter((s) => !initial.pilots.some((p) => p.userId === s.userId)).map((s) => reportPilot(s.userId, s.nickname, s.aircraftId, s.aircraftName))],
   }));
-  const [imported, setImported] = useState<TacviewResult | null>(null);
+  
   const [fileName, setFileName] = useState('');
   const [doubts, setDoubts] = useState<Doubt[]>([]);
   const [resolved, setResolved] = useState<Record<number, string>>({});
   const [unlinked, setUnlinked] = useState<AnalyzedPilot[]>([]);
   const [open, setOpen] = useState('');
-  const [confirmed, setConfirmed] = useState(false);
+  const [stage, setStage] = useState<'import' | 'review'>(initial.source ? 'review' : 'import');
+  const [dragging, setDragging] = useState(false);
   const [dirty, setDirty] = useState(false);
   const aircraft = useQuery({ queryKey: ['admin', 'tree'], queryFn: () => api.get<{ aircraft: Aircraft[] }>('/admin/tree') });
 
-  const edit = (update: (current: MissionReport) => MissionReport) => { setReport(update); setDirty(true); setConfirmed(false); };
+  const edit = (update: (current: MissionReport) => MissionReport) => { setReport(update); setDirty(true); };
   const patch = (userId: string, change: Partial<ReportPilot>) => edit((cur) => ({ ...cur, pilots: cur.pilots.map((p) => (p.userId === userId ? { ...p, reviewed: false, ...change } : p)) }));
   const setCount = (userId: string, key: ReportTarget, value: number) => edit((cur) => ({ ...cur, pilots: cur.pilots.map((p) => (p.userId === userId ? { ...p, reviewed: false, counts: { ...p.counts, [key]: Math.max(0, Math.min(99, value || 0)) } } : p)) }));
   const fromAnalysis = (a: AnalyzedPilot): Partial<ReportPilot> => ({ attended: true, survived: a.survived, counts: { ...zeroCounts(), ...a.counts } });
@@ -50,7 +51,7 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
   const upload = useMutation({
     mutationFn: (file: File) => api.upload<TacviewResult>(`/admin/missions/${mission.id}/report/tacview`, file),
     onSuccess: (data) => {
-      setImported(data);
+
       const byUser = new Map(data.matches.filter((m) => m.userId).map((m) => [m.userId as string, data.analysis.pilots.find((p) => p.key === m.key) as AnalyzedPilot]));
       edit((cur) => ({ ...cur, source: `Tacview: ${fileName}`, pilots: cur.pilots.map((p) => {
         const a = byUser.get(p.userId);
@@ -59,6 +60,7 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
       setUnlinked(data.analysis.pilots.filter((p) => !data.matches.find((m) => m.key === p.key)?.userId));
       setDoubts(data.analysis.doubts.filter((d) => d.kind === 'unclaimed' || d.kind === 'vanished'));
       setResolved({});
+      setStage('review');
       toast('Tacview lido. Confira a tabela e as dúvidas.');
     },
   });
@@ -87,6 +89,11 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
   const open_ = doubts.filter((_, i) => !resolved[i]).length + unlinked.length;
   const resolve = (i: number, text: string) => setResolved((cur) => ({ ...cur, [i]: text }));
   const pilotOptions = rows.map((p) => ({ value: p.userId, label: p.nickname }));
+  const pilotByLabel = (label: string) => rows.find((x) => x.nickname.toLowerCase() === label.toLowerCase()) ?? rows.find((x) => label.toLowerCase().includes(x.nickname.toLowerCase()));
+  const flagged = new Set(doubts.flatMap((d, i) => (d.kind === 'vanished' && !resolved[i] ? [pilotByLabel(d.label)?.userId ?? ''] : [])));
+  const targetsTotal = rows.reduce((n, p) => n + (p.attended ? totalTargets(p) : 0), 0);
+  const baseTotal = rows.reduce((n, p) => n + calc(p).subtotal, 0);
+  const blocked = pending > 0 || open_ > 0 || !rows.length;
 
   const assign = (i: number, userId: string) => {
     const d = doubts[i]; const p = rows.find((x) => x.userId === userId);
@@ -94,45 +101,79 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
     edit((cur) => ({ ...cur, pilots: cur.pilots.map((x) => (x.userId === userId ? { ...x, reviewed: false, attended: true, survived: x.survived ?? true, counts: { ...x.counts, [d.category as ReportTarget]: x.counts[d.category as ReportTarget] + 1 } } : x)) }));
     resolve(i, `Atribuído a ${p.nickname}`);
   };
-  const linkPilot = (a: AnalyzedPilot, userId: string) => {
-    patch(userId, fromAnalysis(a));
-    setUnlinked((cur) => cur.filter((x) => x.key !== a.key));
-  };
+  const linkPilot = (a: AnalyzedPilot, userId: string) => { patch(userId, fromAnalysis(a)); setUnlinked((cur) => cur.filter((x) => x.key !== a.key)); };
+  const pick = (file?: File) => { if (file) { setFileName(file.name); upload.mutate(file); } };
+
+  const steps = (
+    <div className="rq-steps" aria-label="Etapas">
+      <span className={stage === 'import' ? 'on' : ''}>1 · Importar</span>
+      <span className={stage === 'review' ? 'on' : ''}>2 · Conferir</span>
+      <span>3 · Publicar</span>
+    </div>
+  );
+  const title = (sub: React.ReactNode) => (
+    <header className="rq-head">
+      <div>
+        <span className="rq-eyebrow">Administração / Missões</span>
+        <h1>{stage === 'import' ? 'Finalizar missão' : 'Relatório pós-missão'}</h1>
+        <p className="muted">{sub}</p>
+      </div>
+      {steps}
+    </header>
+  );
+
+  if (stage === 'import') {
+    return (
+      <div className="rq">
+        <Link className="op-back" to="/admin/missoes">← Administração de missões</Link>
+        {title(<>{mission.title} · <Link to={`/admin/missoes/${mission.id}/relatorio`}>usar o fluxo completo</Link></>)}
+        <div className="rq-import-grid">
+          <div className="rq-col">
+            <label className={`rq-drop${dragging ? ' over' : ''}`} onDragOver={(e) => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={(e) => { e.preventDefault(); setDragging(false); pick(e.dataTransfer.files[0]); }}>
+              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 16V4" /><path d="M7 9l5-5 5 5" /><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" /></svg>
+              <strong>{upload.isPending ? 'Lendo o arquivo…' : 'Arraste o arquivo do Tacview aqui'}</strong>
+              <span className="muted">Arquivo <code>.acmi</code> gravado durante a missão · até 60 MB</span>
+              <span className="btn">Escolher arquivo</span>
+              <input type="file" accept=".acmi,.zip,.txt" hidden disabled={upload.isPending} onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ''; }} />
+            </label>
+            {upload.error && <p role="alert" className="op-error">{errorMessage(upload.error)}</p>}
+            <div className="card rq-manual">
+              <div><strong>Prefere lançar à mão?</strong><p className="muted">Abre a mesma tabela para você preencher os abates.</p></div>
+              <button type="button" className="btn ghost" onClick={() => setStage('review')}>Abrir tabela</button>
+            </div>
+          </div>
+          <aside className="card rq-side">
+            <span className="rq-eyebrow muted">O que o site lê do arquivo</span>
+            <ul>
+              <li><b>1</b><span><strong>Quem participou</strong><br /><span className="muted">Pilotos que entraram em voo, com a aeronave usada.</span></span></li>
+              <li><b>2</b><span><strong>Quem abateu o quê</strong><br /><span className="muted">Alvos destruídos por piloto, ligados à arma que acertou.</span></span></li>
+              <li><b>3</b><span><strong>Quem sobreviveu</strong><br /><span className="muted">Perdas por ação inimiga contam como não sobreviveu.</span></span></li>
+            </ul>
+            <p className="muted rq-side-note">O Tacview nem sempre mostra quem deu o tiro. O que ficar em dúvida aparece na próxima tela para você decidir.</p>
+          </aside>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rq">
       <Link className="op-back" to="/admin/missoes">← Administração de missões</Link>
-      <header className="rq-head">
-        <div>
-          <span className="label">Administração / Missões</span>
-          <h1>Relatório pós-missão</h1>
-          <p className="muted">{mission.title} · versão simplificada em uma tela. <Link to={`/admin/missoes/${mission.id}/relatorio`}>Usar o fluxo completo</Link></p>
-        </div>
-      </header>
-
-      <section className="card rq-import" aria-label="Importar o Tacview">
-        <div>
-          <strong>1. Importe a gravação do Tacview</strong>
-          <p className="muted">Arquivo <code>.acmi</code> ou <code>.zip.acmi</code>. O site sugere quem participou, os abates e quem sobreviveu. Você confere e ajusta. Sem arquivo, preencha a tabela à mão.</p>
-        </div>
-        <label className="btn" style={{ cursor: upload.isPending ? 'wait' : 'pointer' }}>
-          {upload.isPending ? 'Lendo…' : imported ? 'Trocar arquivo' : 'Escolher arquivo'}
-          <input type="file" accept=".acmi,.zip,.txt" hidden disabled={upload.isPending} onChange={(e) => { const f = e.target.files?.[0]; if (f) { setFileName(f.name); upload.mutate(f); } e.target.value = ''; }} />
-        </label>
-        {upload.error && <p role="alert" className="op-error rq-wide">{errorMessage(upload.error)}</p>}
-        {imported && <p className="rq-wide muted" role="status">Lido: {imported.analysis.pilots.length} pilotos · {imported.analysis.stats.targets} alvos destruídos ({imported.analysis.stats.claimed} atribuídos, {imported.analysis.stats.unclaimed} sem dono) · {mmss(imported.analysis.durationSec)} de gravação.</p>}
-      </section>
+      {title(<>{mission.title}{fileName || report.source ? <> · lido de <code>{fileName || report.source.replace(/^Tacview: /, '')}</code></> : null}</>)}
 
       <section className="rq-kpis" aria-label="Resumo">
-        <div><span>Pilotos que voaram</span><strong>{attendedCount}</strong></div>
-        <div><span>Alvos destruídos</span><strong>{rows.reduce((n, p) => n + (p.attended ? totalTargets(p) : 0), 0)}</strong></div>
+        <div><span>Pilotos</span><strong>{attendedCount}</strong></div>
+        <div><span>Alvos destruídos</span><strong>{targetsTotal}</strong></div>
         <div className="accent"><span>PM a distribuir</span><strong>{fmtPoints(totalPm)}</strong></div>
-        <div className={open_ || pending ? 'warn' : ''}><span>Para conferir</span><strong>{open_ + pending}</strong></div>
+        <div className="warn"><span>Para conferir</span><strong>{open_ + pending}</strong></div>
       </section>
 
       {(doubts.length > 0 || unlinked.length > 0) && (
-        <section className="card rq-doubts" aria-label="Dúvidas">
-          <h2>{open_ ? `${open_} ${open_ === 1 ? 'item precisa' : 'itens precisam'} da sua decisão` : 'Todas as dúvidas foram resolvidas'}</h2>
+        <section className="rq-doubts" aria-label="Itens para conferir">
+          <div className="rq-doubts-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z" /><path d="M12 10v5" /><path d="M12 18v.01" /></svg>
+            <strong>{open_ ? `${open_} ${open_ === 1 ? 'item precisa' : 'itens precisam'} da sua decisão antes de publicar` : 'Todos os itens foram resolvidos'}</strong>
+          </div>
           {unlinked.map((a) => (
             <div key={a.key} className="rq-doubt">
               <span><strong>{a.name}</strong> aparece no arquivo, mas não bate com nenhum inscrito. <span className="muted">Voou {a.aircraft.join(', ')} · {Object.values(a.counts).reduce((n, v) => n + (v ?? 0), 0)} alvos.</span></span>
@@ -141,17 +182,17 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
           ))}
           {doubts.map((d, i) => (
             <div key={i} className={`rq-doubt${resolved[i] ? ' done' : ''}`}>
-              <span><strong>{mmss(d.tSec)}</strong> · {d.kind === 'vanished' ? <><strong>{d.label}</strong> sumiu do mapa.</> : <>{d.label} destruído sem dono.</>} <span className="muted">{d.detail}</span></span>
-              {resolved[i] ? <span className="rq-done">{resolved[i]} <button type="button" className="btn ghost sm" onClick={() => setResolved((c) => { const n = { ...c }; delete n[i]; return n; })}>Desfazer</button></span>
+              <span>{d.kind === 'vanished' ? <><strong>{d.label}</strong> sumiu do mapa aos {mmss(d.tSec)}, sem ação inimiga detectada.</> : <><strong>Abate sem dono:</strong> {d.label} destruído aos {mmss(d.tSec)} sem arma de nenhum piloto por perto.</>} <span className="muted">{d.kind === 'unclaimed' ? 'Fica fora da pontuação até você atribuir.' : d.detail}</span></span>
+              {resolved[i] ? <span className="rq-done">{resolved[i]} <button type="button" className="rq-btn" onClick={() => setResolved((c) => { const n = { ...c }; delete n[i]; return n; })}>Desfazer</button></span>
                 : d.kind === 'vanished' ? (
                   <span className="rq-actions">
-                    <button type="button" className="btn ghost sm" onClick={() => resolve(i, 'Mantido como sobreviveu')}>Sobreviveu</button>
-                    <button type="button" className="btn ghost sm" onClick={() => { const p = rows.find((x) => x.nickname === d.label || x.nickname.toLowerCase() === d.label.toLowerCase()) ?? rows.find((x) => d.label.toLowerCase().includes(x.nickname.toLowerCase())); if (p) patch(p.userId, { survived: false }); resolve(i, 'Marcado como perdido'); }}>Foi perdido</button>
+                    <button type="button" className="rq-btn warn" onClick={() => resolve(i, 'Mantido como sobreviveu')}>Sobreviveu</button>
+                    <button type="button" className="rq-btn" onClick={() => { const p = pilotByLabel(d.label); if (p) patch(p.userId, { survived: false }); resolve(i, 'Marcado como perdido'); }}>Foi perdido</button>
                   </span>
                 ) : (
                   <span className="rq-actions">
-                    <Select aria-label="Atribuir a um piloto" value="" options={[{ value: '', label: 'Atribuir a…' }, ...pilotOptions.filter((o) => rows.find((p) => p.userId === o.value)?.attended !== false)]} onChange={(v) => v && assign(i, v)} />
-                    <button type="button" className="btn ghost sm" onClick={() => resolve(i, 'Ignorado')}>Ignorar</button>
+                    <Select aria-label="Atribuir a um piloto" value="" options={[{ value: '', label: 'Atribuir a um piloto…' }, ...pilotOptions.filter((o) => rows.find((p) => p.userId === o.value)?.attended !== false)]} onChange={(v) => v && assign(i, v)} />
+                    <button type="button" className="rq-btn" onClick={() => resolve(i, 'Ignorado')}>Ignorar</button>
                   </span>
                 )}
             </div>
@@ -160,21 +201,23 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
       )}
 
       <section className="rq-table" aria-label="Pontuação por piloto">
-        <div className="rq-row rq-head-row"><span>Piloto</span><span>Aeronave</span><span>Voou</span><span>Sobreviveu</span><span className="num">Alvos</span><span className="num">PM</span></div>
+        <div className="rq-row rq-head-row"><span>Piloto</span><span>Aeronave</span><span className="num">Alvos</span><span className="ctr">Sobreviveu</span><span className="num">Base</span><span className="num">PM</span></div>
         {rows.map((p) => {
           const c = calc(p);
+          const isOpen = open === p.userId;
           return (
-            <div key={p.userId} className={`rq-item${open === p.userId ? ' open' : ''}`}>
+            <div key={p.userId} className={`rq-item${flagged.has(p.userId) ? ' flag' : ''}${p.attended === false ? ' off' : ''}`}>
               <div className="rq-row">
-                <button type="button" className="rq-name" aria-expanded={open === p.userId} onClick={() => setOpen(open === p.userId ? '' : p.userId)}>{p.nickname}</button>
+                <button type="button" className="rq-name" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? '' : p.userId)}>{p.nickname}{flagged.has(p.userId) && <em>Conferir</em>}</button>
                 <span className="muted">{p.aircraftName}</span>
-                <span><button type="button" className={`rq-chip ${p.attended ? 'ok' : p.attended === false ? 'no' : ''}`} aria-pressed={!!p.attended} onClick={() => patch(p.userId, p.attended ? { attended: false } : { attended: true, survived: p.survived ?? true })}>{p.attended ? 'Sim' : p.attended === false ? 'Não' : '—'}</button></span>
-                <span>{p.attended ? <button type="button" className={`rq-chip ${p.survived ? 'ok' : p.survived === false ? 'no' : ''}`} aria-pressed={!!p.survived} onClick={() => patch(p.userId, { survived: !p.survived })}>{p.survived ? 'Sim' : p.survived === false ? 'Não' : '—'}</button> : <span className="muted">—</span>}</span>
-                <span className="num" style={p.attended ? undefined : { opacity: .45 }}>{totalTargets(p)}</span>
+                <span className="num">{totalTargets(p)}</span>
+                <span className="ctr">{p.attended === false ? <span className="muted">Não voou</span> : <button type="button" className={`rq-chip ${p.survived ? 'ok' : p.survived === false ? 'no' : ''}`} aria-pressed={!!p.survived} onClick={() => patch(p.userId, { attended: true, survived: !p.survived })}>{p.survived ? 'Sim' : p.survived === false ? 'Não' : '—'}</button>}</span>
+                <span className="num">{fmtPoints(c.subtotal)}</span>
                 <span className="num rq-pm">{fmtPoints(c.total)}</span>
               </div>
-              {open === p.userId && (
+              {isOpen && (
                 <div className="rq-detail">
+                  <label className="rq-voou"><input type="checkbox" checked={!!p.attended} onChange={(e) => patch(p.userId, e.target.checked ? { attended: true, survived: p.survived ?? true } : { attended: false })} /> Participou da missão</label>
                   <div className="rq-counts">
                     {REPORT_TARGETS.map(({ key, label }) => (
                       <label key={key}><span>{label}</span><input type="number" min={0} max={99} disabled={!p.attended} value={p.counts[key]} onChange={(e) => setCount(p.userId, key, Number(e.target.value))} /></label>
@@ -186,18 +229,21 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
             </div>
           );
         })}
-        <div className="rq-row rq-total"><span>Total</span><span /><span /><span /><span className="num">{rows.reduce((n, p) => n + (p.attended ? totalTargets(p) : 0), 0)}</span><span className="num rq-pm">{fmtPoints(totalPm)}</span></div>
+        <div className="rq-row rq-total"><span className="rq-total-label">Total</span><span /><span className="num">{targetsTotal}</span><span /><span className="num">{fmtPoints(baseTotal)}</span><span className="num rq-pm big">{fmtPoints(totalPm)}</span></div>
       </section>
 
-      <footer className="card rq-foot">
+      <p className="rq-note muted">Bônus de sobrevivência ×{report.rules.survivalMultiplier.toString().replace('.', ',')} para quem sobreviveu. O bônus por tier da aeronave entra automaticamente quando a missão tem tier acima do 1. Clique em um piloto para ver o detalhe dos alvos ou corrigir um valor.</p>
+
+      <footer className="rq-foot">
         <div>
-          <label className="rq-confirm"><input type="checkbox" checked={confirmed} disabled={pending > 0} onChange={(e) => setConfirmed(e.target.checked)} />Conferi os valores e as dúvidas</label>
-          <p className="muted">{pending > 0 ? `Faltam ${pending} ${pending === 1 ? 'piloto' : 'pilotos'} com participação ou sobrevivência em aberto.` : 'Ao publicar, os PM entram no saldo dos pilotos e a missão é encerrada.'}</p>
+          <span className="muted">Ao publicar, os PM entram no saldo dos pilotos e a missão é encerrada. Você ainda pode conceder as condecorações depois.</span>
+          {blocked && rows.length > 0 && <p className="rq-block">{pending > 0 ? `Faltam ${pending} ${pending === 1 ? 'piloto' : 'pilotos'} com participação ou sobrevivência em aberto.` : 'Resolva os itens para conferir antes de publicar.'}</p>}
           {save.error && <p role="alert" className="op-error">{errorMessage(save.error)}</p>}
         </div>
         <div className="rq-actions">
+          <button type="button" className="btn ghost" onClick={() => setStage('import')}>Voltar</button>
           <button type="button" className="btn ghost" disabled={save.isPending || !dirty} onClick={() => save.mutate(false)}>Salvar rascunho</button>
-          <button type="button" className="btn" disabled={save.isPending || !confirmed || pending > 0 || !rows.length} onClick={() => save.mutate(true)}>{save.isPending ? 'Salvando…' : 'Publicar relatório'}</button>
+          <button type="button" className="btn" disabled={save.isPending || blocked} onClick={() => save.mutate(true)}>{save.isPending ? 'Salvando…' : 'Publicar relatório'}</button>
         </div>
       </footer>
     </div>
