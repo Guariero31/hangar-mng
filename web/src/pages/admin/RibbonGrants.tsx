@@ -16,8 +16,9 @@ export function RibbonGrants({ ribbons }: { ribbons: RibbonRow[] }) {
   const [ribbonId, setRibbonId] = useState('');
   const [valor, setValor] = useState(false);
   const [reason, setReason] = useState('');
+  const [limit, setLimit] = useState(50);
   const players = useQuery({ queryKey: ['admin', 'players', 'grant-options'], queryFn: () => api.get<{ players: PlayerOption[] }>('/admin/players?limit=1000&filter=active&sort=nickname&direction=asc') });
-  const grants = useQuery({ queryKey: ['admin', 'ribbon-grants'], queryFn: () => api.get<Grant[]>('/admin/ribbon-grants') });
+  const grants = useQuery({ queryKey: ['admin', 'ribbon-grants', limit], queryFn: () => api.get<{ items: Grant[]; total: number }>(`/admin/ribbon-grants?limit=${limit}`), placeholderData: (prev) => prev });
   const ribbon = ribbons.find((r) => r.id === ribbonId);
   const refresh = () => { qc.invalidateQueries({ queryKey: ['admin', 'ribbon-grants'] }); qc.invalidateQueries({ queryKey: ['admin', 'activity'] }); };
   const grant = useMutation({
@@ -50,15 +51,16 @@ export function RibbonGrants({ ribbons }: { ribbons: RibbonRow[] }) {
       {(grant.error || revoke.error) && <p role="alert" className="op-error">{errorMessage(grant.error || revoke.error)}</p>}
       <h3>Concessões avulsas</h3>
       {grants.isLoading && <p>Carregando…</p>}
-      {grants.data && !grants.data.length && <p className="muted">Nenhuma concessão avulsa ainda.</p>}
+      {grants.data && !grants.data.items.length && <p className="muted">Nenhuma concessão avulsa ainda.</p>}
       <ul className="rb-grant-list">
-        {grants.data?.map((g) => (
+        {grants.data?.items.map((g) => (
           <li key={g.id}>
             <span><strong>{g.nickname}</strong> · {g.ribbonName}{g.valor ? ' com V' : ''}{g.reason ? ` · ${g.reason}` : ''} <small className="muted">{new Date(g.createdAt).toLocaleDateString('pt-BR')}</small></span>
             <button type="button" className="btn ghost" disabled={revoke.isPending} onClick={() => { if (window.confirm(`Revogar ${g.ribbonName} de ${g.nickname}?`)) revoke.mutate(g.id); }}>Revogar</button>
           </li>
         ))}
       </ul>
+      {grants.data && grants.data.total > grants.data.items.length && <button type="button" className="btn ghost" onClick={() => setLimit((n) => Math.min(200, n + 50))}>Mostrar mais ({grants.data.items.length} de {grants.data.total})</button>}
     </section>
   );
 }

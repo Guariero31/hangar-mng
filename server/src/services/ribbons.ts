@@ -163,12 +163,13 @@ export async function getRibbonRack(userId: string): Promise<RackRibbon[]> {
 export interface GrantRow { id: string; userId: string; nickname: string; ribbonId: string; ribbonName: string; valor: boolean; reason: string; createdAt: string }
 
 /** Concessões avulsas (fora de missões), mais recentes primeiro. */
-export async function listGrants(): Promise<GrantRow[]> {
-  const { rows } = await db.query<GrantRow>(
+export async function listGrants(limit = 50, offset = 0): Promise<{ items: GrantRow[]; total: number }> {
+  const [{ rows }, { rows: [count] }] = await Promise.all([db.query<GrantRow>(
     `select g.id, g.user_id as "userId", u.nickname, g.ribbon_id as "ribbonId", r.name as "ribbonName", g.valor, g.reason, g.created_at as "createdAt"
        from ribbon_grants g join users u on u.id = g.user_id join ribbons r on r.id = g.ribbon_id
-      order by g.created_at desc limit 200`);
-  return rows;
+      order by g.created_at desc, g.id limit $1 offset $2`, [limit, offset]),
+    db.query<{ total: number }>('select count(*)::int as total from ribbon_grants')]);
+  return { items: rows, total: count.total };
 }
 
 export async function grantRibbon(admin: User, input: { userId: string; ribbonId: string; valor: boolean; reason: string }) {

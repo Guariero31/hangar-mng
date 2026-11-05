@@ -131,7 +131,9 @@ test('avulsas: concede fora de missão, valida V/inativa/piloto sem apelido, apa
   const rack = await r.getRibbonRack(pilot.id);
   assert.equal(rack.find((x) => x.id === ribbonId).count, 2);
   assert.equal(rack.find((x) => x.id === valorId).valor, true);
-  assert.equal((await r.listGrants()).find((g) => g.id === id).reason, 'Evento');
+  assert.equal((await r.listGrants()).items.find((g) => g.id === id).reason, 'Evento');
+  const page = await r.listGrants(1, 0);
+  assert.equal(page.items.length, 1); assert.ok(page.total >= 3);
   await assert.rejects(r.deleteRibbon(adm, ribbonId), /já foi concedida/);
   await r.revokeGrant(adm, id);
   assert.equal((await r.getRibbonRack(pilot.id)).find((x) => x.id === ribbonId).count, 1);

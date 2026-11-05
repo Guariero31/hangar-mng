@@ -8,22 +8,17 @@ import type { Aircraft, Mission, MissionReport, ReportPilot, ReportTarget } from
 import { useMission } from '../../api/hooks';
 import { invalidatePlayerData } from '../../api/cache';
 import { useToast } from '../../components/Toast';
-import { Select } from '../../components/Select';
+import { QuickDoubts } from './QuickDoubts';
+import { QuickPilotTable } from './QuickPilotTable';
+import { nameKey, zeroCounts, totalTargets, type AnalyzedPilot, type Doubt } from './quick-shared';
 import { fmtPoints } from '../../lib/format';
 import { aircraftMultiplier, previewPilot, reportPayload, reportPilot, REPORT_TARGETS } from '../../lib/mission-report';
 import './mission-report-quick.css';
 
-interface Doubt { kind: 'unclaimed' | 'vanished'; tSec: number | null; label: string; detail: string; category?: ReportTarget; pilot?: string }
-interface AnalyzedPilot { name: string; key: string; aircraft: string[]; deaths: number; survived: boolean; counts: Partial<Record<ReportTarget, number>> }
 interface TacviewResult {
   analysis: { title: string; durationSec: number; pilots: AnalyzedPilot[]; doubts: Doubt[]; stats: { targets: number; claimed: number; unclaimed: number } };
   matches: { key: string; userId: string | null }[];
 }
-
-const nameKey = (raw: string) => (raw.includes('|') ? raw.slice(raw.lastIndexOf('|') + 1) : raw).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
-const mmss = (sec: number | null) => (sec == null ? '' : `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`);
-const zeroCounts = () => Object.fromEntries(REPORT_TARGETS.map(({ key }) => [key, 0])) as Record<ReportTarget, number>;
-const totalTargets = (p: ReportPilot) => REPORT_TARGETS.reduce((n, { key }) => n + p.counts[key], 0);
 
 function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionReport }) {
   const toast = useToast();
@@ -107,7 +102,14 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
     edit((cur) => ({ ...cur, pilots: cur.pilots.map((x) => (x.userId === userId ? { ...x, reviewed: false, attended: true, survived: x.survived ?? true, counts: { ...x.counts, [d.category as ReportTarget]: x.counts[d.category as ReportTarget] + 1 } } : x)) }));
     resolve(i, `Atribuído a ${p.nickname}`);
   };
-  const linkPilot = (a: AnalyzedPilot, userId: string) => { patch(userId, fromAnalysis(a)); setUnlinked((cur) => cur.filter((x) => x.key !== a.key)); };
+  const markLost = (i: number) => { const d = doubts[i]; const p = pilotByLabel(d.pilot ?? d.label); if (!p) { setNotice(`Não achei ${d.pilot ?? d.label} na tabela. Corrija o Sobreviveu dele à mão.`); return; } setNotice(''); patch(p.userId, { survived: false }); resolve(i, 'Marcado como perdido'); };
+  const linkPilot = (a: AnalyzedPilot, userId: string) => {
+    const cur = rows.find((p) => p.userId === userId);
+    const had = !!cur && cur.attended === true && totalTargets(cur) > 0; // o piloto já recebeu abates de outro nome do arquivo: soma
+    const add = fromAnalysis(a);
+    patch(userId, had && cur ? { attended: true, survived: !!cur.survived && a.survived, counts: Object.fromEntries(REPORT_TARGETS.map(({ key }) => [key, Math.min(99, cur.counts[key] + (a.counts[key] ?? 0))])) as Record<ReportTarget, number> } : add);
+    setUnlinked((c) => c.filter((x) => x.key !== a.key));
+  };
   const pick = (file?: File) => { if (file && dirty && !window.confirm('Importar de novo substitui os abates e as atribuições já feitos nesta tela. Continuar?')) return; if (file) { setFileName(file.name); upload.mutate(file); } };
 
   const steps = (
@@ -177,68 +179,11 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
       {skipped > 0 && <p className="rq-block" role="status">{skipped} {skipped === 1 ? 'objeto do arquivo não pôde' : 'objetos do arquivo não puderam'} ser classificados e ficou de fora da pontuação.</p>}
       {notice && <p className="rq-block" role="alert">{notice}</p>}
       {(doubts.length > 0 || unlinked.length > 0) && (
-        <section className="rq-doubts" aria-label="Itens para conferir">
-          <div className="rq-doubts-title">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z" /><path d="M12 10v5" /><path d="M12 18v.01" /></svg>
-            <strong>{open_ ? `${open_} ${open_ === 1 ? 'item precisa' : 'itens precisam'} da sua decisão antes de publicar` : 'Todos os itens foram resolvidos'}</strong>
-          </div>
-          {unlinked.map((a) => (
-            <div key={a.key} className="rq-doubt">
-              <span><strong>{a.name}</strong> aparece no arquivo, mas não bate com nenhum inscrito. <span className="muted">Voou {a.aircraft.join(', ')} · {Object.values(a.counts).reduce((n, v) => n + (v ?? 0), 0)} alvos.</span></span>
-              <Select aria-label={`Vincular ${a.name} a um inscrito`} value="" options={[{ value: '', label: 'Vincular a…' }, ...pilotOptions]} onChange={(v) => v && linkPilot(a, v)} />
-            </div>
-          ))}
-          {doubts.map((d, i) => (
-            <div key={i} className={`rq-doubt${resolved[i] ? ' done' : ''}`}>
-              <span>{d.kind === 'vanished' ? <><strong>{d.label}</strong> sumiu do mapa aos {mmss(d.tSec)}, sem ação inimiga detectada.</> : <><strong>Abate sem dono:</strong> {d.label} destruído aos {mmss(d.tSec)} sem arma de nenhum piloto por perto.</>} <span className="muted">{d.kind === 'unclaimed' ? 'Fica fora da pontuação até você atribuir.' : d.detail}</span></span>
-              {resolved[i] ? <span className="rq-done">{resolved[i]} <button type="button" className="rq-btn" onClick={() => setResolved((c) => { const n = { ...c }; delete n[i]; return n; })}>Desfazer</button></span>
-                : d.kind === 'vanished' ? (
-                  <span className="rq-actions">
-                    <button type="button" className="rq-btn warn" onClick={() => resolve(i, 'Mantido como sobreviveu')}>Sobreviveu</button>
-                    <button type="button" className="rq-btn" onClick={() => { const p = pilotByLabel(d.pilot ?? d.label); if (!p) { setNotice(`Não achei ${d.pilot ?? d.label} na tabela. Corrija o Sobreviveu dele à mão.`); return; } setNotice(''); patch(p.userId, { survived: false }); resolve(i, 'Marcado como perdido'); }}>Foi perdido</button>
-                  </span>
-                ) : (
-                  <span className="rq-actions">
-                    <Select aria-label="Atribuir a um piloto" value="" options={[{ value: '', label: 'Atribuir a um piloto…' }, ...pilotOptions.filter((o) => rows.find((p) => p.userId === o.value)?.attended !== false)]} onChange={(v) => v && assign(i, v)} />
-                    <button type="button" className="rq-btn" onClick={() => resolve(i, 'Ignorado')}>Ignorar</button>
-                  </span>
-                )}
-            </div>
-          ))}
-        </section>
+        <QuickDoubts pendingCount={open_} unlinked={unlinked} doubts={doubts} resolved={resolved} rows={rows} pilotOptions={pilotOptions}
+          onLink={linkPilot} onResolve={resolve} onUndo={(i) => setResolved((c) => { const n = { ...c }; delete n[i]; return n; })} onAssign={assign} onLost={markLost} />
       )}
 
-      <section className="rq-table" aria-label="Pontuação por piloto">
-        <div className="rq-row rq-head-row"><span>Piloto</span><span>Aeronave</span><span className="num">Alvos</span><span className="ctr">Sobreviveu</span><span className="num">Base</span><span className="num">PM</span></div>
-        {rows.map((p) => {
-          const c = calc(p);
-          const isOpen = open === p.userId;
-          return (
-            <div key={p.userId} className={`rq-item${flagged.has(p.userId) ? ' flag' : ''}${p.attended === false ? ' off' : ''}`}>
-              <div className="rq-row">
-                <button type="button" className="rq-name" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? '' : p.userId)}>{p.nickname}{flagged.has(p.userId) && <em>Conferir</em>}</button>
-                <span className="muted">{p.aircraftName}</span>
-                <span className="num">{totalTargets(p)}</span>
-                <span className="ctr">{p.attended === false ? <span className="muted">Não voou</span> : <button type="button" className={`rq-chip ${p.survived ? 'ok' : p.survived === false ? 'no' : ''}`} aria-pressed={!!p.survived} onClick={() => patch(p.userId, { attended: true, survived: !p.survived })}>{p.survived ? 'Sim' : p.survived === false ? 'Não' : '—'}</button>}</span>
-                <span className="num">{fmtPoints(c.subtotal)}</span>
-                <span className="num rq-pm">{fmtPoints(c.total)}</span>
-              </div>
-              {isOpen && (
-                <div className="rq-detail">
-                  <label className="rq-voou"><input type="checkbox" checked={!!p.attended} onChange={(e) => patch(p.userId, e.target.checked ? { attended: true, survived: p.survived ?? true } : { attended: false })} /> Participou da missão</label>
-                  <div className="rq-counts">
-                    {REPORT_TARGETS.map(({ key, label }) => (
-                      <label key={key}><span>{label}</span><input type="number" min={0} max={99} disabled={!p.attended} value={p.counts[key]} onChange={(e) => setCount(p.userId, key, Number(e.target.value))} /></label>
-                    ))}
-                  </div>
-                  <p className="muted">Base {fmtPoints(c.subtotal)}{c.aircraftBonus ? ` · bônus da aeronave +${fmtPoints(c.aircraftBonus)}` : ''}{c.survivalBonus ? ` · bônus de sobrevivência +${fmtPoints(c.survivalBonus)}` : ''}</p>
-                </div>
-              )}
-            </div>
-          );
-        })}
-        <div className="rq-row rq-total"><span className="rq-total-label">Total</span><span /><span className="num">{targetsTotal}</span><span /><span className="num">{fmtPoints(baseTotal)}</span><span className="num rq-pm big">{fmtPoints(totalPm)}</span></div>
-      </section>
+      <QuickPilotTable rows={rows} calc={calc} flagged={flagged} open={open} targetsTotal={targetsTotal} baseTotal={baseTotal} totalPm={totalPm} onOpen={setOpen} patch={patch} setCount={setCount} />
 
       <p className="rq-note muted">Bônus de sobrevivência ×{report.rules.survivalMultiplier.toString().replace('.', ',')} para quem sobreviveu. O bônus por tier da aeronave entra automaticamente quando a missão tem tier acima do 1. Clique em um piloto para ver o detalhe dos alvos ou corrigir um valor.</p>
 

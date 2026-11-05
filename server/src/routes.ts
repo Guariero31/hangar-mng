@@ -256,7 +256,7 @@ const ribbonBody = z.object({
   allowsValor: z.boolean().default(false), active: z.boolean().default(true),
 });
 adminApi.get('/ribbons', async (_req, res) => { res.json(await ribbons.listRibbons()); });
-adminApi.get('/ribbon-grants', async (_req, res) => { res.json(await ribbons.listGrants()); });
+adminApi.get('/ribbon-grants', async (req, res) => { const q = z.object({ limit: z.coerce.number().int().min(1).max(200).default(50), offset: z.coerce.number().int().min(0).default(0) }).parse(req.query); res.json(await ribbons.listGrants(q.limit, q.offset)); });
 adminApi.post('/ribbon-grants', async (req, res) => {
   const body = z.object({ userId: z.string().uuid(), ribbonId: z.string().uuid(), valor: z.boolean().default(false), reason: z.string().max(200).default('') }).parse(req.body);
   res.status(201).json({ id: await ribbons.grantRibbon(req.user, body) });
