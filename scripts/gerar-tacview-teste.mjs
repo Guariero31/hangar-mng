@@ -1,7 +1,7 @@
 // Gera um arquivo .acmi de TESTE com os pilotos inscritos na missão agendada (a com mais inscritos).
 // Uso (com o servidor PARADO):  npm run tacview-teste   ->  output/tacview-teste.txt.acmi
 // Cenários: o 1º abate 2 aviões; o 2º um blindado; o 3º abate e some do mapa (dúvida); os demais 1 abate;
-// o último inscrito não aparece no arquivo; um "Visitante_Teste" aparece sem inscrição; 1 alvo fica sem dono.
+// o último inscrito não aparece no arquivo; um "Visitante_Teste" sem inscrição deve ser IGNORADO (modo estrito); 1 alvo fica sem dono.
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { db, migrate } from '../server/src/db.ts';
 

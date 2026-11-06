@@ -26,7 +26,7 @@ export interface TacviewAnalysis {
   stats: { targets: number; claimed: number; unclaimed: number; ignored: number };
 }
 
-const MAX_BYTES = 400 * 1024 * 1024;
+const MAX_BYTES = 250 * 1024 * 1024;
 
 /** Compara nomes ignorando prefixos de esquadrão ("HRP | "), maiúsculas, espaços e símbolos. */
 export function nameKey(raw: string) {
@@ -48,7 +48,12 @@ async function readAcmiText(buf: Buffer): Promise<string> {
         zip.openReadStream(entry, (streamError, stream) => {
           if (streamError || !stream) { done = true; return reject(fail('VALIDATION', 'Não foi possível ler a gravação.')); }
           const chunks: Buffer[] = [];
-          stream.on('data', (c: Buffer) => chunks.push(c));
+          let size = 0;
+          stream.on('data', (c: Buffer) => {
+            size += c.length; // o tamanho declarado no cabeçalho pode mentir: conta os bytes realmente lidos
+            if (size > MAX_BYTES) { if (!done) { done = true; reject(fail('VALIDATION', 'A gravação descompactada é grande demais.')); } stream.destroy(); zip.close(); return; }
+            chunks.push(c);
+          });
           stream.on('error', () => { done = true; reject(fail('VALIDATION', 'Não foi possível ler a gravação.')); });
           stream.on('end', () => { done = true; zip.close(); resolve(Buffer.concat(chunks).toString('utf8')); });
         });
@@ -58,7 +63,7 @@ async function readAcmiText(buf: Buffer): Promise<string> {
   });
 }
 
-const AI_NAME = /^[\w ]+-\d+(-\d+)?$/; // "Aerial-2-1", "Yuk-1-1", "Ground-14-4": nomes automáticos de unidades da IA
+const AI_NAME = /^.+-\d+(-\d+)*$/; // "Aerial-2-1", "Yuk-ACE-1-1", "Ground-14-4": nomes automáticos de unidades da IA (terminam em -número)
 const SAM_NAME = /SA-?\d+|S-?300|S-?75|S-?125|Kub|Osa\b|Tor\b|Buk|Strela|Patriot|Hawk|Rapier|Roland|NASAMS|Avenger|Stinger|Igla|Pantsir|9K\d+/i;
 
 function categorize(o: Obj): Category | null {
@@ -166,11 +171,14 @@ export async function analyzeTacview(buf: Buffer, knownNames: string[] = []): Pr
 
   const aircraft = objs.filter((o) => o.type.includes('Air+') && o.pilot);
   const isHuman = (o: Obj) => known.has(nameKey(o.pilot)) || !AI_NAME.test(o.pilot.trim());
-  const humans = aircraft.filter(isHuman);
-  if (!humans.length) throw fail('VALIDATION', 'Não encontrei pilotos humanos nessa gravação.');
+  const candidates = aircraft.filter(isHuman);
+  if (!candidates.length) throw fail('VALIDATION', 'Não encontrei pilotos humanos nessa gravação.');
+  // O lado do esquadrão: o dos pilotos que batem com os inscritos; sem inscritos no arquivo, o da maioria dos candidatos.
+  const registered = candidates.filter((o) => known.has(nameKey(o.pilot)));
   const votes = new Map<string, number>();
-  for (const h of humans) votes.set(h.coalition, (votes.get(h.coalition) ?? 0) + 1);
+  for (const h of registered.length ? registered : candidates) votes.set(h.coalition, (votes.get(h.coalition) ?? 0) + 1);
   const side = [...votes.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  const humans = candidates.filter((o) => o.coalition === side); // só o nosso time: aeronaves de outra coalizão nunca viram pilotos
   const foe = (c: string) => c !== side && c !== 'Neutrals' && c !== '';
 
   const weapons = objs.filter((o) => (o.type.startsWith('Weapon') || o.type.startsWith('Projectile')) && o.tEnd !== null && o.tr.length);

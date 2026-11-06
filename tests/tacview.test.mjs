@@ -68,3 +68,13 @@ test('ZIP real é lido; ZIP sem gravação é recusado', async () => {
   assert.equal(r.pilots.length, 2);
   await assert.rejects(analyzeTacview(Buffer.concat([Buffer.from('PK'), Buffer.alloc(40)])), /arquivo|Tacview|corrompido/);
 });
+
+test('aeronaves do time vermelho (mesmo com nome humano) e IA azul "Yuk-ACE-1-1" não viram pilotos', async () => {
+  const L = [...lines.slice(0, 6),
+    `100,${T(0, 0, 1000)},Type=Air+FixedWing,Name=F-5E-3,Pilot=Alpha,Color=Blue,Coalition=Enemies`,
+    `110,${T(0, 500, 1000)},Type=Air+FixedWing,Name=Su-47,Pilot=Yuk-ACE-1-1,Color=Blue,Coalition=Enemies`,
+    `120,${T(9000, 0, 1000)},Type=Air+FixedWing,Name=MiG-29,Pilot=RedHuman,Color=Red,Coalition=Allies`,
+    '#50', '#100'];
+  const r = await analyzeTacview(Buffer.from(L.join('\n') + '\n'), ['Alpha']);
+  assert.deepEqual(r.pilots.map((p) => p.name), ['Alpha']);
+});
