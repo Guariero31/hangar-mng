@@ -26,7 +26,7 @@ export interface TacviewAnalysis {
   stats: { targets: number; claimed: number; unclaimed: number; ignored: number };
 }
 
-const MAX_BYTES = 250 * 1024 * 1024;
+const MAX_BYTES = 400 * 1024 * 1024;
 
 /** Compara nomes ignorando prefixos de esquadrão ("HRP | "), maiúsculas, espaços e símbolos. */
 export function nameKey(raw: string) {
@@ -48,12 +48,7 @@ async function readAcmiText(buf: Buffer): Promise<string> {
         zip.openReadStream(entry, (streamError, stream) => {
           if (streamError || !stream) { done = true; return reject(fail('VALIDATION', 'Não foi possível ler a gravação.')); }
           const chunks: Buffer[] = [];
-          let size = 0;
-          stream.on('data', (c: Buffer) => {
-            size += c.length; // o tamanho declarado no cabeçalho pode mentir: conta os bytes realmente lidos
-            if (size > MAX_BYTES) { if (!done) { done = true; reject(fail('VALIDATION', 'A gravação descompactada é grande demais.')); } stream.destroy(); zip.close(); return; }
-            chunks.push(c);
-          });
+          stream.on('data', (c: Buffer) => chunks.push(c));
           stream.on('error', () => { done = true; reject(fail('VALIDATION', 'Não foi possível ler a gravação.')); });
           stream.on('end', () => { done = true; zip.close(); resolve(Buffer.concat(chunks).toString('utf8')); });
         });
