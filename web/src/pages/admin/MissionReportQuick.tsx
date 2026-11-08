@@ -36,6 +36,7 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
   const [skipped, setSkipped] = useState(0);
   const [resolved, setResolved] = useState<Record<number, string>>({});
   const [unlinked, setUnlinked] = useState<AnalyzedPilot[]>([]);
+  const [ignored, setIgnored] = useState<string[]>([]); // nomes do arquivo que o admin escolheu não vincular a ninguém
   const [open, setOpen] = useState('');
   const [stage, setStage] = useState<'import' | 'review'>(initial.source ? 'review' : 'import');
   const [dragging, setDragging] = useState(false);
@@ -58,6 +59,7 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
       }) }));
       setIdByName(Object.fromEntries(data.analysis.pilots.flatMap((p) => { const m = data.matches.find((x) => x.key === p.key)?.userId; return m ? [[p.name, m]] : []; })));
       setSkipped(data.analysis.doubts.filter((d) => d.kind !== 'unclaimed' && d.kind !== 'vanished').length);
+      setIgnored([]);
       setUnlinked(data.analysis.pilots.filter((p) => !data.matches.find((m) => m.key === p.key)?.userId));
       setDoubts(data.analysis.doubts.filter((d) => d.kind === 'unclaimed' || d.kind === 'vanished'));
       setResolved({});
@@ -87,7 +89,7 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
   const totalPm = rows.reduce((n, p) => n + calc(p).total, 0);
   const attendedCount = rows.filter((p) => p.attended).length;
   const pending = rows.filter((p) => p.attended === null || (p.attended && p.survived === null)).length;
-  const open_ = doubts.filter((_, i) => !resolved[i]).length + unlinked.length;
+  const open_ = doubts.filter((_, i) => !resolved[i]).length + unlinked.filter((a) => !ignored.includes(a.key)).length;
   const resolve = (i: number, text: string) => setResolved((cur) => ({ ...cur, [i]: text }));
   const pilotOptions = rows.map((p) => ({ value: p.userId, label: p.nickname }));
   const pilotByLabel = (label: string) => rows.find((x) => x.userId === idByName[label]) ?? rows.find((x) => nameKey(x.nickname) === nameKey(label));
@@ -179,7 +181,7 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
       {skipped > 0 && <p className="rq-block" role="status">{skipped} {skipped === 1 ? 'objeto do arquivo não pôde' : 'objetos do arquivo não puderam'} ser classificados e ficou de fora da pontuação.</p>}
       {notice && <p className="rq-block" role="alert">{notice}</p>}
       {(doubts.length > 0 || unlinked.length > 0) && (
-        <QuickDoubts pendingCount={open_} unlinked={unlinked} doubts={doubts} resolved={resolved} rows={rows} pilotOptions={pilotOptions}
+        <QuickDoubts pendingCount={open_} unlinked={unlinked} ignored={ignored} onIgnoreUnlinked={(key, on) => setIgnored((c) => (on ? [...c, key] : c.filter((k) => k !== key)))} doubts={doubts} resolved={resolved} rows={rows} pilotOptions={pilotOptions}
           onLink={linkPilot} onResolve={resolve} onUndo={(i) => setResolved((c) => { const n = { ...c }; delete n[i]; return n; })} onAssign={assign} onLost={markLost} />
       )}
 

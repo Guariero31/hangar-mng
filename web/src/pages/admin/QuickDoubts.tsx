@@ -4,23 +4,31 @@ import type { ReportPilot } from '../../api/types';
 import { mmss, type AnalyzedPilot, type Doubt } from './quick-shared';
 
 interface Props {
-  pendingCount: number; unlinked: AnalyzedPilot[]; doubts: Doubt[]; resolved: Record<number, string>;
+  pendingCount: number; unlinked: AnalyzedPilot[]; ignored: string[]; onIgnoreUnlinked: (key: string, on: boolean) => void; doubts: Doubt[]; resolved: Record<number, string>;
   rows: ReportPilot[]; pilotOptions: { value: string; label: string }[];
   onLink: (a: AnalyzedPilot, userId: string) => void; onResolve: (i: number, text: string) => void; onUndo: (i: number) => void;
   onAssign: (i: number, userId: string) => void; onLost: (i: number) => void;
 }
 
-export function QuickDoubts({ pendingCount, unlinked, doubts, resolved, rows, pilotOptions, onLink, onResolve, onUndo, onAssign, onLost }: Props) {
+export function QuickDoubts({ pendingCount, unlinked, ignored, onIgnoreUnlinked, doubts, resolved, rows, pilotOptions, onLink, onResolve, onUndo, onAssign, onLost }: Props) {
   return (
     <section className="rq-doubts" aria-label="Itens para conferir">
       <div className="rq-doubts-title">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3l10 18H2L12 3z" /><path d="M12 10v5" /><path d="M12 18v.01" /></svg>
         <strong>{pendingCount ? `${pendingCount} ${pendingCount === 1 ? 'item precisa' : 'itens precisam'} da sua decisão antes de publicar` : 'Todos os itens foram resolvidos'}</strong>
       </div>
+      {unlinked.filter((a) => !ignored.includes(a.key)).length > 1 && (
+        <div className="rq-actions"><button type="button" className="rq-btn" onClick={() => unlinked.forEach((a) => { if (!ignored.includes(a.key)) onIgnoreUnlinked(a.key, true); })}>Ignorar todos os nomes sem inscrito</button></div>
+      )}
       {unlinked.map((a) => (
-        <div key={a.key} className="rq-doubt">
+        <div key={a.key} className={`rq-doubt${ignored.includes(a.key) ? ' done' : ''}`}>
           <span><strong>{a.name}</strong> aparece no arquivo, mas não bate com nenhum inscrito. <span className="muted">Voou {a.aircraft.join(', ')} · {Object.values(a.counts).reduce((n, v) => n + (v ?? 0), 0)} alvos.</span></span>
-          <Select aria-label={`Vincular ${a.name} a um inscrito`} value="" options={[{ value: '', label: 'Vincular a…' }, ...pilotOptions]} onChange={(v) => v && onLink(a, v)} />
+          {ignored.includes(a.key)
+            ? <span className="rq-done">Ignorado <button type="button" className="rq-btn" onClick={() => onIgnoreUnlinked(a.key, false)}>Desfazer</button></span>
+            : <span className="rq-actions">
+              <Select aria-label={`Vincular ${a.name} a um inscrito`} value="" options={[{ value: '', label: 'Vincular a…' }, ...pilotOptions]} onChange={(v) => v && onLink(a, v)} />
+              <button type="button" className="rq-btn" onClick={() => onIgnoreUnlinked(a.key, true)}>Ignorar</button>
+            </span>}
         </div>
       ))}
       {doubts.map((d, i) => (
