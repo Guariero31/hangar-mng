@@ -11,3 +11,7 @@ DEPLOY-VPS.md
 GOOGLE-LOGIN.md
 VALIDACAO-PRODUCAO.md
 medalhas.zip
+
+# Saídas locais e configuração das ferramentas
+output/
+.claude/
