@@ -1,4 +1,4 @@
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { Navigate, Outlet, Route, Routes, useParams } from 'react-router-dom';
 import { RequireUser } from './components/RequireUser';
 import { CanonicalMissionRoute } from './components/CanonicalMissionRoute';
 import { Layout } from './components/Layout';
@@ -23,9 +23,14 @@ import { MusicAdmin } from './pages/admin/MusicAdmin';
 import { AircraftAdmin } from './pages/admin/AircraftAdmin';
 import { ScoringAdmin } from './pages/admin/ScoringAdmin';
 import { RibbonsAdmin } from './pages/admin/RibbonsAdmin';
-import { MissionReportEditor } from './pages/admin/MissionReportEditor';
 import { MissionReportQuick } from './pages/admin/MissionReportQuick';
 import { MissionReportPage } from './pages/MissionReport';
+
+/** Links antigos do relatório rápido: o fluxo agora é um só, em /relatorio. */
+function RapidoRedirect() {
+  const { id = '' } = useParams();
+  return <Navigate to={`/admin/missoes/${id}/relatorio`} replace />;
+}
 
 export function App() {
   return (
@@ -53,8 +58,8 @@ export function App() {
           <Route path="aprovacoes" element={<Approvals />} />
           <Route path="missoes" element={<MissionsAdmin />} />
           <Route path="musicas" element={<MusicAdmin />} />
-          <Route path="missoes/:id/relatorio" element={<MissionReportEditor />} />
-          <Route path="missoes/:id/relatorio-rapido" element={<MissionReportQuick />} />
+          <Route path="missoes/:id/relatorio" element={<MissionReportQuick />} />
+          <Route path="missoes/:id/relatorio-rapido" element={<RapidoRedirect />} />
           <Route path="pontuacao" element={<ScoringAdmin />} />
           <Route path="condecoracoes" element={<RibbonsAdmin />} />
           <Route path="atividade" element={<Activity />} />

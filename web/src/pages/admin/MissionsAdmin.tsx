@@ -210,7 +210,6 @@ function MissionOptions({ mission, deleting, onDelete }: { mission: Mission; del
     <button ref={trigger} type="button" className="btn ghost sm mission-card-more" aria-label={`Mais opções da missão ${mission.title}`} aria-expanded={open} aria-controls={open ? id : undefined} onClick={() => setOpen(!open)}>⋯</button>
     {open && <div id={id} className="mission-card-dropdown">
       {mission.status === 'scheduled' && <Link to={`/admin/missoes/${mission.id}/relatorio`} onClick={() => setOpen(false)}>Finalizar missão</Link>}
-      {mission.status === 'scheduled' && <Link to={`/admin/missoes/${mission.id}/relatorio-rapido`} onClick={() => setOpen(false)}>Finalizar (versão em uma tela)</Link>}
       {mission.status === 'closed' && <Link to={`/admin/missoes/${mission.id}/relatorio`} onClick={() => setOpen(false)}>Condecorações</Link>}
       {!mission.hasReport && <button type="button" className="mission-card-delete" disabled={deleting} onClick={() => { setOpen(false); onDelete(); }}>Apagar missão</button>}
     </div>}

@@ -1,7 +1,7 @@
 // Relatório pós-missão em uma tela: importa a gravação do Tacview, mostra tudo numa tabela e deixa só as dúvidas para o admin.
-// Usa as mesmas rotas e regras do fluxo completo (MissionReportEditor); é uma forma mais curta de preencher o mesmo relatório.
-import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+// É o único fluxo para finalizar uma missão. Depois de publicado, a mesma página mostra a concessão de condecorações.
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, errorMessage } from '../../api/client';
 import type { Aircraft, Mission, MissionReport, ReportPilot, ReportTarget } from '../../api/types';
@@ -13,6 +13,8 @@ import { QuickPilotTable } from './QuickPilotTable';
 import { nameKey, zeroCounts, totalTargets, type AnalyzedPilot, type Doubt } from './quick-shared';
 import { fmtPoints } from '../../lib/format';
 import { aircraftMultiplier, previewPilot, reportPayload, reportPilot, REPORT_TARGETS } from '../../lib/mission-report';
+import { MissionAwards } from './MissionAwards';
+import '../mission-report.css';
 import './mission-report-quick.css';
 
 interface TacviewResult {
@@ -136,7 +138,7 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
     return (
       <div className="rq">
         <Link className="op-back" to="/admin/missoes">← Administração de missões</Link>
-        {title(<>{mission.title} · <Link to={`/admin/missoes/${mission.id}/relatorio`}>usar o fluxo completo</Link></>)}
+        {title(<>{mission.title}</>)}
         <div className="rq-import-grid">
           <div className="rq-col">
             <label className={`rq-drop${dragging ? ' over' : ''}`} onDragOver={(e) => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={(e) => { e.preventDefault(); setDragging(false); pick(e.dataTransfer.files[0]); }}>
@@ -207,15 +209,20 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
 
 export function MissionReportQuick() {
   const { id = '' } = useParams();
+  const [params] = useSearchParams();
+  const justPublished = params.get('publicado') === '1';
+  const awardsRef = useRef<HTMLDivElement>(null);
   const mission = useMission(id, { poll: false });
+  useEffect(() => { if (justPublished && mission.data) awardsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, [justPublished, !!mission.data]);
   const report = useQuery({ queryKey: ['admin', 'mission-report', id], queryFn: () => api.get<MissionReport>(`/admin/missions/${id}/report`), enabled: !!id });
   return (
     <div className="rq-page">
       {(mission.isLoading || report.isLoading) && <p className="loading">Preparando relatório…</p>}
       {(mission.error || report.error) && <div role="alert"><p>{errorMessage(mission.error || report.error)}</p><button type="button" className="btn ghost" onClick={() => { void mission.refetch(); void report.refetch(); }}>Tentar novamente</button></div>}
       {report.data?.state === 'published'
-        ? <section className="card report-section"><h2>Relatório publicado</h2><p>Esta missão já foi finalizada e os pontos foram distribuídos.</p><Link className="btn" to={`/missoes/${id}/relatorio`}>Ver relatório publicado</Link></section>
+        ? <section className="card report-section"><h2>Relatório publicado</h2><p>{justPublished ? 'Missão encerrada e PM distribuídos. Agora conceda as condecorações logo abaixo; é opcional e pode ser feito depois.' : 'Esta missão já foi finalizada e os pontos foram distribuídos.'}</p><Link className="btn" to={`/missoes/${id}/relatorio`}>Ver relatório publicado</Link></section>
         : mission.data && report.data && <QuickEditor key={id} mission={mission.data} initial={report.data} />}
+      {report.data?.state === 'published' && <div ref={awardsRef}>{mission.data && <MissionAwards mission={mission.data} />}</div>}
     </div>
   );
 }
