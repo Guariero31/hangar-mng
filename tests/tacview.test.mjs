@@ -78,3 +78,30 @@ test('aeronaves do time vermelho (mesmo com nome humano) e IA azul "Yuk-ACE-1-1"
   const r = await analyzeTacview(Buffer.from(L.join('\n') + '\n'), ['Alpha']);
   assert.deepEqual(r.pilots.map((p) => p.name), ['Alpha']);
 });
+
+test('modo estrito: só inscritos viram pilotos; visitante sem inscrição e IA ficam de fora; sem inscrito casando dá erro', async () => {
+  const L = [...lines.slice(0, 6),
+    `100,${T(0, 0, 1000)},Type=Air+FixedWing,Name=F-5E-3,Pilot=HRP | Alpha,Color=Blue,Coalition=Enemies`,
+    `110,${T(0, 500, 1000)},Type=Air+FixedWing,Name=F-5E-3,Pilot=Visitante,Color=Blue,Coalition=Enemies`,
+    `120,${T(0, 900, 1000)},Type=Air+FixedWing,Name=Su-47,Pilot=Yuk-ACE-1-1,Color=Blue,Coalition=Enemies`,
+    '#50', '#100'];
+  const buf = Buffer.from(L.join('\n') + '\n');
+  assert.deepEqual((await analyzeTacview(buf, ['Alpha'])).pilots.map((p) => p.name), ['HRP | Alpha']);
+  await assert.rejects(analyzeTacview(buf, ['Fulano']), /inscrito/);
+});
+
+test('casamento com inscritos: IA nunca casa por "contém" e apelidos parecidos não são adivinhados', async () => {
+  const { matchRegistered } = await import('../server/src/services/tacview.ts');
+  assert.equal(matchRegistered('Yuk-ACE-1-1', ['Yuk']), null); // IA com prefixo igual a um inscrito curto
+  assert.equal(matchRegistered('Yuk', ['Yuk']), 'Yuk');
+  assert.equal(matchRegistered('HRP | Mr. Magoo', ['Mr_Magoo']), 'Mr_Magoo');
+  assert.equal(matchRegistered('FiberOptic', ['Fiber', 'Fibre']), 'Fiber'); // único candidato "contém"
+  assert.equal(matchRegistered('Fiber', ['Fiber 2', 'Fiber_3']), null); // dois candidatos: não adivinha
+  assert.equal(matchRegistered('Ox', ['Oxygen']), null); // menos de 3 letras
+  const L = [...lines.slice(0, 6),
+    `100,${T(0, 0, 1000)},Type=Air+FixedWing,Name=F-5E-3,Pilot=Alpha,Color=Blue,Coalition=Enemies`,
+    `110,${T(0, 500, 1000)},Type=Air+FixedWing,Name=Su-47,Pilot=Alpha-ACE-1-1,Color=Blue,Coalition=Enemies`,
+    '#50', '#100'];
+  const r = await analyzeTacview(Buffer.from(L.join('\n') + '\n'), ['Alp', 'Alpha']);
+  assert.deepEqual(r.pilots.map((p) => p.name), ['Alpha']);
+});

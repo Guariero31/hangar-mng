@@ -28,6 +28,21 @@ export interface TacviewAnalysis {
 
 const MAX_BYTES = 250 * 1024 * 1024;
 
+/**
+ * Acha a qual dos nomes inscritos pertence o nome de piloto do arquivo. Exato (ignorando tag, maiúsculas e símbolos) sempre vale.
+ * Por "contém" (3 letras ou mais), só vale se o nome do arquivo NÃO parecer de IA e se houver um único candidato: assim "Yuk" não vira
+ * "Yuk-1-1" e "Fiber" não é confundido com "FiberOptic".
+ */
+export function matchRegistered(pilotName: string, names: string[]): string | null {
+  const key = nameKey(pilotName);
+  if (!key) return null;
+  const exact = names.find((n) => nameKey(n) === key);
+  if (exact) return exact;
+  if (AI_NAME.test(pilotName.trim()) || key.length < 3) return null;
+  const loose = names.filter((n) => { const k = nameKey(n); return k.length >= 3 && (key.includes(k) || k.includes(key)); });
+  return loose.length === 1 ? loose[0] : null;
+}
+
 /** Compara nomes ignorando prefixos de esquadrão ("HRP | "), maiúsculas, espaços e símbolos. */
 export function nameKey(raw: string) {
   const tail = raw.includes('|') ? raw.slice(raw.lastIndexOf('|') + 1) : raw;
@@ -171,8 +186,10 @@ export async function analyzeTacview(buf: Buffer, knownNames: string[] = []): Pr
 
   const aircraft = objs.filter((o) => o.type.includes('Air+') && o.pilot);
   const isHuman = (o: Obj) => known.has(nameKey(o.pilot)) || !AI_NAME.test(o.pilot.trim());
-  const candidates = aircraft.filter(isHuman);
-  if (!candidates.length) throw fail('VALIDATION', 'Não encontrei pilotos humanos nessa gravação.');
+  // Com inscritos conhecidos, só quem bate com a inscrição conta como piloto (modo estrito): IA e visitantes ficam de fora.
+  const matchesKnown = (o: Obj) => matchRegistered(o.pilot, knownNames) !== null;
+  const candidates = known.size ? aircraft.filter(matchesKnown) : aircraft.filter(isHuman);
+  if (!candidates.length) throw fail('VALIDATION', known.size ? 'Nenhum piloto inscrito nesta missão aparece na gravação. Confira os apelidos dos inscritos.' : 'Não encontrei pilotos humanos nessa gravação.');
   // O lado do esquadrão: o dos pilotos que batem com os inscritos; sem inscritos no arquivo, o da maioria dos candidatos.
   const registered = candidates.filter((o) => known.has(nameKey(o.pilot)));
   const votes = new Map<string, number>();

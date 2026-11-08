@@ -1,0 +1,6 @@
+# Normaliza finais de linha ao commitar (evita diffs inteiros por CRLF vs LF)
+* text=auto
+*.png binary
+*.mp3 binary
+*.mp4 binary
+*.zip binary

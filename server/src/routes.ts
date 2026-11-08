@@ -14,7 +14,7 @@ import { getRanking } from './services/ranking.js';
 import { getProfile } from './services/profile.js';
 import * as missions from './services/missions.js';
 import * as ribbons from './services/ribbons.js';
-import { analyzeTacview, nameKey } from './services/tacview.js';
+import { analyzeTacview, matchRegistered } from './services/tacview.js';
 import { adminErrorsRouter, clientErrorsRouter } from './error-routes.js';
 import { getMissionAssetDownload, getMissionFile, uploadMissionAsset } from './services/mission-files.js';
 import { withBriefingAudioRecovery } from './services/briefing-audio.js';
@@ -441,9 +441,8 @@ adminApi.post('/missions/:id/report/tacview', rateLimit({ windowMs: 60_000, max:
   const analysis = await analyzeTacview(req.body, mission.signups.map((s) => s.nickname));
   // liga cada piloto do arquivo a um inscrito: nome igual, ou um contido no outro (ex.: "HRP | Mr. Magoo" x "Mr_Magoo")
   const matches = analysis.pilots.map((p) => {
-    const exact = mission.signups.find((s) => nameKey(s.nickname) === p.key);
-    const loose = exact ?? mission.signups.find((s) => { const k = nameKey(s.nickname); return k.length >= 3 && p.key.length >= 3 && (p.key.includes(k) || k.includes(p.key)); });
-    return { key: p.key, userId: loose?.userId ?? null };
+    const nick = matchRegistered(p.name, mission.signups.map((s) => s.nickname));
+    return { key: p.key, userId: (nick && mission.signups.find((s) => s.nickname === nick)?.userId) || null };
   });
   res.json({ analysis, matches });
 });

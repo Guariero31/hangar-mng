@@ -38,6 +38,7 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
   const [skipped, setSkipped] = useState(0);
   const [resolved, setResolved] = useState<Record<number, string>>({});
   const [unlinked, setUnlinked] = useState<AnalyzedPilot[]>([]);
+  const [ackSkipped, setAckSkipped] = useState(false); // ciente de que objetos não classificados ficam fora da pontuação
   const [ignored, setIgnored] = useState<string[]>([]); // nomes do arquivo que o admin escolheu não vincular a ninguém
   const [open, setOpen] = useState('');
   const [stage, setStage] = useState<'import' | 'review'>(initial.source ? 'review' : 'import');
@@ -62,6 +63,7 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
       setIdByName(Object.fromEntries(data.analysis.pilots.flatMap((p) => { const m = data.matches.find((x) => x.key === p.key)?.userId; return m ? [[p.name, m]] : []; })));
       setSkipped(data.analysis.doubts.filter((d) => d.kind !== 'unclaimed' && d.kind !== 'vanished').length);
       setIgnored([]);
+      setAckSkipped(false);
       setUnlinked(data.analysis.pilots.filter((p) => !data.matches.find((m) => m.key === p.key)?.userId));
       setDoubts(data.analysis.doubts.filter((d) => d.kind === 'unclaimed' || d.kind === 'vanished'));
       setResolved({});
@@ -98,7 +100,7 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
   const flagged = new Set(doubts.flatMap((d, i) => (d.kind === 'vanished' && !resolved[i] ? [pilotByLabel(d.pilot ?? d.label)?.userId ?? ''] : [])));
   const targetsTotal = rows.reduce((n, p) => n + (p.attended ? totalTargets(p) : 0), 0);
   const baseTotal = rows.reduce((n, p) => n + calc(p).subtotal, 0);
-  const blocked = pending > 0 || open_ > 0 || !rows.length;
+  const blocked = pending > 0 || open_ > 0 || !rows.length || (skipped > 0 && !ackSkipped);
 
   const assign = (i: number, userId: string) => {
     const d = doubts[i]; const p = rows.find((x) => x.userId === userId);
@@ -180,10 +182,10 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
         <div className="warn"><span>Para conferir</span><strong>{open_ + pending}</strong></div>
       </section>
 
-      {skipped > 0 && <p className="rq-block" role="status">{skipped} {skipped === 1 ? 'objeto do arquivo não pôde' : 'objetos do arquivo não puderam'} ser classificados e ficou de fora da pontuação.</p>}
+      {skipped > 0 && <label className="rq-block rq-ack"><input type="checkbox" checked={ackSkipped} onChange={(e) => setAckSkipped(e.target.checked)} /> {skipped} {skipped === 1 ? 'objeto do arquivo não pôde' : 'objetos do arquivo não puderam'} ser classificados e fica de fora da pontuação. Estou ciente.</label>}
       {notice && <p className="rq-block" role="alert">{notice}</p>}
       {(doubts.length > 0 || unlinked.length > 0) && (
-        <QuickDoubts pendingCount={open_} unlinked={unlinked} ignored={ignored} onIgnoreUnlinked={(key, on) => setIgnored((c) => (on ? [...c, key] : c.filter((k) => k !== key)))} doubts={doubts} resolved={resolved} rows={rows} pilotOptions={pilotOptions}
+        <QuickDoubts pendingCount={open_} unlinked={unlinked} ignored={ignored} onIgnoreUnlinked={(key, on) => { const a = unlinked.find((x) => x.key === key); const kills = a ? Object.values(a.counts).reduce((n, v) => n + (v ?? 0), 0) : 0; if (on && kills > 0 && !window.confirm(`${a?.name} tem ${kills} abate(s) no arquivo. Ignorar descarta esses abates. Continuar?`)) return; setIgnored((c) => (on ? [...c, key] : c.filter((k) => k !== key))); }} doubts={doubts} resolved={resolved} rows={rows} pilotOptions={pilotOptions}
           onLink={linkPilot} onResolve={resolve} onUndo={(i) => setResolved((c) => { const n = { ...c }; delete n[i]; return n; })} onAssign={assign} onLost={markLost} />
       )}
 
@@ -194,7 +196,7 @@ function QuickEditor({ mission, initial }: { mission: Mission; initial: MissionR
       <footer className="rq-foot">
         <div>
           <span className="muted">Ao publicar, os PM entram no saldo dos pilotos e a missão é encerrada. Você ainda pode conceder as condecorações depois.</span>
-          {blocked && rows.length > 0 && <p className="rq-block">{pending > 0 ? `Faltam ${pending} ${pending === 1 ? 'piloto' : 'pilotos'} com participação ou sobrevivência em aberto.` : 'Resolva os itens para conferir antes de publicar.'}</p>}
+          {blocked && rows.length > 0 && <p className="rq-block">{pending > 0 ? `Faltam ${pending} ${pending === 1 ? 'piloto' : 'pilotos'} com participação ou sobrevivência em aberto.` : open_ > 0 ? 'Resolva os itens para conferir antes de publicar.' : 'Marque que está ciente dos objetos não classificados.'}</p>}
           {save.error && <p role="alert" className="op-error">{errorMessage(save.error)}</p>}
         </div>
         <div className="rq-actions">

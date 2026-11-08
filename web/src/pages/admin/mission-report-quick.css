@@ -69,3 +69,4 @@
 .rq-foot > div:first-child { max-width: 560px; font-size: 15px; line-height: 1.45; }
 .rq-block { margin: 8px 0 0; font-size: 14px; color: #ffc24a; }
 @media (max-width: 720px) { .rq-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rq-steps span { padding: 6px 8px; } }
+.rq-ack { display: flex; gap: 8px; align-items: center; margin: 0; cursor: pointer; }
